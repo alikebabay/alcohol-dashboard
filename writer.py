@@ -135,7 +135,7 @@ def normalize_alcohol_df(
 
 # --- сохранение ------------------------------------------------------------
 
-def save_to_excel(df: pd.DataFrame, filename: str = "normalized.xlsx") -> Path:
+def save_to_excel(df: pd.DataFrame, filename: str) -> Path:
     """
     Сохраняет DataFrame в Excel.
     На выходе всегда 10 фиксированных колонок:
@@ -148,7 +148,7 @@ def save_to_excel(df: pd.DataFrame, filename: str = "normalized.xlsx") -> Path:
     column_map = {
         "Description": "Наименование",
         "Bt/Cs": "шт / кор",
-        "USD/cs": "цена",
+       
     }
 
     # базовый шаблон с пустыми колонками
@@ -159,13 +159,16 @@ def save_to_excel(df: pd.DataFrame, filename: str = "normalized.xlsx") -> Path:
         "cl",
         "шт / кор",
         "Место загрузки",
-        "Поставщик 1",
-        "Поставщик 2",
-        "Поставщик 3",
-        "Поставщик 4",
-        "цена",
     ]
-    df_out = pd.DataFrame(columns=base_cols)
+    # формируем шаблон на количество строк во входном df
+    df_out = pd.DataFrame(index=df.index, columns=base_cols)
+    # имя поставщика из имени входного файла
+    supplier = Path(filename).stem
+    price_col = f"цена {supplier}"
+
+    # добавляем колонку с ценой, если она есть во входном df
+    if "USD/cs" in df.columns:
+        df_out[price_col] = df["USD/cs"]
 
     # переносим из сырых данных только то, что нашли
     for raw_col, target_col in column_map.items():
@@ -174,8 +177,17 @@ def save_to_excel(df: pd.DataFrame, filename: str = "normalized.xlsx") -> Path:
 
     out_dir = Path("processed")
     out_dir.mkdir(exist_ok=True)
-    path = out_dir / filename
+    path = out_dir / "master.xlsx"
+
+    # считаем, сколько строк пришло на вход
+    added_rows = len(df_out)
+
+    # если файл уже есть → читаем и добавляем новые строки вниз
+    if path.exists():
+        old = pd.read_excel(path)
+        df_out = pd.concat([old, df_out], ignore_index=True)
+
     df_out.to_excel(path, index=False, engine="openpyxl")
 
-    print(f"[OK] Сохранено {filename} → {path}, shape={df_out.shape}")
+    print(f"[OK] Master обновлён: {path}, добавлено {added_rows} строк, всего {df_out.shape[0]}")
     return path

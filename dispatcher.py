@@ -7,6 +7,6 @@ def dispatch_excel(file_path: Path):
     df_norm, mapping = parse_excel(file_path)
     print(f"[DEBUG dispatcher] parse_excel вернул df shape={df_norm.shape}, mapping={mapping}")
 
-    out_path = save_to_excel(df_norm, f"normalized_{file_path.name}")
+    out_path = save_to_excel(df_norm, file_path.name)
     print(f"[DEBUG dispatcher] save_to_excel вернул: {out_path}")
     return out_path
