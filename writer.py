@@ -56,11 +56,6 @@ BOTTLES_PER_CASE_PATS = [
     r"pcs.*[/ ]*case", r"qty.*case", r"per.*case"
 ]
 
-CASES_PATS = [
-    r"^cs$", r"cases?$", r"кейсы|короб|ящик|короба",
-    r"доступн|avail|stock|qty$"
-]
-
 PRICE_CASE_PATS = [
     r"usd.?/?cs", r"eur.?/?cs", r"€.?/?cs", r"\$.?/?cs",
     r"price.*case", r"цена.*кейс", r"цена.?/?кейс", r"$/case", r"usd.*per.*case"
@@ -84,14 +79,13 @@ def normalize_alcohol_df(
     # ищем колонки
     col_name  = _find_col(df, NAME_PATS)
     col_bpc   = _find_col(df, BOTTLES_PER_CASE_PATS)
-    col_cases = _find_col(df, CASES_PATS)
     col_price = _find_col(df, PRICE_CASE_PATS)
 
     mapping = {
         "name": col_name,
         "bottles_per_case": col_bpc,
-        "cases": col_cases,
         "price_per_case": col_price,
+        "price_per_bottle": "calculated",
     }
 
     # собираем нормализованные данные
@@ -107,24 +101,14 @@ def normalize_alcohol_df(
     else:
         out["bottles_per_case"] = None
 
-    if col_cases:
-        out["cases"] = df[col_cases].map(_to_number)
-    else:
-        out["cases"] = None
-
     if col_price:
         out["price_per_case"] = df[col_price].map(_to_number)
     else:
         out["price_per_case"] = None
 
-    # вычисляем цену за бутылку, если возможно
-    def _price_bottle(row):
-        p, bpc = row.get("price_per_case"), row.get("bottles_per_case")
-        if p is None or bpc in (None, 0):
-            return None
-        return round(p / bpc, 4)
-
-    out["price_per_bottle"] = out.apply(_price_bottle, axis=1)
+    out["price_per_bottle"] = out["price_per_case"] / out["bottles_per_case"]
+    out["price_per_bottle"] = out["price_per_bottle"].where(~pd.isna(out["price_per_bottle"]))
+    out["price_per_bottle"] = out["price_per_bottle"].round(4)
 
     # уберём полностью пустые строки (если в исходнике были групповые заголовки и т.п.)
     if col_name:
@@ -147,8 +131,7 @@ def save_to_excel(df: pd.DataFrame, filename: str) -> Path:
     # соответствие сырых колонок -> наши поля
     column_map = {
         "Description": "Наименование",
-        "Bt/Cs": "шт / кор",
-       
+        "Bt/Cs": "шт / кор",            
     }
 
     # базовый шаблон с пустыми колонками
@@ -166,9 +149,10 @@ def save_to_excel(df: pd.DataFrame, filename: str) -> Path:
     supplier = Path(filename).stem
     price_col = f"цена {supplier}"
 
-    # добавляем колонку с ценой, если она есть во входном df
-    if "USD/cs" in df.columns:
-        df_out[price_col] = df["USD/cs"]
+    # добавляем колонку с ценой за бутылку
+    if "price_per_bottle" in df.columns:
+        df_out[price_col] = df["price_per_bottle"]
+
 
     # переносим из сырых данных только то, что нашли
     for raw_col, target_col in column_map.items():

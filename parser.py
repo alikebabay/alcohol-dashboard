@@ -13,7 +13,7 @@ def parse_excel(file_path: Path):
     header_row = None
     for i, row in raw.iterrows():
         non_empty = row.dropna().shape[0]
-        if non_empty >= 6:   # можно менять на 7
+        if non_empty >= 4:   # можно менять на 7
             header_row = i
             break
 
