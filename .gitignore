@@ -32,3 +32,6 @@ Thumbs.db
 # Test docs (оставим папку, но исключим файлы)
 test_documents/*
 !test_documents/.gitkeep
+
+processed/*
+!processed/.gitkeep
