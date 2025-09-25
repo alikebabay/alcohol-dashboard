@@ -130,8 +130,8 @@ def save_to_excel(df: pd.DataFrame, filename: str) -> Path:
 
     # соответствие сырых колонок -> наши поля
     column_map = {
-        "Description": "Наименование",
-        "Bt/Cs": "шт / кор",            
+        "name": "Наименование",
+        "bottles_per_case": "шт / кор",            
     }
 
     # базовый шаблон с пустыми колонками
