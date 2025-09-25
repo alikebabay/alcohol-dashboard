@@ -147,11 +147,14 @@ def save_to_excel(df: pd.DataFrame, filename: str) -> Path:
     df_out = pd.DataFrame(index=df.index, columns=base_cols)
     # имя поставщика из имени входного файла
     supplier = Path(filename).stem
-    price_col = f"цена {supplier}"
+    
+    # добавляем колонку с ценой за кейс
+    if "price_per_case" in df.columns:
+        df_out[f"цена за кейс {supplier}"] = df["price_per_case"]
 
     # добавляем колонку с ценой за бутылку
     if "price_per_bottle" in df.columns:
-        df_out[price_col] = df["price_per_bottle"]
+        df_out[f"цена за бутылку {supplier}"] = df["price_per_bottle"]
 
 
     # переносим из сырых данных только то, что нашли
