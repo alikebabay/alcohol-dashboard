@@ -1,3 +1,7 @@
+#проверка свежести кода
+import time
+print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+
 from parser import parse_excel
 from writer import save_to_excel
 from pathlib import Path

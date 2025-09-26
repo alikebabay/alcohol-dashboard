@@ -1,3 +1,7 @@
+#проверка свежести кода
+import time
+print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+
 from pathlib import Path
 import traceback
 from dispatcher import dispatch_excel

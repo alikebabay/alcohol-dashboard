@@ -1,3 +1,7 @@
+#проверка свежести кода
+import time
+print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+
 # parser.py
 from pathlib import Path
 import pandas as pd

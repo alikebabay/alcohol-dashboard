@@ -1,3 +1,8 @@
+#проверка свежести кода
+import time
+print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+
+
 # gsheets_integration.py
 from pathlib import Path
 import gspread
