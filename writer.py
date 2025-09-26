@@ -177,4 +177,4 @@ def save_to_excel(df: pd.DataFrame, filename: str) -> Path:
     df_out.to_excel(path, index=False, engine="openpyxl")
 
     print(f"[OK] Master обновлён: {path}, добавлено {added_rows} строк, всего {df_out.shape[0]}")
-    return path
+    return path, df_out
