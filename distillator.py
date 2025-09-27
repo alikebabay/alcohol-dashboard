@@ -4,9 +4,14 @@ print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
 import re
 import pandas as pd
+from typing import Optional
+
 
 # --- регексы для признаков продукта ---
-RX_VOLUME   = re.compile(r'(?i)\b(\d{2,4}\s?ml|\d{2}\s?cl|\d(?:[.,]\d)?\s?l)\b')
+# ловит 50ml / 75cl / 1L / 37.5cl и т.п. (без жесткой границы слева)
+_RX_VOLUME   = re.compile(r'(?i)(\d{1,4}(?:[.,]\d{1,2})?\s?(?:ml|cl|l))\b')
+# NxVol (12x75cl, 06x1L, 120x5cl)
+_RX_CASEVOL = re.compile(r'(?i)\b(\d{1,3})\s*[x×]\s*(\d{1,4}(?:[.,]\d{1,2})?)\s*(ml|cl|l)\b')
 RX_ABV      = re.compile(r'(?i)\b\d{1,2}(?:[.,]\d)?\s?%(\s*abv)?\b')
 RX_AGE      = re.compile(r'(?i)\b(\d{1,2})\s?(yo|years?|лет)\b')
 RX_VINTAGE  = re.compile(r'\b(19\d{2}|20(0\d|1\d|2[0-6]))\b')
@@ -20,25 +25,64 @@ CATEGORY_LEX = {
 # извлечение количества бутылок из паттернов вида 6x75cl, 12x0.7l, 24x200ml
 RX_PACK_CASES = re.compile(r'(?i)\b(?P<cases>\d{1,2})\s*[x×]\s*\d{2,4}\s?(?:ml|cl|l)\b')
 
-def _extract_volume(text: str) -> str | None:
-    """Ищет объём (ml/cl/l) и возвращает строкой"""
-    if not text:
-        return None
-    m = RX_VOLUME.search(text)
-    if m:
-        return m.group(0).replace(" ", "")
-    return None
-
 def _normalize_text(s: str) -> str:
-    if not isinstance(s, str):
-        return ""
-    # убрать неразрывные пробелы, табы и т.п.
-    s = s.replace("\xa0", " ").replace("\u200b", "")  
-    # убрать все не-буквенно-цифровые символы с краёв
-    s = re.sub(r"^\W+|\W+$", "", s)
-    # схлопнуть пробелы
+    s = str(s or "").strip().lower()
+    s = s.replace("\n", " ").replace("\r", " ")
     s = re.sub(r"\s+", " ", s)
-    return s.strip().lower()
+    s = s.replace("ё", "е")
+    return s
+
+def _cl_from_text(text) -> Optional[float]:
+     if not text: return None
+     s = str(text).lower().replace('\xa0',' ')
+     m = _RX_CASEVOL.search(s)
+     if not m:
+         m = re.search(r'(\d{1,4}(?:[.,]\d{1,2})?)\s*(ml|cl|l)\b', s)
+     if not m:
+         return None
+     val = float(m.group(1 if m.re is not _RX_CASEVOL else 2).replace(',', '.'))
+     unit = m.group(2 if m.re is not _RX_CASEVOL else 3)
+     if unit == 'ml': return round(val / 10, 2)   # 750ml -> 75.0
+     if unit == 'l':  return round(val * 100, 2)  # 1l -> 100.0
+     return val                                     # cl
+
+def _strip_casevol_tokens(s: str) -> str:
+     if not isinstance(s, str): s = str(s or '')
+     s = _RX_CASEVOL.sub('', s)
+     s = RX_VOLUME.sub('', s)
+     s = re.sub(r'\s{2,}', ' ', s).strip(' -,—–')
+     return s
+
+def _remove_volume_tokens(name: str) -> str:
+    if not isinstance(name, str):
+        return name
+    # убираем кейс+объём: 6x75cl, 12x1L, 120x5cl
+    s = _RX_CASEVOL.sub("", name)
+    # убираем одиночные объёмы: 75cl, 1L, 200ml
+    s = _RX_VOLUME.sub("", s)
+    return re.sub(r"\s{2,}", " ", s).strip(" -")
+
+def _extract_volume(text: str):
+    if not isinstance(text, str):
+        return None
+    s = text.lower().replace('\xa0',' ')
+    # сначала ищем форматы 12x75cl, 6x1l и т.п.
+    m = _RX_CASEVOL.search(s)
+    if m:
+        val, unit = m.group(2), m.group(3).lower()
+    else:
+        m = _RX_VOLUME.search(s)
+        if not m:
+            return None
+        # здесь m.group(1) = "75cl", надо разнести
+        val_unit = m.group(0).replace(" ", "").lower()
+        return val_unit   # ← сразу возвращаем как строку ("75cl", "1l", "50ml")
+
+    # нормализуем в cl
+    val = float(val.replace(',', '.'))
+    if unit == "ml": return round(val/10, 2)   # 750ml -> 75.0
+    if unit == "l":  return round(val*100, 2)  # 1l -> 100.0
+    return val
 
 def _infer_bpc_from_name(text: str) -> float | None:
     """Пытаемся понять bottles_per_case из названия (6x75cl, 12x0.7L, 24x200ml)."""
@@ -90,14 +134,11 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name") -> pd.DataFrame:
 
     df = df[~mask_cat].reset_index(drop=True)
 
-    # создаём колонку volume
-    df["volume"] = df[col_name].map(_extract_volume)
+    # вытащим cl (объем) в отдельную колонку
+    df["cl"] = df[col_name].map(_extract_volume)
 
-    # добавляем volume к названию, если нашли
-    df[col_name] = df.apply(
-        lambda row: f"{row[col_name]} ({row['volume']})" if pd.notna(row["volume"]) else row[col_name],
-        axis=1
-    )
+    # удаляем cl-часть из названия (все токены)
+    df[col_name] = df[col_name].map(_remove_volume_tokens)
 
     # ---- ДОзаполнение и чистка числовых полей ----
     # 1) если bottles_per_case пусто, пробуем вытащить из названия (6x75cl → 6)

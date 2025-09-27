@@ -75,15 +75,17 @@ NAME_PATS = [
 ]
 
 BOTTLES_PER_CASE_PATS = [
-    r"bt.?/?cs", r"btl.?/?case", r"bottl.*case",
+    r"bt.?/?cs", r"btl.?/?case",
+    r"\bbottles?\b", r"bottl.?/case",  # ← только bottles
     r"шт.*[/ ]*кор", r"шт.*в.*кор", r"шт.*в.*ящ",
-    r"pcs.*[/ ]*case", r"qty.*case", r"per.*case",
-    r"size", r"规格"
+    r"pcs.*[/ ]*case", r"qty.*case",
+    r"size(?!.*price)",   # ← исключаем Price/Size
+    r"规格"
 ]
 
 PRICE_CASE_PATS = [
-    r"usd.?/?cs", r"eur.?/?cs", r"€.?/?cs", r"\$.?/?cs",
-    r"price.*case", r"цена.*кейс", r"цена.?/?кейс", r"$/case", r"usd.*per.*case",
+    r"price.*case", r"usd.?/?cs", r"eur.?/?cs", r"€.?/?cs", r"\$.?/?cs",
+    r"цена.*кейс", r"цена.?/?кейс", r"$/case", r"usd.*per.*case",
     r"price.*/?\s*ctn", r"price.*carton", r"/\s*ctn", r"/\s*carton", r"/\s*cs"
 ]
 
@@ -104,8 +106,9 @@ def normalize_alcohol_df(
 
     # ищем ВСЕ подходящие колонки и берём "первую непустую" по строке
     name_cols  = _find_cols(df, NAME_PATS)
-    bpc_cols   = _find_cols(df, BOTTLES_PER_CASE_PATS)
-    price_cols = [c for c in _find_cols(df, PRICE_CASE_PATS) if c not in bpc_cols]
+    price_cols = _find_cols(df, PRICE_CASE_PATS)
+    bpc_cols   = [c for c in _find_cols(df, BOTTLES_PER_CASE_PATS) if c not in price_cols]
+    
 
     mapping = {
         "name": name_cols,
@@ -215,7 +218,8 @@ def save_to_excel(df: pd.DataFrame, filename: str) -> Path:
     # соответствие сырых колонок -> наши поля
     column_map = {
         "name": "Наименование",
-        "bottles_per_case": "шт / кор",            
+        "bottles_per_case": "шт / кор",
+        "cl": "cl", # уже должна быть в df           
     }
 
     # базовый шаблон с пустыми колонками
