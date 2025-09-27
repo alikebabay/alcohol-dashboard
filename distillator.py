@@ -27,17 +27,32 @@ def _extract_volume(text: str) -> str | None:
         return m.group(0).replace(" ", "")
     return None
 
+def _normalize_text(s: str) -> str:
+    if not isinstance(s, str):
+        return ""
+    # убрать неразрывные пробелы, табы и т.п.
+    s = s.replace("\xa0", " ").replace("\u200b", "")  
+    # убрать все не-буквенно-цифровые символы с краёв
+    s = re.sub(r"^\W+|\W+$", "", s)
+    # схлопнуть пробелы
+    s = re.sub(r"\s+", " ", s)
+    return s.strip().lower()
 
-def looks_like_category(name: str) -> bool:
+
+def looks_like_category(name: str, row: pd.Series | None = None) -> bool:
     """Эвристика: категория, а не продукт"""
     if not name:
         return False
-    s = str(name).strip().lower()
-
+    s = _normalize_text(str(name))
+    
     if s in CATEGORY_LEX:
         return True
-    if len(s) <= 30 and len(s.split()) <= 4 and not re.search(r'\d', s):
-        return True
+    
+    # если мало слов, нет цифр и в строке вообще пустые цены — тоже категория
+    if row is not None:
+        if pd.isna(row.get("price_per_case")) and pd.isna(row.get("bottles_per_case")):
+            if len(s) <= 30 and len(s.split()) <= 4 and not re.search(r'\d', s):
+                return True
     return False
 
 
@@ -53,7 +68,13 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name") -> pd.DataFrame:
     df = df.copy()
 
     # убираем категории
-    mask_cat = df[col_name].fillna("").map(looks_like_category)
+    mask_cat = df.apply(lambda r: looks_like_category(r[col_name], r), axis=1)
+    removed = df[mask_cat]
+    if not removed.empty:
+        print(f"[DEBUG distillator] вырезано категорий: {len(removed)}")
+        for val in removed[col_name].dropna().unique():
+            print(f"   - {val!r}")
+
     df = df[~mask_cat].reset_index(drop=True)
 
     # создаём колонку volume

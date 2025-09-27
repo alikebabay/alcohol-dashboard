@@ -14,16 +14,17 @@ def dispatch_excel(file_path: Path):
     df_raw, _ = parse_excel(file_path)
     print(f"[DEBUG dispatcher] parse_excel вернул df shape={df_raw.shape}")
 
-    # 2. фильтруем и обогащаем
-    df_filtered = filter_and_enrich(df_raw, col_name="name")
-    print(f"[DEBUG dispatcher] после фильтрации/обогащения shape={df_filtered.shape}")
-
     # 3. нормализуем
-    df_norm, mapping = normalize_alcohol_df(df_filtered)
+    df_norm, mapping = normalize_alcohol_df(df_raw)
     print(f"[DEBUG dispatcher] normalize_alcohol_df вернул df shape={df_norm.shape}, mapping={mapping}")
 
+
+    # 2. фильтруем и обогащаем
+    df_distilled = filter_and_enrich(df_norm, col_name="name")
+    print(f"[DEBUG dispatcher] после фильтрации/обогащения shape={df_distilled.shape}")
+
     # 4. сохраняем
-    out_path, df_out = save_to_excel(df_norm, file_path.name)
+    out_path, df_out = save_to_excel(df_distilled, file_path.name)
     print(f"[DEBUG dispatcher] save_to_excel вернул: {out_path}")
 
     # 5. (опционально) обновляем Google Sheets

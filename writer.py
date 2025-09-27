@@ -64,7 +64,7 @@ PRICE_CASE_PATS = [
     r"price.*case", r"цена.*кейс", r"цена.?/?кейс", r"$/case", r"usd.*per.*case"
 ]
 
-
+#последний этап поиска колонок
 def normalize_alcohol_df(
     df_in: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, Dict[str, Optional[str]]]:
@@ -193,8 +193,9 @@ def save_to_excel(df: pd.DataFrame, filename: str) -> Path:
         "шт / кор",
         "Место загрузки",
     ]
-    # формируем шаблон на количество строк во входном df
-    df_out = pd.DataFrame(index=df.index, columns=base_cols)
+    
+    # формируем шаблон на количество строк во входном df (с непрерывным индексом)
+    df_out = pd.DataFrame(index=range(len(df)), columns=base_cols)
     # имя поставщика из имени входного файла
     supplier = Path(filename).stem
     
@@ -229,6 +230,8 @@ def save_to_excel(df: pd.DataFrame, filename: str) -> Path:
     df_final.to_excel(path, index=False, engine="openpyxl")
 
     print(f"[OK] Master обновлён: {path}, добавлено {path} строк, всего {df_final.shape[0]}")
+    print("[DEBUG save_to_excel] первые 10 наименований:",
+      df_out["Наименование"].head(10).tolist())
     return path, df_final
 
 
