@@ -110,7 +110,10 @@ def normalize_alcohol_df(
         out["price_per_case"] = None
 
     out["price_per_bottle"] = out["price_per_case"] / out["bottles_per_case"]
-    out["price_per_bottle"] = out["price_per_bottle"].where(~pd.isna(out["price_per_bottle"]))
+    # преобразуем к числу (оставляем NaN, если не парсится)
+    out["price_per_bottle"] = pd.to_numeric(out["price_per_bottle"], errors="coerce")
+
+    # теперь можно безопасно округлить
     out["price_per_bottle"] = out["price_per_bottle"].round(4)
 
     # уберём полностью пустые строки (если в исходнике были групповые заголовки и т.п.)
@@ -118,6 +121,50 @@ def normalize_alcohol_df(
         out = out[~out["name"].fillna("").str.strip().eq("")].reset_index(drop=True)
 
     return out, mapping
+
+# --- создание матрицы ------------------------------------------------------------
+
+def merge_with_master(old: pd.DataFrame, new: pd.DataFrame, supplier: str) -> pd.DataFrame:
+    """
+    Сливает новые данные по поставщику с существующим master.xlsx.
+    - Ключ для совпадения: Наименование + шт / кор
+    - Если колонок для этого поставщика нет → добавляем
+    - Если цена изменилась → обновляем
+    - Если строка новая → добавляем
+    """
+    # добавляем колонки для текущего поставщика, если их нет
+    for col in [f"цена за кейс {supplier}", f"цена за бутылку {supplier}"]:
+        if col not in old.columns:
+            old[col] = None
+
+    updated, inserted = 0, 0
+
+    for _, row in new.iterrows():
+        name = row["Наименование"]
+        bpc = row["шт / кор"]
+        price_case = row.get(f"цена за кейс {supplier}")
+        price_bottle = row.get(f"цена за бутылку {supplier}")
+
+        mask = (old["Наименование"] == name) & (old["шт / кор"] == bpc)
+        if mask.any():
+            # обновляем только если цена отличается
+            if pd.notna(price_case):
+                old_price = old.loc[mask, f"цена за кейс {supplier}"].values[0]
+                if pd.isna(old_price) or old_price != price_case:
+                    old.loc[mask, f"цена за кейс {supplier}"] = price_case
+                    updated += 1
+            if pd.notna(price_bottle):
+                old_price_b = old.loc[mask, f"цена за бутылку {supplier}"].values[0]
+                if pd.isna(old_price_b) or old_price_b != price_bottle:
+                    old.loc[mask, f"цена за бутылку {supplier}"] = price_bottle
+                    updated += 1
+        else:
+            # новой строки ещё нет → добавляем
+            old = pd.concat([old, pd.DataFrame([row])], ignore_index=True)
+            inserted += 1
+
+    print(f"[DEBUG merge_with_master] updated={updated}, inserted={inserted}")
+    return old
 
 
 # --- сохранение ------------------------------------------------------------
@@ -175,9 +222,13 @@ def save_to_excel(df: pd.DataFrame, filename: str) -> Path:
     # если файл уже есть → читаем и добавляем новые строки вниз
     if path.exists():
         old = pd.read_excel(path)
-        df_out = pd.concat([old, df_out], ignore_index=True)
+        df_final = merge_with_master(old, df_out, supplier)
+    else:
+        df_final = df_out
 
-    df_out.to_excel(path, index=False, engine="openpyxl")
+    df_final.to_excel(path, index=False, engine="openpyxl")
 
-    print(f"[OK] Master обновлён: {path}, добавлено {added_rows} строк, всего {df_out.shape[0]}")
-    return path, df_out
+    print(f"[OK] Master обновлён: {path}, добавлено {path} строк, всего {df_final.shape[0]}")
+    return path, df_final
+
+
