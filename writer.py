@@ -46,6 +46,27 @@ def _find_col(df: pd.DataFrame, patterns: List[str]) -> Optional[str]:
                 return col
     return None
 
+def _find_cols(df: pd.DataFrame, patterns: List[str]) -> List[str]:
+    """Вернёт все колонки, подходящие под паттерны (нормализованный хедер)."""
+    norm_cols = {col: _clean_header(col) for col in df.columns}
+    out = []
+    for col, norm in norm_cols.items():
+        if any(re.search(pat, norm) for pat in patterns):
+            out.append(col)
+    return out
+
+_RX_CASES_FROM_SIZE = re.compile(r'(?i)\b(\d{1,3})\s*[x×]\s*\d')
+def _cases_from_size_text(x) -> Optional[float]:
+    if pd.isna(x):
+        return None
+    m = _RX_CASES_FROM_SIZE.search(str(x))
+    if m:
+        try:
+            return float(m.group(1))
+        except Exception:
+            return None
+    return _to_number(x)
+
 
 # --- ядро нормализации -----------------------------------------------------
 
@@ -56,12 +77,14 @@ NAME_PATS = [
 BOTTLES_PER_CASE_PATS = [
     r"bt.?/?cs", r"btl.?/?case", r"bottl.*case",
     r"шт.*[/ ]*кор", r"шт.*в.*кор", r"шт.*в.*ящ",
-    r"pcs.*[/ ]*case", r"qty.*case", r"per.*case"
+    r"pcs.*[/ ]*case", r"qty.*case", r"per.*case",
+    r"size", r"规格"
 ]
 
 PRICE_CASE_PATS = [
     r"usd.?/?cs", r"eur.?/?cs", r"€.?/?cs", r"\$.?/?cs",
-    r"price.*case", r"цена.*кейс", r"цена.?/?кейс", r"$/case", r"usd.*per.*case"
+    r"price.*case", r"цена.*кейс", r"цена.?/?кейс", r"$/case", r"usd.*per.*case",
+    r"price.*/?\s*ctn", r"price.*carton", r"/\s*ctn", r"/\s*carton", r"/\s*cs"
 ]
 
 #последний этап поиска колонок
@@ -79,33 +102,44 @@ def normalize_alcohol_df(
     # работаем с копией
     df = df_in.copy()
 
-    # ищем колонки
-    col_name  = _find_col(df, NAME_PATS)
-    col_bpc   = _find_col(df, BOTTLES_PER_CASE_PATS)
-    col_price = _find_col(df, PRICE_CASE_PATS)
+    # ищем ВСЕ подходящие колонки и берём "первую непустую" по строке
+    name_cols  = _find_cols(df, NAME_PATS)
+    bpc_cols   = _find_cols(df, BOTTLES_PER_CASE_PATS)
+    price_cols = [c for c in _find_cols(df, PRICE_CASE_PATS) if c not in bpc_cols]
 
     mapping = {
-        "name": col_name,
-        "bottles_per_case": col_bpc,
-        "price_per_case": col_price,
+        "name": name_cols,
+        "bottles_per_case": bpc_cols,
+        "price_per_case": price_cols,
         "price_per_bottle": "calculated",
     }
 
     # собираем нормализованные данные
     out = pd.DataFrame()
 
-    if col_name:
-        out["name"] = df[col_name].astype(str).str.strip()
+    if name_cols:
+        tmp = df[name_cols].bfill(axis=1)
+        out["name"] = tmp.iloc[:, 0].astype(str).str.strip()
     else:
         out["name"] = None  # поле допустимо отсутствующим
 
-    if col_bpc:
-        out["bottles_per_case"] = df[col_bpc].map(_to_number)
+    if bpc_cols:
+        tmp = df[bpc_cols].bfill(axis=1)
+        # если хоть один из найденных хедеров похож на Size/规格 или значения содержат Nx...
+        col0 = tmp.columns[0]
+        header_norm = _clean_header(col0)
+        looks_like_size = bool(re.search(r"size|规格", header_norm)) or \
+            tmp.iloc[:,0].astype(str).str.contains(r"\d\s*[x×]\s*\d", case=False, na=False).any()
+        if looks_like_size:
+            out["bottles_per_case"] = tmp.iloc[:,0].map(_cases_from_size_text)
+        else:
+            out["bottles_per_case"] = tmp.iloc[:,0].map(_to_number)
     else:
-        out["bottles_per_case"] = None
+         out["bottles_per_case"] = None
 
-    if col_price:
-        out["price_per_case"] = df[col_price].map(_to_number)
+    if price_cols:
+        tmp = df[price_cols].bfill(axis=1)
+        out["price_per_case"] = tmp.iloc[:,0].map(_to_number)
     else:
         out["price_per_case"] = None
 
@@ -117,7 +151,7 @@ def normalize_alcohol_df(
     out["price_per_bottle"] = out["price_per_bottle"].round(4)
 
     # уберём полностью пустые строки (если в исходнике были групповые заголовки и т.п.)
-    if col_name:
+    if name_cols:
         out = out[~out["name"].fillna("").str.strip().eq("")].reset_index(drop=True)
 
     return out, mapping

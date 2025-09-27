@@ -17,6 +17,8 @@ CATEGORY_LEX = {
     'wines','wine','spirits','spirits/liquors','sparkling wines'
 }
 
+# извлечение количества бутылок из паттернов вида 6x75cl, 12x0.7l, 24x200ml
+RX_PACK_CASES = re.compile(r'(?i)\b(?P<cases>\d{1,2})\s*[x×]\s*\d{2,4}\s?(?:ml|cl|l)\b')
 
 def _extract_volume(text: str) -> str | None:
     """Ищет объём (ml/cl/l) и возвращает строкой"""
@@ -38,6 +40,17 @@ def _normalize_text(s: str) -> str:
     s = re.sub(r"\s+", " ", s)
     return s.strip().lower()
 
+def _infer_bpc_from_name(text: str) -> float | None:
+    """Пытаемся понять bottles_per_case из названия (6x75cl, 12x0.7L, 24x200ml)."""
+    if not text:
+        return None
+    m = RX_PACK_CASES.search(text)
+    if m:
+        try:
+            return float(m.group("cases"))
+        except Exception:
+            return None
+    return None
 
 def looks_like_category(name: str, row: pd.Series | None = None) -> bool:
     """Эвристика: категория, а не продукт"""
@@ -86,4 +99,38 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name") -> pd.DataFrame:
         axis=1
     )
 
+    # ---- ДОзаполнение и чистка числовых полей ----
+    # 1) если bottles_per_case пусто, пробуем вытащить из названия (6x75cl → 6)
+    if "bottles_per_case" in df.columns:
+        bpc_before_na = int(df["bottles_per_case"].isna().sum())
+        if bpc_before_na:
+            df["bottles_per_case"] = df.apply(
+                lambda r: r["bottles_per_case"] if pd.notna(r["bottles_per_case"]) else _infer_bpc_from_name(r[col_name]),
+                axis=1
+            )
+            bpc_filled = bpc_before_na - int(df["bottles_per_case"].isna().sum())
+            if bpc_filled:
+                print(f"[DEBUG distillator] дозаполнено bottles_per_case из названия: {bpc_filled}")
+
+    # 2) приведение к числам
+    if "price_per_case" in df.columns:
+        df["price_per_case"] = pd.to_numeric(df["price_per_case"], errors="coerce")
+    if "bottles_per_case" in df.columns:
+        df["bottles_per_case"] = pd.to_numeric(df["bottles_per_case"], errors="coerce")
+
+    # 3) отбрасываем только строки где НЕТ цены (qty может быть NaN)
+    if "price_per_case" in df.columns:
+        mask_invalid = df["price_per_case"].isna()
+        drop_cnt = int(mask_invalid.sum())
+        if drop_cnt:
+            print(f"[DEBUG distillator] удалено без цены: {drop_cnt} (примеры: {df.loc[mask_invalid, col_name].head(5).tolist()})")
+        df = df[~mask_invalid].reset_index(drop=True)
+
+    # 4) убираем дубли по (name, bottles_per_case)
+    if {"name","bottles_per_case"}.issubset(df.columns):
+        before = len(df)
+        df = df.drop_duplicates(subset=["name","bottles_per_case"], keep="last")
+        removed_dups = before - len(df)
+        if removed_dups:
+            print(f"[DEBUG distillator] удалено дублей: {removed_dups}")
     return df
