@@ -3,15 +3,13 @@ import time
 print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
 # parser.py
-from pathlib import Path
+from io import BytesIO
 import pandas as pd
 
-import numpy as np
-
-def parse_excel(file_path: Path):
-    print(f"[DEBUG parse_excel] Начинаю парсить: {file_path}")
+def parse_excel(src: BytesIO):
+    print(f"[DEBUG parse_excel] Начинаю парсить BytesIO")
     # читаем все листы сразу
-    sheets = pd.read_excel(file_path, sheet_name=None, header=None, engine="openpyxl")
+    sheets = pd.read_excel(src, sheet_name=None, header=None, engine="openpyxl")
     print(f"[DEBUG parse_excel] найдено листов: {list(sheets.keys())}")
 
     frames = []
@@ -31,7 +29,7 @@ def parse_excel(file_path: Path):
             continue
 
         # формируем нормальный DataFrame
-        df = pd.read_excel(file_path, sheet_name=sheet_name, header=header_row, engine="openpyxl")
+        df = pd.read_excel(src, sheet_name=sheet_name, header=header_row, engine="openpyxl")
         frames.append(df)
         mappings[sheet_name] = {"columns": list(df.columns), "header_row": header_row}
         print(f"[DEBUG parse_excel] {sheet_name}: shape={df.shape}, header_row={header_row}")
