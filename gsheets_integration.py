@@ -32,12 +32,16 @@ def _get_worksheet():
 def load_master_from_gsheets() -> pd.DataFrame:
     """Загружает мастер-таблицу из Google Sheets в DataFrame."""
     ws = _get_worksheet()
-    data = ws.get_all_records()
+    data = ws.get_all_records(value_render_option="UNFORMATTED_VALUE")
     if not data:
         print(f"[INFO] Лист {SHEET_NAME} пустой")
         return pd.DataFrame()
     df = pd.DataFrame(data)
     print(f"[OK] Загружено из Google Sheets: {df.shape[0]} строк, {df.shape[1]} колонок")
+    # сразу приводим все числовые цены в float
+    for col in df.columns:
+        if "цена за бутылку" in col or "цена за кейс" in col:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
     return df
 
 
