@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from gsheets_integration import load_master_from_gsheets, update_master_to_gsheets
+
 
 import pandas as pd
 
@@ -170,13 +172,11 @@ def merge_with_master(old: pd.DataFrame, new: pd.DataFrame, supplier: str) -> pd
     updated, inserted = 0, 0
 
     for i, row in new.iterrows():
-        print(f"\n[DEBUG merge_with_master] row {i}:")
-        print(row.to_dict())
-        print(f"[DEBUG] row.keys() = {list(row.index)}")
+        
 
         name = row["Наименование"]
         bpc = row["шт / кор"]
-        print(f"[DEBUG] name={name}, bpc={bpc}")
+        
 
         # поддержка старого и нового формата
         price_case = row.get("price_per_case")
@@ -188,7 +188,7 @@ def merge_with_master(old: pd.DataFrame, new: pd.DataFrame, supplier: str) -> pd
             price_case = row.get(col_case)
             price_bottle = row.get(col_bottle)
 
-        print(f"[DEBUG] price_case={price_case}, price_bottle={price_bottle}")
+        
 
         mask = (old["Наименование"] == name) & (old["шт / кор"] == bpc)
         if mask.any():
@@ -214,7 +214,7 @@ def merge_with_master(old: pd.DataFrame, new: pd.DataFrame, supplier: str) -> pd
 
 # --- сохранение ------------------------------------------------------------
 
-def save_to_excel(df: pd.DataFrame, filename: str) -> Path:
+def save_to_excel(df: pd.DataFrame, filename: str):
     """
     Сохраняет DataFrame в Excel.
     На выходе всегда 10 фиксированных колонок:
@@ -246,8 +246,8 @@ def save_to_excel(df: pd.DataFrame, filename: str) -> Path:
     
     # формируем шаблон на количество строк во входном df (с непрерывным индексом)
     df_out = pd.DataFrame(index=range(len(df)), columns=base_cols)
-    # имя поставщика из имени входного файла
-    supplier = Path(filename).stem
+    # supplier берём всегда из имени файла
+    supplier = Path(filename).stem if filename else "unknown"
     
     
 
@@ -269,15 +269,15 @@ def save_to_excel(df: pd.DataFrame, filename: str) -> Path:
     added_rows = len(df_out)
 
     # если файл уже есть → читаем и добавляем новые строки вниз
-    if path.exists():
-        old = pd.read_excel(path)
-        df_final = merge_with_master(old, df_out, supplier)
-    else:
+    old_master = load_master_from_gsheets()
+    if old_master.empty:
         df_final = df_out
+    else:
+        df_final = merge_with_master(old_master, df_out, supplier)
 
-    df_final.to_excel(path, index=False, engine="openpyxl")
+    update_master_to_gsheets(df_final)
 
-    print(f"[OK] Master обновлён: {path}, добавлено {path} строк, всего {df_final.shape[0]}")
+    print(f"[OK] Master обновлён в Google Sheets, всего строк: {df_final.shape[0]}")
     print("[DEBUG save_to_excel] первые 10 наименований:",
       df_out["Наименование"].head(10).tolist())
     return path, df_final

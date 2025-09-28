@@ -40,8 +40,12 @@ def dispatch_excel(file_src: Union[Path, BytesIO], file_name: str = "unnamed.xls
     df_distilled = order_by_category(df_distilled, category_col="Тип")
 
     # 4. сохраняем
-    out_path, df_out = save_to_excel(df_distilled, file_name)
-    print(f"[DEBUG dispatcher] save_to_excel вернул: {out_path}")
+    print(f"[DEBUG dispatcher] file_name={file_name!r}")
+    supplier = Path(file_name).stem
+    print(f"[DEBUG dispatcher] supplier={supplier!r}")
+    out_path, df_out = save_to_excel(df_distilled, supplier)
+    print(f"[DEBUG dispatcher] file_name={file_name!r}")
+    print(f"[DEBUG dispatcher] supplier={Path(file_name).stem!r}")
 
     # 5. (опционально) обновляем Google Sheets
     try:

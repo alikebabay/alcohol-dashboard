@@ -5,6 +5,7 @@ print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 from pathlib import Path
 import traceback
 from dispatcher import dispatch_excel
+from io import BytesIO
 
 # Папка с тестовыми документами
 TEST_DIR = Path(r"C:\Users\alikebabay\Documents\alcohol-dashboard\test_documents")
@@ -20,7 +21,9 @@ def main():
     for f in files:
         print(f"\n[DEBUG local_runner] Запуск для: {f.name}")
         try:
-            dispatch_excel(f)
+            with f.open("rb") as fh:
+                data = fh.read()
+            dispatch_excel(BytesIO(data), f.name)
             print(f"[OK] Завершено: {f.name}")
         except Exception as e:
             print(f"[ERROR] {f.name}: {e}")
