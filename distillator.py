@@ -128,7 +128,7 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name") -> pd.DataFrame:
     mask_cat = df.apply(lambda r: looks_like_category(r[col_name], r), axis=1)
     removed = df[mask_cat]
     if not removed.empty:
-        print(f"[DEBUG distillator] вырезано категорий: {len(removed)}")
+        
         for val in removed[col_name].dropna().unique():
             print(f"   - {val!r}")
 

@@ -208,7 +208,7 @@ def merge_with_master(old: pd.DataFrame, new: pd.DataFrame, supplier: str) -> pd
             old = pd.concat([old, pd.DataFrame([row])], ignore_index=True)
             inserted += 1
 
-    print(f"[DEBUG merge_with_master] updated={updated}, inserted={inserted}")
+    
     return old
 
 
@@ -222,8 +222,7 @@ def save_to_excel(df: pd.DataFrame, filename: str):
     Заполняются только Наименование, cl, шт / кор и цена.
     Остальные пока пустые.
     """
-    print("[DEBUG save_to_excel] первые цены:")
-    print(df[["name", "bottles_per_case", "price_per_case", "price_per_bottle"]].head(10))
+    
 
     # соответствие сырых колонок -> наши поля
     column_map = {
@@ -278,8 +277,7 @@ def save_to_excel(df: pd.DataFrame, filename: str):
     update_master_to_gsheets(df_final)
 
     print(f"[OK] Master обновлён в Google Sheets, всего строк: {df_final.shape[0]}")
-    print("[DEBUG save_to_excel] первые 10 наименований:",
-      df_out["Наименование"].head(10).tolist())
+    
     return path, df_final
 
 

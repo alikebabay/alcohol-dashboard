@@ -24,28 +24,27 @@ def dispatch_excel(file_src: Union[Path, BytesIO], file_name: str = "unnamed.xls
     
     # 1. читаем Excel
     df_raw, _ = parse_excel(parse_target)
-    print(f"[DEBUG dispatcher] parse_excel вернул df shape={df_raw.shape}")
+    
 
     # 2. нормализуем
     df_norm, mapping = normalize_alcohol_df(df_raw)
-    print(f"[DEBUG dispatcher] normalize_alcohol_df вернул df shape={df_norm.shape}, mapping={mapping}")
+    
 
 
     # 3. фильтруем и обогащаем
     df_distilled = filter_and_enrich(df_norm, col_name="name")
-    print(f"[DEBUG dispatcher] после фильтрации/обогащения shape={df_distilled.shape}")
+    
 
     # 3.1 Категоризация + порядок
     df_distilled = attach_categories(df_distilled, name_col="name", out_col="Тип")
     df_distilled = order_by_category(df_distilled, category_col="Тип")
 
     # 4. сохраняем
-    print(f"[DEBUG dispatcher] file_name={file_name!r}")
+    
     supplier = Path(file_name).stem
-    print(f"[DEBUG dispatcher] supplier={supplier!r}")
+    
     out_path, df_out = save_to_excel(df_distilled, supplier)
-    print(f"[DEBUG dispatcher] file_name={file_name!r}")
-    print(f"[DEBUG dispatcher] supplier={Path(file_name).stem!r}")
+    
 
     # 5. (опционально) обновляем Google Sheets
     try:
