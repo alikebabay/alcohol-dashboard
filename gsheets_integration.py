@@ -37,10 +37,7 @@ def update_master_to_gsheets(df: pd.DataFrame):
         if pd.api.types.is_datetime64_any_dtype(df_clean[col]):
             df_clean[col] = df_clean[col].astype(str)
     
-    # --- DEBUG ---
-    print("[DEBUG gsheets] DataFrame для аплоада:")
-    print(" shape:", df_clean.shape)
-    print(df_clean.head(5).to_string(index=False))
+    
 
     # очищаем и загружаем заново
     ws.clear()

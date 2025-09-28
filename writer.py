@@ -75,6 +75,7 @@ NAME_PATS = [
 ]
 
 BOTTLES_PER_CASE_PATS = [
+    r"^\s*bt\s*/?\s*cs\s*$",          # точное совпадение Bt/Cs
     r"bt.?/?cs", r"btl.?/?case",
     r"\bbottles?\b", r"bottl.?/case",  # ← только bottles
     r"шт.*[/ ]*кор", r"шт.*в.*кор", r"шт.*в.*ящ",
@@ -84,9 +85,11 @@ BOTTLES_PER_CASE_PATS = [
 ]
 
 PRICE_CASE_PATS = [
-    r"price.*case", r"usd.?/?cs", r"eur.?/?cs", r"€.?/?cs", r"\$.?/?cs",
-    r"цена.*кейс", r"цена.?/?кейс", r"$/case", r"usd.*per.*case",
-    r"price.*/?\s*ctn", r"price.*carton", r"/\s*ctn", r"/\s*carton", r"/\s*cs"
+    r"(?:price|цена).*(?:case|cs|ctn|carton)",                 # явно цена за кейс
+    r"(?:usd|eur|\$|€)\s*(?:/|per)?\s*(?:case|cs|ctn|carton)", # валюта + кейс
+    r"usd.?/?cs", r"eur.?/?cs",                                # явные варианты
+    r"\b\$\s*/?\s*cs\b", r"\b€\s*/?\s*cs\b"
+    # ВАЖНО: без голого '/cs', чтобы не ловить 'Bt/Cs'
 ]
 
 #последний этап поиска колонок
@@ -176,11 +179,26 @@ def merge_with_master(old: pd.DataFrame, new: pd.DataFrame, supplier: str) -> pd
 
     updated, inserted = 0, 0
 
-    for _, row in new.iterrows():
+    for i, row in new.iterrows():
+        print(f"\n[DEBUG merge_with_master] row {i}:")
+        print(row.to_dict())
+        print(f"[DEBUG] row.keys() = {list(row.index)}")
+
         name = row["Наименование"]
         bpc = row["шт / кор"]
-        price_case = row.get(f"цена за кейс {supplier}")
-        price_bottle = row.get(f"цена за бутылку {supplier}")
+        print(f"[DEBUG] name={name}, bpc={bpc}")
+
+        # поддержка старого и нового формата
+        price_case = row.get("price_per_case")
+        price_bottle = row.get("price_per_bottle")
+        
+        if price_case is None and price_bottle is None:
+            col_case = f"цена за кейс {supplier}"
+            col_bottle = f"цена за бутылку {supplier}"
+            price_case = row.get(col_case)
+            price_bottle = row.get(col_bottle)
+
+        print(f"[DEBUG] price_case={price_case}, price_bottle={price_bottle}")
 
         mask = (old["Наименование"] == name) & (old["шт / кор"] == bpc)
         if mask.any():
@@ -214,11 +232,13 @@ def save_to_excel(df: pd.DataFrame, filename: str) -> Path:
     Заполняются только Наименование, cl, шт / кор и цена.
     Остальные пока пустые.
     """
+    print("[DEBUG save_to_excel] первые цены:")
+    print(df[["name", "bottles_per_case", "price_per_case", "price_per_bottle"]].head(10))
 
     # соответствие сырых колонок -> наши поля
     column_map = {
         "name": "Наименование",
-        "bottles_per_case": "шт / кор",
+        "bottles_per_case": "шт / кор", 
         "cl": "cl", # уже должна быть в df           
     }
 
