@@ -34,17 +34,7 @@ def _to_number(x) -> Optional[float]:
     except Exception:
         return None
 
-def _find_col(df: pd.DataFrame, patterns: List[str]) -> Optional[str]:
-    """
-    Возвращает имя первой подходящей колонки (по списку regex-паттернов) или None.
-    Поиск идёт по нормализованным заголовкам.
-    """
-    norm_cols = {col: _clean_header(col) for col in df.columns}
-    for col, norm in norm_cols.items():
-        for pat in patterns:
-            if re.search(pat, norm):
-                return col
-    return None
+
 
 def _find_cols(df: pd.DataFrame, patterns: List[str]) -> List[str]:
     """Вернёт все колонки, подходящие под паттерны (нормализованный хедер)."""
@@ -173,7 +163,7 @@ def merge_with_master(old: pd.DataFrame, new: pd.DataFrame, supplier: str) -> pd
     - Если строка новая → добавляем
     """
     # добавляем колонки для текущего поставщика, если их нет
-    for col in [f"цена за кейс {supplier}", f"цена за бутылку {supplier}"]:
+    for col in [f"цена за бутылку {supplier}"]:
         if col not in old.columns:
             old[col] = None
 
@@ -259,9 +249,7 @@ def save_to_excel(df: pd.DataFrame, filename: str) -> Path:
     # имя поставщика из имени входного файла
     supplier = Path(filename).stem
     
-    # добавляем колонку с ценой за кейс
-    if "price_per_case" in df.columns:
-        df_out[f"цена за кейс {supplier}"] = df["price_per_case"]
+    
 
     # добавляем колонку с ценой за бутылку
     if "price_per_bottle" in df.columns:
