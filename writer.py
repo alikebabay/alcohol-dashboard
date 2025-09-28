@@ -239,7 +239,9 @@ def save_to_excel(df: pd.DataFrame, filename: str) -> Path:
     column_map = {
         "name": "Наименование",
         "bottles_per_case": "шт / кор", 
-        "cl": "cl", # уже должна быть в df           
+        "cl": "cl", # уже должна быть в df 
+        # добавили:
+        "Тип": "Тип",          
     }
 
     # базовый шаблон с пустыми колонками

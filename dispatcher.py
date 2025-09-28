@@ -7,6 +7,7 @@ from writer import save_to_excel, normalize_alcohol_df
 from pathlib import Path
 from gsheets_integration import update_master_to_gsheets
 from distillator import filter_and_enrich
+from organizer import attach_categories, order_by_category
 
 def dispatch_excel(file_path: Path):
     print(f"[DEBUG dispatcher] Входной файл: {file_path}")
@@ -14,14 +15,18 @@ def dispatch_excel(file_path: Path):
     df_raw, _ = parse_excel(file_path)
     print(f"[DEBUG dispatcher] parse_excel вернул df shape={df_raw.shape}")
 
-    # 3. нормализуем
+    # 2. нормализуем
     df_norm, mapping = normalize_alcohol_df(df_raw)
     print(f"[DEBUG dispatcher] normalize_alcohol_df вернул df shape={df_norm.shape}, mapping={mapping}")
 
 
-    # 2. фильтруем и обогащаем
+    # 3. фильтруем и обогащаем
     df_distilled = filter_and_enrich(df_norm, col_name="name")
     print(f"[DEBUG dispatcher] после фильтрации/обогащения shape={df_distilled.shape}")
+
+    # 3.1 Категоризация + порядок
+    df_distilled = attach_categories(df_distilled, name_col="name", out_col="Тип")
+    df_distilled = order_by_category(df_distilled, category_col="Тип")
 
     # 4. сохраняем
     out_path, df_out = save_to_excel(df_distilled, file_path.name)
