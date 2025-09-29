@@ -1,6 +1,6 @@
-pandas
-gspread
-google-auth
-google-auth-oauthlib
-google-auth-httplib2
-openpyxl
+python-telegram-bot==22.4
+pandas==2.3.2
+openpyxl==3.1.5
+gspread==6.2.1
+google-auth==2.40.3
+python-dotenv==1.1.1

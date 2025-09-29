@@ -2,13 +2,12 @@
 import time
 print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
-from pathlib import Path
 import gspread
 from google.oauth2.service_account import Credentials
 import pandas as pd
+from config import get_gsheets_credentials
 
-# путь к JSON с ключом сервисного аккаунта
-CREDENTIALS_FILE = Path("service_account.json")
+
 
 # ID таблицы (из URL Google Sheets)
 SPREADSHEET_ID = "1dISLvKdfi5DCTeYlQ5JXiBcyusrIlJkmikDvkWAcg60"
@@ -18,7 +17,7 @@ SHEET_NAME = "master"   # имя листа в таблице
 def _get_worksheet():
     """Авторизация и возврат worksheet (создаём при отсутствии)."""
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=scopes)
+    creds = get_gsheets_credentials(scopes)   # <-- переключатель уже внутри config
     client = gspread.authorize(creds)
 
     sh = client.open_by_key(SPREADSHEET_ID)
