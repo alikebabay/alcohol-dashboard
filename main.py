@@ -69,6 +69,7 @@ def main():
         entry_points=[CommandHandler("start", start_command)],
         states={MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_district_choice)]},
         fallbacks=[CommandHandler("cancel", cancel)],
+        per_message=True,   # перезапуск диалога на каждое сообщение
     )
     app.add_handler(conv_handler)
 
