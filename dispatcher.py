@@ -7,6 +7,8 @@ from writer import save_to_excel, normalize_alcohol_df
 from typing import Union
 from io import BytesIO
 from pathlib import Path
+import os
+
 from gsheets_integration import update_master_to_gsheets
 from distillator import filter_and_enrich
 from organizer import attach_categories, order_by_category
@@ -16,14 +18,10 @@ from organizer import attach_categories, order_by_category
 def dispatch_excel(file_src: Union[Path, BytesIO], file_name: str = "unnamed.xlsx"):
     print(f"[DEBUG dispatcher] Входной файл: {file_name}")
 
-# если прилетает BytesIO → пока подсовываем дамми Path (старому коду)
-    if isinstance(file_src, BytesIO):
-        parse_target = Path(r"C:\Users\alikebabay\Documents\alcohol-dashboard\test_documents") / file_name
-    else:
-        parse_target = file_src
+
     
     # 1. читаем Excel
-    df_raw, _ = parse_excel(parse_target)
+    df_raw, _ = parse_excel(file_src)
     
 
     # 2. нормализуем
@@ -41,9 +39,9 @@ def dispatch_excel(file_src: Union[Path, BytesIO], file_name: str = "unnamed.xls
 
     # 4. сохраняем
     
-    supplier = Path(file_name).stem
+    supplier = os.path.splitext(os.path.basename(file_name))[0] if file_name else "unknown"
     
-    out_path, df_out = save_to_excel(df_distilled, supplier)
+    df_out = save_to_excel(df_distilled, supplier)
     
 
     # 5. (опционально) обновляем Google Sheets
@@ -53,4 +51,4 @@ def dispatch_excel(file_src: Union[Path, BytesIO], file_name: str = "unnamed.xls
     except Exception as e:
         print(f"[ERROR dispatcher] Не удалось обновить Google Sheets: {e}")
 
-    return out_path
+    return df_out

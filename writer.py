@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from gsheets_integration import load_master_from_gsheets, update_master_to_gsheets
-
+import os
 
 import pandas as pd
 
@@ -214,7 +214,7 @@ def merge_with_master(old: pd.DataFrame, new: pd.DataFrame, supplier: str) -> pd
 
 # --- сохранение ------------------------------------------------------------
 
-def save_to_excel(df: pd.DataFrame, filename: str):
+def save_to_excel(df: pd.DataFrame, filename: str) -> pd.DataFrame:
     """
     Сохраняет DataFrame в Excel.
     На выходе всегда 10 фиксированных колонок:
@@ -246,7 +246,7 @@ def save_to_excel(df: pd.DataFrame, filename: str):
     # формируем шаблон на количество строк во входном df (с непрерывным индексом)
     df_out = pd.DataFrame(index=range(len(df)), columns=base_cols)
     # supplier берём всегда из имени файла
-    supplier = Path(filename).stem if filename else "unknown"
+    supplier = os.path.splitext(os.path.basename(filename))[0] if filename else "unknown"
     
     
 
@@ -260,9 +260,7 @@ def save_to_excel(df: pd.DataFrame, filename: str):
         if raw_col in df.columns:
             df_out[target_col] = df[raw_col]
 
-    out_dir = Path("processed")
-    out_dir.mkdir(exist_ok=True)
-    path = out_dir / "master.xlsx"
+    
 
     # считаем, сколько строк пришло на вход
     added_rows = len(df_out)
@@ -278,6 +276,6 @@ def save_to_excel(df: pd.DataFrame, filename: str):
 
     print(f"[OK] Master обновлён в Google Sheets, всего строк: {df_final.shape[0]}")
     
-    return path, df_final
+    return df_final
 
 

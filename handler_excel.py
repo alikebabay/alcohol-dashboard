@@ -3,6 +3,7 @@ from telegram.ext import ContextTypes
 import asyncio
 from dispatcher import dispatch_excel
 from io import BytesIO
+import pandas as pd
 
 
 async def handle_excel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -16,9 +17,13 @@ async def handle_excel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bio = BytesIO(file_bytes)
 
     # 2. Передаём BytesIO и имя файла в диспетчер
-    out_path = await asyncio.get_running_loop().run_in_executor(
+    df_out = await asyncio.get_running_loop().run_in_executor(
         None, lambda: dispatch_excel(bio, file_name)
     )
 
-    # 3. Отправляем результат как раньше
-    await update.message.reply_document(open(out_path, "rb"))
+    # 3. Конвертируем DataFrame обратно в Excel и отправляем пользователю
+    bio_out = BytesIO()
+    df_out.to_excel(bio_out, index=False)
+    bio_out.seek(0)
+
+    await update.message.reply_document(document=bio_out, filename=f"processed_{file_name}")
