@@ -31,7 +31,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     await update.message.reply_text(
-        "Добрый день! Отправьте прайс от поставщика, выбрав регион",
+        "Добрый день! Отправьте прайс от поставщика в формате Excel или CSV для обработки.\n",
         reply_markup=reply_markup
     )
     return MENU
@@ -40,9 +40,9 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_district_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_input = update.message.text.lower()
     if "медеуский" in user_input:
-        await update.message.reply_text("Вы выбрали Медеуский район (здесь будет парсинг).")
+        await update.message.reply_text("Не понял ввод. Пожалуйста, отправьте прайс в формате Excel или CSV.")
     else:
-        await update.message.reply_text("Пока поддерживается только Медеуский район. Нажмите /start.")
+        await update.message.reply_text("Пока поддерживается только отправка файла. Нажмите /start.")
     return MENU
 
 # /cancel
