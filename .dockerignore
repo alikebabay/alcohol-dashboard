@@ -1,0 +1,31 @@
+# git
+.git
+.gitignore
+
+# secrets
+service_account.json
+*.secret.json
+*.key.json
+*.pem
+.env
+.env.*
+
+# python cache/venv
+__pycache__/
+*.py[cod]
+*.pyd
+.venv
+venv
+
+# data/output (not needed in image)
+processed/
+data/
+*.xlsx
+*.xls
+*.csv
+*.parquet
+*.log
+
+# misc
+*.ipynb_checkpoints
+node_modules
