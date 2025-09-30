@@ -4,8 +4,8 @@ from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
 
 # грузим локальный .env если есть
-if os.path.exists("dotenv_calc.env"):
-    load_dotenv("dotenv_calc.env")
+if os.path.exists("bot_token.env"):
+    load_dotenv("bot_token.env")
 
 TOKEN = os.getenv("bot_token")
 BOT_USERNAME = os.getenv("BOT_USERNAME")
