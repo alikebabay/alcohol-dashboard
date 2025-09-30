@@ -69,7 +69,6 @@ def main():
         entry_points=[CommandHandler("start", start_command)],
         states={MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_district_choice)]},
         fallbacks=[CommandHandler("cancel", cancel)],
-        per_message=True,   # перезапуск диалога на каждое сообщение
     )
     app.add_handler(conv_handler)
 
@@ -86,7 +85,7 @@ def main():
     app.add_error_handler(error)
 
     print("Опрашиваем...")
-    app.run_polling(poll_interval=20)
+    app.run_polling(poll_interval=1)
 
 if __name__ == "__main__":
     main()

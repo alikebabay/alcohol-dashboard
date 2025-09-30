@@ -10,11 +10,11 @@ import os
 
 #code integrations
 from parser import parse_excel
-from writer import save_to_excel, normalize_alcohol_df
-from gsheets_integration import update_master_to_gsheets
+from writer import save_to_excel, normalize_alcohol_df, merge_with_master
+from gsheets_integration import update_master_to_gsheets, load_master_from_gsheets
 from distillator import filter_and_enrich
 from organizer import attach_categories, order_by_category
-from parser_fsm import SupplierStateMachine
+from parser_fsm import AlcoholStateMachine
 
 from functools import wraps
 
@@ -35,7 +35,7 @@ def dispatch_excel(file_src: Union[Path, BytesIO], file_name: str = "unnamed.xls
     print(f"[DEBUG dispatcher] Входной файл: {file_name}")
 
     # Создаём state machine для поставщика
-    supplier_sm = SupplierStateMachine(file_name)
+    supplier_sm = AlcoholStateMachine(file_name)
        
     # 1. читаем Excel
     df_raw, _ = parse_excel(file_src)
@@ -58,17 +58,24 @@ def dispatch_excel(file_src: Union[Path, BytesIO], file_name: str = "unnamed.xls
     
     df_out = save_to_excel(df_distilled, supplier_name)
 
-    
-    
+    # файл для отдачи пользователю телеграм. сохраним в state machine
+    supplier_sm.set_df_out(df_out)
+    print(f"[DEBUG dispatcher] df_out saved to state machine, shape={df_out.shape}")
 
-    # 5. Обновляем Google Sheets
+    
+    # 5. работа с мастером в Google Sheets
     try:
-        update_master_to_gsheets(df_out)
-        print("[DEBUG dispatcher] Google Sheets обновлён")
+        old_master = load_master_from_gsheets()
+        if old_master.empty:
+            df_final = df_out
+        else:
+            df_final = merge_with_master(old_master, df_out, supplier_name)
+
+        update_master_to_gsheets(df_final)
+        print(f"[OK dispatcher] Master обновлён в Google Sheets, всего строк: {df_final.shape[0]}")
     except Exception as e:
         print(f"[ERROR dispatcher] Не удалось обновить Google Sheets: {e}")
-    
-    
+        df_final = df_out  # fallback
 
-    return df_out
+    return supplier_sm.get_df_out()
 

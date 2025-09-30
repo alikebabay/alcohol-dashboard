@@ -216,24 +216,19 @@ def merge_with_master(old: pd.DataFrame, new: pd.DataFrame, supplier: str) -> pd
 
 def save_to_excel(df: pd.DataFrame, supplier: str) -> pd.DataFrame:
     """
-    Сохраняет DataFrame в Excel.
+    Приводит DataFrame к фиксированным 10 колонкам.
     На выходе всегда 10 фиксированных колонок:
       Тип | Доступ | Наименование | cl | шт / кор | Место загрузки | Поставщик 1 | Поставщик 2 | Поставщик 3 | Поставщик 4
     Заполняются только Наименование, cl, шт / кор и цена.
     Остальные пока пустые.
     """
-    
-
-    # соответствие сырых колонок -> наши поля
     column_map = {
         "name": "Наименование",
         "bottles_per_case": "шт / кор", 
-        "cl": "cl", # уже должна быть в df 
-        # добавили:
-        "Тип": "Тип",          
+        "cl": "cl",
+        "Тип": "Тип",
     }
 
-    # базовый шаблон с пустыми колонками
     base_cols = [
         "Тип",
         "Доступ",
@@ -243,33 +238,18 @@ def save_to_excel(df: pd.DataFrame, supplier: str) -> pd.DataFrame:
         "Место загрузки",
     ]
     
-    # формируем шаблон на количество строк во входном df (с непрерывным индексом)
     df_out = pd.DataFrame(index=range(len(df)), columns=base_cols)
-     
-    
 
     # добавляем колонку с ценой за бутылку
     if "price_per_bottle" in df.columns:
         df_out[f"цена за бутылку {supplier}"] = df["price_per_bottle"]
 
-
-    # переносим из сырых данных только то, что нашли
+    # переносим найденные данные
     for raw_col, target_col in column_map.items():
         if raw_col in df.columns:
             df_out[target_col] = df[raw_col]
 
-    
-    # если файл уже есть → читаем и добавляем новые строки вниз
-    old_master = load_master_from_gsheets()
-    if old_master.empty:
-        df_final = df_out
-    else:
-        df_final = merge_with_master(old_master, df_out, supplier)
+    return df_out
 
-    update_master_to_gsheets(df_final)
-
-    print(f"[OK] Master обновлён в Google Sheets, всего строк: {df_final.shape[0]}")
-    
-    return df_final
 
 
