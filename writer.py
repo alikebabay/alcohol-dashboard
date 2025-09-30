@@ -214,7 +214,7 @@ def merge_with_master(old: pd.DataFrame, new: pd.DataFrame, supplier: str) -> pd
 
 # --- сохранение ------------------------------------------------------------
 
-def save_to_excel(df: pd.DataFrame, filename: str) -> pd.DataFrame:
+def save_to_excel(df: pd.DataFrame, supplier: str) -> pd.DataFrame:
     """
     Сохраняет DataFrame в Excel.
     На выходе всегда 10 фиксированных колонок:
@@ -245,9 +245,7 @@ def save_to_excel(df: pd.DataFrame, filename: str) -> pd.DataFrame:
     
     # формируем шаблон на количество строк во входном df (с непрерывным индексом)
     df_out = pd.DataFrame(index=range(len(df)), columns=base_cols)
-    # supplier берём всегда из имени файла
-    supplier = os.path.splitext(os.path.basename(filename))[0] if filename else "unknown"
-    
+     
     
 
     # добавляем колонку с ценой за бутылку
@@ -261,10 +259,6 @@ def save_to_excel(df: pd.DataFrame, filename: str) -> pd.DataFrame:
             df_out[target_col] = df[raw_col]
 
     
-
-    # считаем, сколько строк пришло на вход
-    added_rows = len(df_out)
-
     # если файл уже есть → читаем и добавляем новые строки вниз
     old_master = load_master_from_gsheets()
     if old_master.empty:

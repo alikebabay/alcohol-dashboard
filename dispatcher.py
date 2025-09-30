@@ -2,16 +2,19 @@
 import time
 print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
-from parser import parse_excel
-from writer import save_to_excel, normalize_alcohol_df
+
 from typing import Union
 from io import BytesIO
 from pathlib import Path
 import os
 
+#code integrations
+from parser import parse_excel
+from writer import save_to_excel, normalize_alcohol_df
 from gsheets_integration import update_master_to_gsheets
 from distillator import filter_and_enrich
 from organizer import attach_categories, order_by_category
+from parser_fsm import SupplierStateMachine
 
 from functools import wraps
 
@@ -30,6 +33,9 @@ def timed(func):
 @timed
 def dispatch_excel(file_src: Union[Path, BytesIO], file_name: str = "unnamed.xlsx"):
     print(f"[DEBUG dispatcher] Входной файл: {file_name}")
+
+    # Создаём state machine для поставщика
+    supplier_sm = SupplierStateMachine(file_name)
        
     # 1. читаем Excel
     df_raw, _ = parse_excel(file_src)
@@ -46,11 +52,11 @@ def dispatch_excel(file_src: Union[Path, BytesIO], file_name: str = "unnamed.xls
     df_distilled = attach_categories(df_distilled, name_col="name", out_col="Тип")
     df_distilled = order_by_category(df_distilled, category_col="Тип")
 
-    # 4. сохраняем
+    # ⚡️ теперь говорим state machine, что поставщик готов
+    supplier_sm.ready()
+    supplier_name = supplier_sm.get_name()
     
-    supplier = os.path.splitext(os.path.basename(file_name))[0] if file_name else "unknown"
-    
-    df_out = save_to_excel(df_distilled, supplier)
+    df_out = save_to_excel(df_distilled, supplier_name)
 
     
     
