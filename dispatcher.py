@@ -31,11 +31,11 @@ def timed(func):
 
 
 @timed
-def dispatch_excel(file_src: Union[Path, BytesIO], file_name: str = "unnamed.xlsx"):
-    print(f"[DEBUG dispatcher] Входной файл: {file_name}")
+def dispatch_excel(file_src: Union[Path, BytesIO], file_name: str, supplier_choice: str | None = None):
+    print(f"[DEBUG dispatcher] Входной файл: {file_name}, supplier_choice={supplier_choice}")
 
-    # Создаём state machine для поставщика
-    supplier_sm = AlcoholStateMachine(file_name)
+    # Создаём state machine для поставщика (само решает: имя файла или выбор пользователя)
+    supplier_sm = AlcoholStateMachine(file_name, supplier_choice)
        
     # 1. читаем Excel
     df_raw, _ = parse_excel(file_src)

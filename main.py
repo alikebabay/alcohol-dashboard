@@ -25,25 +25,31 @@ MENU = 0
 # /start
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
-        [KeyboardButton("Local")],
-        [KeyboardButton("Europe")],
-        [KeyboardButton("Asia")],
+        [KeyboardButton("Поставщик 1"), KeyboardButton("Поставщик 2")],
+        [KeyboardButton("Поставщик 3"), KeyboardButton("По названию файла")],
     ]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     await update.message.reply_text(
-        "Добрый день! Отправьте прайс от поставщика в формате Excel или CSV для обработки.\n",
+        "Добрый день! Выберите поставщика: Или отправьте файл в формате Excel/CSV. ",
         reply_markup=reply_markup
     )
     return MENU
 
-# Выбор района
-async def handle_district_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_input = update.message.text.lower()
-    if "медеуский" in user_input:
-        await update.message.reply_text("Не понял ввод. Пожалуйста, отправьте прайс в формате Excel или CSV.")
+# выбор поставщика
+async def handle_supplier_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    
+    choice = update.message.text
+    logger.info(f"Поставщик выбран: {choice}")
+    if choice in ["Поставщик 1", "Поставщик 2", "Поставщик 3", "По названию файла"]:
+        context.chat_data["supplier_choice"] = choice
+        await update.message.reply_text(
+            f"Вы выбрали: {choice}. Теперь отправьте прайс Excel или CSV."
+        )
+        return MENU
     else:
-        await update.message.reply_text("Пока поддерживается только отправка файла. Нажмите /start.")
-    return MENU
+        await update.message.reply_text("Пожалуйста, выберите один из вариантов кнопками.")
+        return MENU
+
 
 # /cancel
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -58,28 +64,53 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.error(f"Update {update} caused error {context.error}")
 
+# Фолбэк: если файл прислали вне диалога
+async def handle_file_outside_dialog(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Пожалуйста, сначала введите /start и выберите поставщика.")
+
+# Фолбэк: если текст прислали вне диалога
+async def handle_text_outside_dialog(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Используйте /start, чтобы начать работу.")
+
 # Запуск
 def main():
     print("Бот запускается...")
 
     app = (Application.builder().token(TOKEN).concurrent_updates(False).read_timeout(60).write_timeout(60).build())
 
-    # Диалог
+    # --- Диалог ---
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start_command)],
-        states={MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_district_choice)]},
+        states={
+            MENU: [
+                MessageHandler(
+                    filters.Document.FileExtension("xlsx") | filters.Document.FileExtension("csv"),
+                    handle_excel
+                ),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_supplier_choice),
+            ]
+        },
+         # ВАЖНО: fallbacks здесь работают только КОГДА диалог активен.
         fallbacks=[CommandHandler("cancel", cancel)],
+        allow_reentry=True
     )
-    app.add_handler(conv_handler)
 
-    # Обработка Excel/CSV файлов
+    app.add_handler(conv_handler, group=0)
+
     
-    app.add_handler(MessageHandler(filters.Document.FileExtension("xlsx") | filters.Document.FileExtension("csv"), handle_excel))
-    print("[DEBUG main] Handler для Excel/CSV добавлен")
-
-
-    # Общие ответы
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    # --- Вне диалога (глобальные фолбэки) ---
+    # Сработают, только если conv_handler НЕ перехватил апдейт
+    app.add_handler(
+        MessageHandler(
+            filters.Document.FileExtension("xlsx") | filters.Document.FileExtension("csv"),
+            handle_file_outside_dialog
+        ),
+        group=1
+    )
+    app.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_outside_dialog),
+        group=1
+    )
 
     # Ошибки
     app.add_error_handler(error)
