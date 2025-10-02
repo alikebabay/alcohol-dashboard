@@ -8,11 +8,19 @@ from typing import Optional
 
 
 # --- регексы для признаков продукта ---
-# ловит 50ml / 75cl / 1L / 37.5cl и т.п. (без жесткой границы слева)
-_RX_VOLUME   = re.compile(r'(?i)(\d{1,4}(?:[.,]\d{1,2})?\s?(?:ml|cl|l))\b')
-# NxVol (12x75cl, 06x1L, 120x5cl)
-_RX_CASEVOL = re.compile(r'(?i)\b(\d{1,3})\s*[x×]\s*(\d{1,4}(?:[.,]\d{1,2})?)\s*(ml|cl|l)\b')
-RX_ABV      = re.compile(r'(?i)\b\d{1,2}(?:[.,]\d)?\s?%(\s*abv)?\b')
+# Объём вида 50ml, 75cl, 1L, 37.5cl
+# Теперь после ml|cl|l может быть конец строки, пробел, запятая, %, или буква x
+_RX_VOLUME = re.compile(
+    r'(?i)(\d{1,4}(?:[.,]\d{1,2})?\s?(?:ml|cl|l))(?:\b|(?=[x%]))'
+)
+# NxVol (12x75cl, 06x1L, 120x5cl) — разрешаем слепленные варианты
+_RX_CASEVOL = re.compile(
+    r'(?i)\b(\d{1,3})\s*[x×]\s*(\d{1,4}(?:[.,]\d{1,2})?)\s*(ml|cl|l)(?:\b|(?=[x%]))'
+)
+# ABV: 40%, 46.3%, можно слепленные (70clx40%)
+RX_ABV = re.compile(
+    r'(?i)\b(\d{1,2}(?:[.,]\d)?)\s?%(?:\s*abv)?'
+)
 RX_AGE      = re.compile(r'(?i)\b(\d{1,2})\s?(yo|years?|лет)\b')
 RX_VINTAGE  = re.compile(r'\b(19\d{2}|20(0\d|1\d|2[0-6]))\b')
 
@@ -23,7 +31,18 @@ CATEGORY_LEX = {
 }
 
 # извлечение количества бутылок из паттернов вида 6x75cl, 12x0.7l, 24x200ml
-RX_PACK_CASES = re.compile(r'(?i)\b(?P<cases>\d{1,2})\s*[x×]\s*\d{2,4}\s?(?:ml|cl|l)\b')
+RX_PACK_CASES_FLEX = re.compile(
+    r'(?i)\b(?P<cases>\d{1,2})\s*[x×]\s*\d{1,4}(?:[.,]\d{1,2})?\s?(?:ml|cl|l)'
+)
+
+
+def _normalize_token(s: str) -> str:
+    s = str(s or "").lower()
+    s = s.replace("×", "x").replace("х", "x")  # кириллица → латиница
+    s = s.replace("л", "l")
+    s = re.sub(r"[%@]", " ", s)                # убираем % и @
+    s = re.sub(r"\s+", " ", s)
+    return s.strip()
 
 def _normalize_text(s: str) -> str:
     s = str(s or "").strip().lower()
@@ -85,15 +104,25 @@ def _extract_volume(text: str):
     return val
 
 def _infer_bpc_from_name(text: str) -> float | None:
-    """Пытаемся понять bottles_per_case из названия (6x75cl, 12x0.7L, 24x200ml)."""
+    """Пытаемся понять bottles_per_case из строки (включая кривые форматы 6x70clx40%)."""
     if not text:
         return None
-    m = RX_PACK_CASES.search(text)
+    s = _normalize_token(text)
+
+    m = RX_PACK_CASES_FLEX.search(s)
     if m:
-        try:
-            return float(m.group("cases"))
-        except Exception:
-            return None
+        cases = float(m.group("cases"))
+        print(f"[DEBUG bpc] flex match in '{s}' → {cases}")
+        return cases
+
+    # fallback — ищем просто N x число
+    m = re.search(r'(?i)\b(?P<cases>\d{1,2})\s*[x×]\s*\d+', s)
+    if m:
+        cases = float(m.group("cases"))
+        print(f"[DEBUG bpc] loose match in '{s}' → {cases}")
+        return cases
+
+    print(f"[DEBUG bpc] no match in '{s}'")
     return None
 
 def looks_like_category(name: str, row: pd.Series | None = None) -> bool:
@@ -112,66 +141,3 @@ def looks_like_category(name: str, row: pd.Series | None = None) -> bool:
                 return True
     return False
 
-
-def filter_and_enrich(df: pd.DataFrame, col_name: str = "name") -> pd.DataFrame:
-    """
-    - убирает строки с категориями
-    - добавляет колонку 'volume' (если найден в тексте)
-    - аппендит volume к name (например: 'Macallan 12' -> 'Macallan 12 (700ml)')
-    """
-    if col_name not in df.columns:
-        return df
-
-    df = df.copy()
-
-    # убираем категории
-    mask_cat = df.apply(lambda r: looks_like_category(r[col_name], r), axis=1)
-    removed = df[mask_cat]
-    if not removed.empty:
-        
-        for val in removed[col_name].dropna().unique():
-            print(f"   - {val!r}")
-
-    df = df[~mask_cat].reset_index(drop=True)
-
-    # вытащим cl (объем) в отдельную колонку
-    df["cl"] = df[col_name].map(_extract_volume)
-
-    # удаляем cl-часть из названия (все токены)
-    df[col_name] = df[col_name].map(_remove_volume_tokens)
-
-    # ---- ДОзаполнение и чистка числовых полей ----
-    # 1) если bottles_per_case пусто, пробуем вытащить из названия (6x75cl → 6)
-    if "bottles_per_case" in df.columns:
-        bpc_before_na = int(df["bottles_per_case"].isna().sum())
-        if bpc_before_na:
-            df["bottles_per_case"] = df.apply(
-                lambda r: r["bottles_per_case"] if pd.notna(r["bottles_per_case"]) else _infer_bpc_from_name(r[col_name]),
-                axis=1
-            )
-            bpc_filled = bpc_before_na - int(df["bottles_per_case"].isna().sum())
-            if bpc_filled:
-                print(f"[DEBUG distillator] дозаполнено bottles_per_case из названия: {bpc_filled}")
-
-    # 2) приведение к числам
-    if "price_per_case" in df.columns:
-        df["price_per_case"] = pd.to_numeric(df["price_per_case"], errors="coerce")
-    if "bottles_per_case" in df.columns:
-        df["bottles_per_case"] = pd.to_numeric(df["bottles_per_case"], errors="coerce")
-
-    # 3) отбрасываем только строки где НЕТ цены (qty может быть NaN)
-    if "price_per_case" in df.columns:
-        mask_invalid = df["price_per_case"].isna()
-        drop_cnt = int(mask_invalid.sum())
-        if drop_cnt:
-            print(f"[DEBUG distillator] удалено без цены: {drop_cnt} (примеры: {df.loc[mask_invalid, col_name].head(5).tolist()})")
-        df = df[~mask_invalid].reset_index(drop=True)
-
-    # 4) убираем дубли по (name, bottles_per_case)
-    if {"name","bottles_per_case"}.issubset(df.columns):
-        before = len(df)
-        df = df.drop_duplicates(subset=["name","bottles_per_case"], keep="last")
-        removed_dups = before - len(df)
-        if removed_dups:
-            print(f"[DEBUG distillator] удалено дублей: {removed_dups}")
-    return df
