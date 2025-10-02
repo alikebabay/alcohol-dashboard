@@ -67,8 +67,8 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name") -> pd.DataFrame:
     if "bottles_per_case" in df.columns:
         df["bottles_per_case"] = pd.to_numeric(df["bottles_per_case"], errors="coerce")
 
-    if "price_per_case" in df.columns:
-        mask_invalid = df["price_per_case"].isna()
+    if {"price_per_case","price_per_bottle"}.issubset(df.columns):
+        mask_invalid = df["price_per_case"].isna() & df["price_per_bottle"].isna()
         drop_cnt = int(mask_invalid.sum())
         if drop_cnt:
             print(f"[DEBUG distillator] удалено без цены: {drop_cnt} (примеры: {df.loc[mask_invalid, col_name].head(5).tolist()})")
