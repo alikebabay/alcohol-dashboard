@@ -16,6 +16,7 @@ from gsheets_integration import update_master_to_gsheets, load_master_from_gshee
 from name_enricher import filter_and_enrich
 from organizer import attach_categories, order_by_category
 from state_machine import AlcoholStateMachine
+from text_state import TextState
 
 from functools import wraps
 
@@ -38,16 +39,15 @@ def dispatch_excel(file_src: Union[Path, BytesIO], file_name: str, supplier_choi
     # Создаём state machine для поставщика (само решает: имя файла или выбор пользователя)
     supplier_sm = AlcoholStateMachine(file_name, supplier_choice)
        
-    # 1. читаем Excel
-    df_raw, _ = parse_excel(file_src)
-    
-
-    # 2. нормализуем
-    df_norm, mapping = normalize_alcohol_df(df_raw)  
-
-
-    # 3. фильтруем и обогащаем
-    df_distilled = filter_and_enrich(df_norm, col_name="name")
+    if isinstance(file_src, str):
+        # если это сырой текст → TextState
+        ts = TextState(file_src)
+        df_distilled = ts.run()
+    else:
+        # Excel путь
+        df_raw, _ = parse_excel(file_src)
+        df_norm, mapping = normalize_alcohol_df(df_raw)
+        df_distilled = filter_and_enrich(df_norm, col_name="name")
 
     # 3.1 Категоризация + порядок
     df_distilled = attach_categories(df_distilled, name_col="name", out_col="Тип")

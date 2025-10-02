@@ -9,7 +9,7 @@ from telegram.ext import (
     filters, ContextTypes, ConversationHandler
 )
 from config import TOKEN 
-from handler_excel import handle_excel
+from handler_userdata import handle_userdata
 
 
 # Логирование
@@ -19,8 +19,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Состояния
-MENU = 0
+# Состояния диалога
+SUPPLIER, INGEST = range(2)
 
 # /start
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -30,10 +30,11 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     await update.message.reply_text(
-        "Добрый день! Поставщика можно выбрать кнопкой, либо ввести текст. Или отправьте файл в формате Excel/CSV. ",
+        "Добрый день! Сначала выберите поставщика кнопкой или введите его название.\n"
+        "Затем отправьте прайс (Excel/CSV) или вставьте прайс текстом.",
         reply_markup=reply_markup
     )
-    return MENU
+    return SUPPLIER
 
 # выбор поставщика
 async def handle_supplier_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -46,17 +47,21 @@ async def handle_supplier_choice(update: Update, context: ContextTypes.DEFAULT_T
     if choice in fixed_choices:
         context.chat_data["supplier_choice"] = choice
         await update.message.reply_text(
-            f"Вы выбрали: {choice}. Теперь отправьте прайс Excel или CSV."
+            f"Вы выбрали: {choice}. Теперь отправьте прайс Excel/CSV или пришлите текстовый прайс."
         )
-        return MENU
+        return INGEST
     
     # если не кнопка → трактуем как ручной ввод
     context.chat_data["supplier_choice"] = choice
     await update.message.reply_text(
-        f"Принято: {choice}. Теперь отправьте прайс Excel или CSV."
+        f"Принято: {choice}. Теперь отправьте прайс Excel/CSV или пришлите текстовый прайс."
     )
-    return MENU
+    return INGEST
 
+
+# Если прислали файл до выбора поставщика
+async def handle_wrong_before_supplier(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Сначала выберите поставщика (/start), затем пришлите прайс (файл или текст).")
 
 # /cancel
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -89,13 +94,25 @@ def main():
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start_command)],
         states={
-            MENU: [
-                MessageHandler(
-                    filters.Document.FileExtension("xlsx") | filters.Document.FileExtension("csv"),
-                    handle_excel
-                ),
+            # Этап 1: выбираем поставщика
+            SUPPLIER: [
+                # кнопки или ручной ввод названия поставщика
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_supplier_choice),
-            ]
+                # если прилетел файл раньше времени — вежливо просим выбрать поставщика
+                MessageHandler(filters.Document.FileExtension("xlsx") | filters.Document.FileExtension("csv"),
+                               handle_wrong_before_supplier),
+            ],
+            # Этап 2: принимаем прайс (файл или текст)
+            INGEST: [
+                MessageHandler(
+                    (filters.Document.FileExtension("xlsx") | filters.Document.FileExtension("csv")),
+                    handle_userdata
+                ),
+                MessageHandler(
+                    (filters.TEXT & ~filters.COMMAND),
+                    handle_userdata
+                ),
+            ],
         },
          # ВАЖНО: fallbacks здесь работают только КОГДА диалог активен.
         fallbacks=[CommandHandler("cancel", cancel)],
