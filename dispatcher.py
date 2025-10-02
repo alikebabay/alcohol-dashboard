@@ -14,7 +14,7 @@ from writer import save_to_excel, normalize_alcohol_df, merge_with_master
 from gsheets_integration import update_master_to_gsheets, load_master_from_gsheets
 from distillator import filter_and_enrich
 from organizer import attach_categories, order_by_category
-from parser_fsm import AlcoholStateMachine
+from state_machine import AlcoholStateMachine
 
 from functools import wraps
 

@@ -30,7 +30,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     await update.message.reply_text(
-        "Добрый день! Выберите поставщика: Или отправьте файл в формате Excel/CSV. ",
+        "Добрый день! Поставщика можно выбрать кнопкой, либо ввести текст. Или отправьте файл в формате Excel/CSV. ",
         reply_markup=reply_markup
     )
     return MENU
@@ -40,15 +40,22 @@ async def handle_supplier_choice(update: Update, context: ContextTypes.DEFAULT_T
     
     choice = update.message.text
     logger.info(f"Поставщик выбран: {choice}")
-    if choice in ["Поставщик 1", "Поставщик 2", "Поставщик 3", "По названию файла"]:
+
+    # фиксированные кнопки
+    fixed_choices = ["Поставщик 1", "Поставщик 2", "Поставщик 3", "По названию файла"]
+    if choice in fixed_choices:
         context.chat_data["supplier_choice"] = choice
         await update.message.reply_text(
             f"Вы выбрали: {choice}. Теперь отправьте прайс Excel или CSV."
         )
         return MENU
-    else:
-        await update.message.reply_text("Пожалуйста, выберите один из вариантов кнопками.")
-        return MENU
+    
+    # если не кнопка → трактуем как ручной ввод
+    context.chat_data["supplier_choice"] = choice
+    await update.message.reply_text(
+        f"Принято: {choice}. Теперь отправьте прайс Excel или CSV."
+    )
+    return MENU
 
 
 # /cancel
