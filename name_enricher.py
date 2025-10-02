@@ -2,6 +2,26 @@
 import pandas as pd
 from distillator import looks_like_category, _remove_volume_tokens, _extract_volume, _infer_bpc_from_name
 
+
+import re
+
+def _clean_name_extras(s: str) -> str:
+    """
+    Убираем лишние токены из названия:
+    - префиксы типа 'FTL.' или 'EXW.'
+    - хвосты с '@ Euro ...', 'per bottle', 'per case'
+    - служебные маркеры (T1, T2, weeks, on stock)
+    """
+    if not isinstance(s, str):
+        return s
+    s = re.sub(r'^(FTL\.?|EXW\.?)\s*', '', s, flags=re.I)           # убираем FTL., EXW.
+    s = re.sub(r'@.*', '', s)                                        # всё после @ (цену и условия)
+    s = re.sub(r'\bT[0-9]\b', '', s, flags=re.I)                     # T1, T2
+    s = re.sub(r'\b\d+\s*weeks?\b', '', s, flags=re.I)               # "2 weeks"
+    s = re.sub(r'\bon stock\b', '', s, flags=re.I)                   # "on stock"
+    s = re.sub(r'\s+', ' ', s).strip()
+    return s
+
 def filter_and_enrich(df: pd.DataFrame, col_name: str = "name") -> pd.DataFrame:
     """
     - убирает строки с категориями
@@ -27,6 +47,8 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name") -> pd.DataFrame:
 
     # удаляем cl-часть из названия (все токены)
     df[col_name] = df[col_name].map(_remove_volume_tokens)
+    # дополнительно чистим от лишних слов и хвостов
+    df[col_name] = df[col_name].map(_clean_name_extras)
 
     # ---- ДОзаполнение и чистка числовых полей ----
     if "bottles_per_case" in df.columns:

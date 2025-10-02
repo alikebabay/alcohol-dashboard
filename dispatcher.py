@@ -8,6 +8,7 @@ from io import BytesIO
 from pathlib import Path
 import os
 
+
 #code integrations
 from parser import parse_excel
 from writer import save_to_excel, normalize_alcohol_df, merge_with_master
@@ -31,7 +32,7 @@ def timed(func):
 
 
 @timed
-def dispatch_excel(file_src: Union[Path, BytesIO], file_name: str, supplier_choice: str | None = None):
+def dispatch_excel(file_src: Union[Path, BytesIO], file_name: str, supplier_choice: str | None = None): #added pd.DataFrame
     print(f"[DEBUG dispatcher] Входной файл: {file_name}, supplier_choice={supplier_choice}")
 
     # Создаём state machine для поставщика (само решает: имя файла или выбор пользователя)
