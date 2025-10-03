@@ -45,4 +45,6 @@ async def handle_userdata(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     context.chat_data.clear()
     context.user_data.clear()
+    context.chat_data["_conv_active"] = False
+    context.chat_data["_fsm"] = "END"
     return ConversationHandler.END

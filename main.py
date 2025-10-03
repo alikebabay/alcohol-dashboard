@@ -5,7 +5,7 @@ print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 import logging
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import (
-    Application, CommandHandler, MessageHandler,
+    Application, CommandHandler, MessageHandler, 
     filters, ContextTypes, ConversationHandler
 )
 from config import TOKEN 
@@ -24,6 +24,8 @@ SUPPLIER, INGEST = range(2)
 
 # /start
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.chat_data["_conv_active"] = True
+    context.chat_data["_fsm"] = "SUPPLIER"
     keyboard = [
         [KeyboardButton("Поставщик 1"), KeyboardButton("Поставщик 2")],
         [KeyboardButton("Поставщик 3"), KeyboardButton("По названию файла")],
@@ -38,7 +40,9 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # выбор поставщика
 async def handle_supplier_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    
+    context.chat_data["_conv_active"] = True
+    context.chat_data["_fsm"] = "INGEST"
+
     choice = update.message.text
     logger.info(f"Поставщик выбран: {choice}")
 
@@ -65,6 +69,8 @@ async def handle_wrong_before_supplier(update: Update, context: ContextTypes.DEF
 
 # /cancel
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.chat_data["_conv_active"] = False
+    context.chat_data["_fsm"] = "END"
     await update.message.reply_text("Диалог завершён.")
     return ConversationHandler.END
 
@@ -82,6 +88,8 @@ async def handle_file_outside_dialog(update: Update, context: ContextTypes.DEFAU
 
 # Фолбэк: если текст прислали вне диалога
 async def handle_text_outside_dialog(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if context.chat_data.get("_conv_active"):
+        return
     await update.message.reply_text("Используйте /start, чтобы начать работу.")
 
 # Запуск
