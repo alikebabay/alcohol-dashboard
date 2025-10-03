@@ -17,6 +17,7 @@ from name_enricher import filter_and_enrich
 from organizer import attach_categories, order_by_category
 from state_machine import AlcoholStateMachine
 from text_state import TextState
+from input_loader import load
 
 from functools import wraps
 
@@ -33,7 +34,10 @@ def timed(func):
 
 
 @timed
-def dispatch_excel(file_src: Union[Path, BytesIO], file_name: str, supplier_choice: str | None = None): #added pd.DataFrame
+async def dispatch_excel(update, context, supplier_choice=None):
+        # 1. загружаем файл или текст через input_loader
+    file_src, file_name = await load(update, context)
+
     print(f"[DEBUG dispatcher] Входной файл: {file_name}, supplier_choice={supplier_choice}")
 
     # Создаём state machine для поставщика (само решает: имя файла или выбор пользователя)

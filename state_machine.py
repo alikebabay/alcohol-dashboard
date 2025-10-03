@@ -2,7 +2,7 @@
 import time
 print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
-from pathlib import Path
+from input_loader import load
 from resolve_supplier_name import resolve_supplier_name
 
 class AlcoholStateMachine:
