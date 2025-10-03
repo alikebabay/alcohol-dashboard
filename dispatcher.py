@@ -10,13 +10,11 @@ import os
 
 
 #code integrations
-from parser import parse_excel
-from writer import save_to_excel, normalize_alcohol_df, merge_with_master
+
+from writer import save_to_excel, merge_with_master
 from gsheets_integration import update_master_to_gsheets, load_master_from_gsheets
-from name_enricher import filter_and_enrich
 from organizer import attach_categories, order_by_category
 from state_machine import AlcoholStateMachine
-from text_state import TextState
 from input_loader import load
 
 from functools import wraps
@@ -40,18 +38,13 @@ async def dispatch_excel(update, context, supplier_choice=None):
 
     print(f"[DEBUG dispatcher] Входной файл: {file_name}, supplier_choice={supplier_choice}")
 
-    # Создаём state machine для поставщика (само решает: имя файла или выбор пользователя)
+    # Создаём state machine и определяем состояние
     supplier_sm = AlcoholStateMachine(file_name, supplier_choice)
-       
-    if isinstance(file_src, str):
-        # если это сырой текст → TextState
-        ts = TextState(file_src)
-        df_distilled = ts.run()
-    else:
-        # Excel путь
-        df_raw, _ = parse_excel(file_src)
-        df_norm, mapping = normalize_alcohol_df(df_raw)
-        df_distilled = filter_and_enrich(df_norm, col_name="name")
+    state = supplier_sm.decide_state(file_src)
+    print(f"[DEBUG dispatcher] FSM выбрала состояние {state}")
+
+    # FSM вызывает соответствующий метод обработки
+    df_distilled = supplier_sm.handle_state(state, file_src)
 
     # 3.1 Категоризация + порядок
     df_distilled = attach_categories(df_distilled, name_col="name", out_col="Тип")
