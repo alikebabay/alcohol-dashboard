@@ -7,7 +7,7 @@ from io import BytesIO
 from resolve_supplier_name import resolve_supplier_name
 from text_state import TextState
 from parser import parse_excel
-from writer import normalize_alcohol_df
+from normalizer import normalize_alcohol_df
 from name_enricher import filter_and_enrich
 
 class AlcoholStateMachine:
