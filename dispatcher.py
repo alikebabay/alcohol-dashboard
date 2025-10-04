@@ -16,6 +16,7 @@ from gsheets_integration import update_master_to_gsheets, load_master_from_gshee
 from organizer import attach_categories, order_by_category
 from state_machine import AlcoholStateMachine
 from input_loader import load
+from verifier import verifier
 
 from functools import wraps
 
@@ -53,6 +54,10 @@ async def dispatch_excel(update, context, supplier_choice=None):
     # ⚡️ теперь говорим state machine, что поставщик готов
     supplier_sm.ready()
     supplier_name = supplier_sm.get_name()
+
+    # проверка перед отдачей пользователю
+    df_distilled = verifier.run(df_distilled)
+    print(verifier.report())
     
     df_out = save_to_excel(df_distilled, supplier_name)
 
@@ -67,6 +72,10 @@ async def dispatch_excel(update, context, supplier_choice=None):
         if old_master.empty:
             df_final = df_out
         else:
+            # проверка перед созданием сводного файла
+            df_out = verifier.run(df_out)
+            print(verifier.report())
+            # слияние
             df_final = merge_with_master(old_master, df_out, supplier_name)
 
         update_master_to_gsheets(df_final)

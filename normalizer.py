@@ -153,7 +153,11 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     # --- доступность и место загрузки ---
     if avail_cols:
         tmp = df[avail_cols].bfill(axis=1)
-        out["access"] = tmp.iloc[:, 0].astype(str).str.strip()
+        if tmp.shape[1] > 1:
+        # склеиваем доступность и T1/T2
+            out["access"] = tmp.iloc[:,0].astype(str).str.strip() + " (" + tmp.iloc[:,1].astype(str).str.strip() + ")"
+        else:
+            out["access"] = tmp.iloc[:,0].astype(str).str.strip()
     else:
         out["access"] = None
 
