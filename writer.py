@@ -12,98 +12,142 @@ import pandas as pd
 
 def merge_with_master(old: pd.DataFrame, new: pd.DataFrame, supplier: str) -> pd.DataFrame:
     """
-    Сливает новые данные по поставщику с существующим master.xlsx.
-    - Ключ для совпадения: Наименование + шт / кор
-    - Если колонок для этого поставщика нет → добавляем
-    - Если цена изменилась → обновляем
-    - Если строка новая → добавляем
+    Ключ: Наименование + шт / кор.
+    Обновляем/добавляем поля поставщика:
+      цена за бутылку {supplier}, цена за кейс {supplier} (если есть), Доступ {supplier}, Место загрузки {supplier}.
     """
-    # добавляем колонки для текущего поставщика, если их нет
-    for col in [f"цена за бутылку {supplier}"]:
-        if col not in old.columns:
-            old[col] = None
+    # 0) гарантируем наличие нужных колонок поставщика
+    need_cols = [
+        f"цена за бутылку {supplier}",
+        f"Доступ {supplier}",
+        f"Место загрузки {supplier}",
+        f"цена за кейс {supplier}",
+    ]
+    for c in need_cols:
+        if c not in old.columns:
+            old[c] = None
 
-    updated, inserted = 0, 0
+    for _, row in new.iterrows():
+        name = row.get("Наименование")
+        bpc  = row.get("шт / кор")
 
-    for i, row in new.iterrows():
-        
+        price_bottle = row.get(f"цена за бутылку {supplier}") or row.get("price_per_bottle")
+        price_case   = row.get(f"цена за кейс {supplier}")   or row.get("price_per_case")
+        access       = row.get(f"Доступ {supplier}")         or row.get("Доступ")   or row.get("access")
+        location     = row.get(f"Место загрузки {supplier}") or row.get("Место загрузки") or row.get("location")
 
-        name = row["Наименование"]
-        bpc = row["шт / кор"]
-        
-
-        # поддержка старого и нового формата
-        price_case = row.get("price_per_case")
-        price_bottle = row.get("price_per_bottle")
-        
-        if price_case is None and price_bottle is None:
-            col_case = f"цена за кейс {supplier}"
-            col_bottle = f"цена за бутылку {supplier}"
-            price_case = row.get(col_case)
-            price_bottle = row.get(col_bottle)
-
-        
+        if name is None or bpc is None:
+            continue  # защитимся от мусорных строк
 
         mask = (old["Наименование"] == name) & (old["шт / кор"] == bpc)
-        if mask.any():
-            # обновляем только если цена отличается
-            if pd.notna(price_case):
-                old_price = old.loc[mask, f"цена за кейс {supplier}"].values[0]
-                if pd.isna(old_price) or old_price != price_case:
-                    old.loc[mask, f"цена за кейс {supplier}"] = price_case
-                    updated += 1
-            if pd.notna(price_bottle):
-                old_price_b = old.loc[mask, f"цена за бутылку {supplier}"].values[0]
-                if pd.isna(old_price_b) or old_price_b != price_bottle:
-                    old.loc[mask, f"цена за бутылку {supplier}"] = price_bottle
-                    updated += 1
-        else:
-            # новой строки ещё нет → добавляем
-            old = pd.concat([old, pd.DataFrame([row])], ignore_index=True)
-            inserted += 1
 
-    
+        if mask.any():
+            # обновляем только если реально изменилось
+            if price_case is not None:
+                col = f"цена за кейс {supplier}"
+                if pd.isna(old.loc[mask, col]).all() or not (old.loc[mask, col] == price_case).all():
+                    old.loc[mask, col] = price_case
+
+            if price_bottle is not None:
+                col = f"цена за бутылку {supplier}"
+                if pd.isna(old.loc[mask, col]).all() or not (old.loc[mask, col] == price_bottle).all():
+                    old.loc[mask, col] = price_bottle
+
+            if access not in (None, ""):
+                col = f"Доступ {supplier}"
+                if pd.isna(old.loc[mask, col]).all() or not (old.loc[mask, col].astype(str) == str(access)).all():
+                    old.loc[mask, col] = access
+
+            if location not in (None, ""):
+                col = f"Место загрузки {supplier}"
+                if pd.isna(old.loc[mask, col]).all() or not (old.loc[mask, col].astype(str) == str(location)).all():
+                    old.loc[mask, col] = location
+
+        else:
+            # новой строки нет → создаём
+            new_row = {
+                "Тип": row.get("Тип", ""),
+                "Наименование": name,
+                "cl": row.get("cl", ""),
+                "шт / кор": bpc,
+                f"цена за бутылку {supplier}": price_bottle,
+                f"цена за кейс {supplier}": price_case,
+                f"Доступ {supplier}": access,
+                f"Место загрузки {supplier}": location,
+            }
+            # добьём отсутствующие базовые колонки, если вдруг нет
+            for base in ["Тип", "Наименование", "cl", "шт / кор"]:
+                new_row.setdefault(base, "")
+            old = pd.concat([old, pd.DataFrame([new_row])], ignore_index=True)
+
+    # (необязательно) можно здесь перешить порядок колонок:
+    # базовые → для каждого поставщика: цена/Доступ/Место загрузки
+    base_cols = ["Тип", "Наименование", "cl", "шт / кор"]
+    suppliers = sorted({
+        c.replace("цена за бутылку ", "")
+        for c in old.columns if c.startswith("цена за бутылку ")
+    })
+    ordered = base_cols[:]
+    for s in suppliers:
+        ordered += [f"цена за бутылку {s}", f"Доступ {s}", f"Место загрузки {s}", f"цена за кейс {s}"]
+    # добрособираем хвост
+    tail = [c for c in old.columns if c not in ordered]
+    old = old.reindex(columns=ordered + tail)
+
     return old
+
 
 
 # --- сохранение ------------------------------------------------------------
 
 def save_to_excel(df: pd.DataFrame, supplier: str) -> pd.DataFrame:
     """
-    Приводит DataFrame к фиксированным 10 колонкам.
-    На выходе всегда 10 фиксированных колонок:
-      Тип | Доступ | Наименование | cl | шт / кор | Место загрузки | Поставщик 1 | Поставщик 2 | Поставщик 3 | Поставщик 4
-    Заполняются только Наименование, cl, шт / кор и цена.
-    Остальные пока пустые.
+    Фиксируем базовые колонки товара, а цены/доступ/место — в колонках конкретного поставщика.
+    Формат:
+      Тип | Наименование | cl | шт / кор |
+      цена за бутылку {supplier} | Доступ {supplier} | Место загрузки {supplier}
     """
+    # 1) базовые маппинги товара
     column_map = {
         "name": "Наименование",
-        "bottles_per_case": "шт / кор", 
+        "bottles_per_case": "шт / кор",
         "cl": "cl",
         "Тип": "Тип",
     }
 
-    base_cols = [
-        "Тип",
-        "Доступ",
-        "Наименование",
-        "cl",
-        "шт / кор",
-        "Место загрузки",
-    ]
-    
+    base_cols = ["Тип", "Наименование", "cl", "шт / кор"]
     df_out = pd.DataFrame(index=range(len(df)), columns=base_cols)
 
-    # добавляем колонку с ценой за бутылку
-    if "price_per_bottle" in df.columns:
-        df_out[f"цена за бутылку {supplier}"] = df["price_per_bottle"]
-
-    # переносим найденные данные
     for raw_col, target_col in column_map.items():
         if raw_col in df.columns:
             df_out[target_col] = df[raw_col]
 
-    return df_out
+    # 2) поставщик-специфичные колонки
+    col_price_bottle = f"цена за бутылку {supplier}"
+    col_price_case   = f"цена за кейс {supplier}"
+    col_access       = f"Доступ {supplier}"
+    col_location     = f"Место загрузки {supplier}"
+
+    # цена за бутылку (из нормализатора)
+    if "price_per_bottle" in df.columns:
+        df_out[col_price_bottle] = df["price_per_bottle"]
+
+    # цена за кейс (если вдруг уже есть в df)
+    if "price_per_case" in df.columns:
+        df_out[col_price_case] = df["price_per_case"]
+
+    # доступ и место загрузки: принимаем и en/ru варианты источников
+    access_src   = df.get("Доступ", df.get("access"))
+    location_src = df.get("Место загрузки", df.get("location"))
+
+    if access_src is not None:
+        df_out[col_access] = access_src
+    if location_src is not None:
+        df_out[col_location] = location_src
+
+    # 3) минимальная чистка
+    return df_out.fillna("")
+
 
 
 

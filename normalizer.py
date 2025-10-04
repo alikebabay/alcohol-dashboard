@@ -76,6 +76,16 @@ PRICE_CASE_PATS = [
     r"\b\$\s*/?\s*cs\b", r"\b€\s*/?\s*cs\b"
 ]
 
+AVAILABILITY_PATS = [
+    r"stock", r"lead\s*time", r"availability", r"status", r"eta", 
+    r"ready", r"t1", r"t2", r"tbo", r"доступ", r"наличи"
+]
+
+LOCATION_PATS = [
+    r"wareh", r"склад", r"origin", r"отгруз", r"exw", r"dap", r"fob", r"cif", r"место\s*загруз"
+]
+
+
 
 def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, Optional[str]]]:
     """
@@ -85,12 +95,19 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
         ['name', 'bottles_per_case', 'price_per_case', 'price_per_bottle']
       - mapping: какие исходные колонки были использованы.
     """
+    print(f"\n[DEBUG normalize_alcohol_df] === START ===")
+    print(f"[DEBUG normalize_alcohol_df] Input shape: {df_in.shape}")
+    print(f"[DEBUG normalize_alcohol_df] Columns in input: {list(df_in.columns)}")
+
+
     df = df_in.copy()
 
     # --- поиск колонок ---
     name_cols  = _find_cols(df, NAME_PATS)
     price_cols = _find_cols(df, PRICE_CASE_PATS)
     bpc_cols   = [c for c in _find_cols(df, BOTTLES_PER_CASE_PATS) if c not in price_cols]
+    avail_cols = _find_cols(df, AVAILABILITY_PATS)
+    loc_cols   = _find_cols(df, LOCATION_PATS)
 
     mapping = {
         "name": name_cols,
@@ -132,6 +149,19 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     # --- Расчёт цены за бутылку ---
     out["price_per_bottle"] = out["price_per_case"] / out["bottles_per_case"]
     out["price_per_bottle"] = pd.to_numeric(out["price_per_bottle"], errors="coerce").round(4)
+
+    # --- доступность и место загрузки ---
+    if avail_cols:
+        tmp = df[avail_cols].bfill(axis=1)
+        out["access"] = tmp.iloc[:, 0].astype(str).str.strip()
+    else:
+        out["access"] = None
+
+    if loc_cols:
+        tmp = df[loc_cols].bfill(axis=1)
+        out["location"] = tmp.iloc[:, 0].astype(str).str.strip()
+    else:
+        out["location"] = None
 
     # --- Очистка пустых строк ---
     if name_cols:
