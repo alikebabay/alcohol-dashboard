@@ -1,5 +1,5 @@
 import pandas as pd
-import text_extractors as te
+import utils.text_extractors as te
 
 def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
     """

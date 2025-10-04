@@ -1,6 +1,6 @@
 # text_extractors.py
 import re
-from distillator import _extract_volume, _infer_bpc_from_name, RX_ABV
+from core.distillator import _extract_volume, _infer_bpc_from_name, RX_ABV
 
 def extract_volume(text: str):
     return _extract_volume(text)

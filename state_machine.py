@@ -4,11 +4,11 @@ print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
 from io import BytesIO
 
-from resolve_supplier_name import resolve_supplier_name
+from utils.resolve_supplier_name import resolve_supplier_name
 from text_state import TextState
-from parser import parse_excel
-from normalizer import normalize_alcohol_df
-from name_enricher import filter_and_enrich
+from core.parser import parse_excel
+from core.normalizer import normalize_alcohol_df
+from core.name_enricher import filter_and_enrich
 
 class AlcoholStateMachine:
     def __init__(self, file_name: str, supplier_choice: str = None):

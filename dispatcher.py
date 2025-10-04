@@ -12,11 +12,11 @@ import os
 #code integrations
 
 from writer import save_to_excel, merge_with_master
-from gsheets_integration import update_master_to_gsheets, load_master_from_gsheets
-from organizer import attach_categories, order_by_category
+from integrations.gsheets_integration import update_master_to_gsheets, load_master_from_gsheets
+from core.organizer import attach_categories, order_by_category
 from state_machine import AlcoholStateMachine
-from input_loader import load
-from verifier import verifier
+from integrations.input_loader import load
+from utils.verifier import verifier
 
 from functools import wraps
 

@@ -1,6 +1,6 @@
 import pandas as pd
-from text_parser import parse_text
-from name_enricher import filter_and_enrich 
+from core.text_parser import parse_text
+from core.name_enricher import filter_and_enrich 
 
 class TextState:
     def __init__(self, raw_text: str):

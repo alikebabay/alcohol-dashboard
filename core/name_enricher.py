@@ -1,6 +1,6 @@
 # enricher.py
 import pandas as pd
-from distillator import looks_like_category, _remove_volume_tokens, _extract_volume, _infer_bpc_from_name
+from core.distillator import looks_like_category, _remove_volume_tokens, _extract_volume, _infer_bpc_from_name
 
 
 import re
