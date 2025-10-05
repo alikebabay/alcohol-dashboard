@@ -10,7 +10,7 @@ from typing import Optional
 # --- регексы для признаков продукта ---
 # Объём вида 50ml, 75cl, 1L, 37.5cl
 # Теперь после ml|cl|l может быть конец строки, пробел, запятая, %, или буква x
-_RX_VOLUME = re.compile(
+RX_VOLUME = re.compile(
     r'(?i)(\d{1,4}(?:[.,]\d{1,2})?\s?(?:ml|cl|l))(?:\b|(?=[x%]))'
 )
 # NxVol (12x75cl, 06x1L, 120x5cl) — разрешаем слепленные варианты
@@ -78,8 +78,39 @@ def _remove_volume_tokens(name: str) -> str:
     # убираем кейс+объём: 6x75cl, 12x1L, 120x5cl
     s = _RX_CASEVOL.sub("", name)
     # убираем одиночные объёмы: 75cl, 1L, 200ml
-    s = _RX_VOLUME.sub("", s)
+    s = RX_VOLUME.sub("", s)
     return re.sub(r"\s{2,}", " ", s).strip(" -")
+
+
+def extract_volume_smart(row: pd.Series, df_raw: pd.DataFrame | None = None) -> float | str | None:
+    """
+    Пытается вытащить объём (cl/ml/l) из разных полей строки:
+    1. name / Наименование
+    2. Size / Size/规格 / 规格
+    3. (если не найдено) ищет в исходном df_raw
+    """
+    possible_fields = ["name", "Наименование", "Size", "Size/规格", "规格"]
+
+    # основной цикл
+    for field in possible_fields:
+        if field in row and isinstance(row[field], str):
+            val = _extract_volume(row[field])
+            if val:
+                print(f"[DEBUG smart_volume] found in '{field}': {val}")
+                return val
+
+    # fallback — поиск в сыром df_raw
+    if df_raw is not None:
+        for col in df_raw.columns:
+            joined_text = " ".join(df_raw[col].astype(str).tolist())
+            val = _extract_volume(joined_text)
+            if val:
+                print(f"[DEBUG smart_volume] fallback match in df_raw[{col}]: {val}")
+                return val
+
+    return None
+
+
 
 def _extract_volume(text: str):
     if not isinstance(text, str):
@@ -90,7 +121,7 @@ def _extract_volume(text: str):
     if m:
         val, unit = m.group(2), m.group(3).lower()
     else:
-        m = _RX_VOLUME.search(s)
+        m = RX_VOLUME.search(s)
         if not m:
             return None
         # здесь m.group(1) = "75cl", надо разнести

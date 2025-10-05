@@ -29,6 +29,7 @@ def _get_worksheet():
 
 def load_master_from_gsheets() -> pd.DataFrame:
     """Загружает мастер-таблицу из Google Sheets в DataFrame."""
+    print("[DEBUG] load_master_from_gsheets вызвана")
     ws = _get_worksheet()
     data = ws.get_all_records(value_render_option="UNFORMATTED_VALUE")
     if not data:
@@ -45,6 +46,20 @@ def load_master_from_gsheets() -> pd.DataFrame:
 
 def update_master_to_gsheets(df: pd.DataFrame):
     """Очищает лист и загружает новые данные."""
+    if df is None:
+        print("[ERROR] update_master_to_gsheets получил None вместо DataFrame — пропускаю обновление.")
+        return  # ничего не делаем, чтобы не падать
+
+    if not isinstance(df, pd.DataFrame):
+        print(f"[ERROR] Ожидался DataFrame, но получен {type(df)} — пропускаю обновление.")
+        return
+
+    if df.empty:
+        print("[WARN] Пустой DataFrame передан в update_master_to_gsheets — создаю заглушку.")
+        df = pd.DataFrame({"Тип": [], "Наименование": []})  # минимальный placeholder
+
+
+
     ws = _get_worksheet()
 
     # нормализация значений (например, даты → строки)

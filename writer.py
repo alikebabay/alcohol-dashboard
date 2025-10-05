@@ -1,11 +1,7 @@
 
 from __future__ import annotations
-import re
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-import os
-
 import pandas as pd
+from utils.verifier import verifier
 
 # --- создание матрицы ------------------------------------------------------------
 
@@ -79,7 +75,7 @@ def merge_with_master(old: pd.DataFrame, new: pd.DataFrame, supplier: str) -> pd
                 new_row.setdefault(base, "")
             old = pd.concat([old, pd.DataFrame([new_row])], ignore_index=True)
 
-    # (необязательно) можно здесь перешить порядок колонок:
+    
     # базовые → для каждого поставщика: цена/Доступ/Место загрузки
     base_cols = ["Тип", "Наименование", "cl", "шт / кор"]
     suppliers = sorted({
@@ -92,7 +88,6 @@ def merge_with_master(old: pd.DataFrame, new: pd.DataFrame, supplier: str) -> pd
     # добрособираем хвост
     tail = [c for c in old.columns if c not in ordered]
     old = old.reindex(columns=ordered + tail)
-
     return old
 
 

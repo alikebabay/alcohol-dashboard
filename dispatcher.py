@@ -69,14 +69,23 @@ async def dispatch_excel(update, context, supplier_choice=None):
     # 5. работа с мастером в Google Sheets
     try:
         old_master = load_master_from_gsheets()
+        # 💡 страховка: если вернул None — создаём пустой DataFrame
+        if old_master is None:
+            print("[WARN] load_master_from_gsheets() вернул None — создаю пустой DataFrame")
+            old_master = pd.DataFrame()
+
         if old_master.empty:
+            print("[INFO] Master пустой — создаю новый из df_out")
             df_final = df_out
         else:
-            # проверка перед созданием сводного файла
-            df_out = verifier.run(df_out)
-            print(verifier.report())
-            # слияние
+            # обычное слияние
             df_final = merge_with_master(old_master, df_out, supplier_name)
+        
+        # ⚡️ финальная типизация теперь всегда
+        verifier.set_state("typing")
+        verifier.run(df_final)
+        print(verifier.report())
+
 
         update_master_to_gsheets(df_final)
         print(f"[OK dispatcher] Master обновлён в Google Sheets, всего строк: {df_final.shape[0]}")
@@ -84,5 +93,11 @@ async def dispatch_excel(update, context, supplier_choice=None):
         print(f"[ERROR dispatcher] Не удалось обновить Google Sheets: {e}")
         df_final = df_out  # fallback
 
-    return supplier_sm.get_df_out()
+    result = supplier_sm.get_df_out()
 
+    supplier_sm.reset()
+    supplier_sm = None  # 💥 уничтожаем ссылку на объект FSM
+    verifier.reset()  # 💥 сбрасываем глобальный верифаер
+    print("[DEBUG dispatcher] FSM и Verifier полностью обнулены после завершения цикла")
+
+    return result

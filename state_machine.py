@@ -15,6 +15,7 @@ class AlcoholStateMachine:
         self.name = resolve_supplier_name(file_name, supplier_choice)
 
         self.state = "INIT"
+        self.df_raw = None  # здесь будем хранить входной (сырый) датафрейм
         self.df_out = None  # здесь будем хранить выходной датафрейм
 
     def ready(self):
@@ -34,8 +35,10 @@ class AlcoholStateMachine:
 
     def handle_file(self, file_src: BytesIO):
         df_raw, _ = parse_excel(file_src)
+        self.df_raw = df_raw.copy()  # 💾 сохраняем исходный датафрейм для доп. поиска
         df_norm, _ = normalize_alcohol_df(df_raw)
-        return filter_and_enrich(df_norm, col_name="name")
+        return filter_and_enrich(df_norm, col_name="name", df_raw=self.df_raw)
+
 
     def handle_state(self, state: str, file_src):
         """Вызывает метод в зависимости от состояния"""
@@ -56,3 +59,11 @@ class AlcoholStateMachine:
         if self.state != "READY":
             raise RuntimeError(f"Supplier not ready, current state={self.state}")
         return self.name
+    
+    def reset(self):
+        """Полный сброс состояния после завершения обработки"""
+        print(f"[FSM] Сбрасываю состояние для поставщика: {self.name}")
+        self.state = "INIT"
+        self.df_raw = None
+        self.df_out = None
+        self.name = None
