@@ -60,6 +60,7 @@ NAME_PATS = [
 ]
 
 BOTTLES_PER_CASE_PATS = [
+    r"bottles_per_case",
     r"^\s*bt\s*/?\s*cs\s*$",
     r"bt.?/?cs", r"btl.?/?case",
     r"\bbottles?\b", r"bottl.?/case",
@@ -95,7 +96,9 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
         ['name', 'bottles_per_case', 'price_per_case', 'price_per_bottle']
       - mapping: какие исходные колонки были использованы.
     """
-    
+
+    print(f"\n[DEBUG normalizer] входной DataFrame shape={df_in.shape}")
+    print(f"[DEBUG normalizer] входные колонки: {list(df_in.columns)}")
 
 
     df = df_in.copy()
@@ -113,6 +116,13 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
         "price_per_case": price_cols,
         "price_per_bottle": "calculated",
     }
+
+
+    #тестовый код
+    print(f"[DEBUG normalizer] распознанные колонки:")
+    for k, v in mapping.items():
+        print(f"   {k:<20} → {v}")
+    #тестовый код
 
     out = pd.DataFrame()
 
@@ -168,5 +178,8 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     # --- Очистка пустых строк ---
     if name_cols:
         out = out[~out["name"].fillna("").str.strip().eq("")].reset_index(drop=True)
+
+    print(f"[DEBUG normalizer] выходной shape={out.shape}")
+    print(f"[DEBUG normalizer] пример нормализованных данных:\n{out.head(3)}\n")
 
     return out, mapping
