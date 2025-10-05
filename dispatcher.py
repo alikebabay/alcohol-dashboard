@@ -36,13 +36,11 @@ def timed(func):
 async def dispatch_excel(update, context, supplier_choice=None):
         # 1. загружаем файл или текст через input_loader
     file_src, file_name = await load(update, context)
-
-    print(f"[DEBUG dispatcher] Входной файл: {file_name}, supplier_choice={supplier_choice}")
+    
 
     # Создаём state machine и определяем состояние
     supplier_sm = AlcoholStateMachine(file_name, supplier_choice)
     state = supplier_sm.decide_state(file_src)
-    print(f"[DEBUG dispatcher] FSM выбрала состояние {state}")
 
     # FSM вызывает соответствующий метод обработки
     df_distilled = supplier_sm.handle_state(state, file_src)
@@ -63,7 +61,6 @@ async def dispatch_excel(update, context, supplier_choice=None):
 
     # файл для отдачи пользователю телеграм. сохраним в state machine
     supplier_sm.set_df_out(df_out)
-    print(f"[DEBUG dispatcher] df_out saved to state machine, shape={df_out.shape}")
 
     
     # 5. работа с мастером в Google Sheets

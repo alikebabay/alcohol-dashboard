@@ -7,10 +7,10 @@ from io import BytesIO
 import pandas as pd
 
 def parse_excel(src: BytesIO):
-    print(f"[DEBUG parse_excel] Начинаю парсить BytesIO")
+    
     # читаем все листы сразу
     sheets = pd.read_excel(src, sheet_name=None, header=None, engine="openpyxl")
-    print(f"[DEBUG parse_excel] найдено листов: {list(sheets.keys())}")
+    
 
     frames = []
     mappings = {}
@@ -32,7 +32,7 @@ def parse_excel(src: BytesIO):
         df = pd.read_excel(src, sheet_name=sheet_name, header=header_row, engine="openpyxl")
         frames.append(df)
         mappings[sheet_name] = {"columns": list(df.columns), "header_row": header_row}
-        print(f"[DEBUG parse_excel] {sheet_name}: shape={df.shape}, header_row={header_row}")
+        
     if frames:
         df_all = pd.concat(frames, ignore_index=True)
     else:

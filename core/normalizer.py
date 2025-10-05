@@ -95,9 +95,7 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
         ['name', 'bottles_per_case', 'price_per_case', 'price_per_bottle']
       - mapping: какие исходные колонки были использованы.
     """
-    print(f"\n[DEBUG normalize_alcohol_df] === START ===")
-    print(f"[DEBUG normalize_alcohol_df] Input shape: {df_in.shape}")
-    print(f"[DEBUG normalize_alcohol_df] Columns in input: {list(df_in.columns)}")
+    
 
 
     df = df_in.copy()

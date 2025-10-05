@@ -29,14 +29,9 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
     - добавляет колонку 'volume' (если найден в тексте)
     - аппендит volume к name (например: 'Macallan 12' -> 'Macallan 12 (700ml)')
     """
-    # debug checking for df_raw
-    if df_raw is not None:
-        print(f"[DEBUG enricher] df_raw passed to enricher with shape={df_raw.shape}")
-    else:
-        print("[DEBUG enricher] df_raw is None (fallback to name only)")
-    # end of debug code
-
     
+
+
     if col_name not in df.columns:
         return df
 
@@ -52,11 +47,9 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
     df = df[~mask_cat].reset_index(drop=True)
 
     # вытащим cl (объем) в отдельную колонку, поиск по нейме и другим колонкам
-    print("[DEBUG enricher] sample names for cl extraction:")
-    print(df[col_name].head(10).tolist())
+    
     df["cl"] = df.apply(lambda r: extract_volume_smart(r, df_raw=df_raw), axis=1)
-    print("[DEBUG enricher] sample cl results:")
-    print(df["cl"].head(10).tolist())
+    
 
 
    # удаляем cl-часть из названия (все токены)
@@ -64,9 +57,7 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
     # дополнительно чистим от лишних слов и хвостов
     df[col_name] = df[col_name].map(_clean_name_extras)
 
-    # финальный дебаг
-    print(f"[DEBUG enricher] after cleaning, columns: {list(df.columns)}")
-    print(df.head(5)[["cl", col_name]])
+    
 
     # ---- ДОзаполнение и чистка числовых полей ----
     if "bottles_per_case" in df.columns:

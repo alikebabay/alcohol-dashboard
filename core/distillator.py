@@ -95,8 +95,7 @@ def extract_volume_smart(row: pd.Series, df_raw: pd.DataFrame | None = None) -> 
     for field in possible_fields:
         if field in row and isinstance(row[field], str):
             val = _extract_volume(row[field])
-            if val:
-                print(f"[DEBUG smart_volume] found in '{field}': {val}")
+            if val:                
                 return val
 
     # fallback — поиск в сыром df_raw
@@ -105,7 +104,6 @@ def extract_volume_smart(row: pd.Series, df_raw: pd.DataFrame | None = None) -> 
             joined_text = " ".join(df_raw[col].astype(str).tolist())
             val = _extract_volume(joined_text)
             if val:
-                print(f"[DEBUG smart_volume] fallback match in df_raw[{col}]: {val}")
                 return val
 
     return None
@@ -142,18 +140,14 @@ def _infer_bpc_from_name(text: str) -> float | None:
 
     m = RX_PACK_CASES_FLEX.search(s)
     if m:
-        cases = float(m.group("cases"))
-        print(f"[DEBUG bpc] flex match in '{s}' → {cases}")
+        cases = float(m.group("cases"))        
         return cases
 
     # fallback — ищем просто N x число
     m = re.search(r'(?i)\b(?P<cases>\d{1,2})\s*[x×]\s*\d+', s)
     if m:
         cases = float(m.group("cases"))
-        print(f"[DEBUG bpc] loose match in '{s}' → {cases}")
-        return cases
-
-    print(f"[DEBUG bpc] no match in '{s}'")
+        return cases    
     return None
 
 def looks_like_category(name: str, row: pd.Series | None = None) -> bool:
