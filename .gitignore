@@ -40,3 +40,10 @@ test_documents/*
 
 processed/*
 !processed/.gitkeep
+
+
+# Neo4j data and logs
+data/
+logs/
+import/
+plugins/
