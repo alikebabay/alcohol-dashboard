@@ -28,6 +28,7 @@ Thumbs.db
 
 # --- secrets ---
 service_account.json
+canonical_mapping_master.json
 *.secret.json
 *.key.json
 *.pem
