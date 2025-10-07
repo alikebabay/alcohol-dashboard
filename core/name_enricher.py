@@ -1,26 +1,46 @@
 # enricher.py
 import pandas as pd
 from core.distillator import looks_like_category, _remove_volume_tokens, extract_volume_smart, _infer_bpc_from_name
-
+from utils.verifier import verifier
 
 import re
 
 def _clean_name_extras(s: str) -> str:
     """
-    Убираем лишние токены из названия:
-    - префиксы типа 'FTL.' или 'EXW.'
-    - хвосты с '@ Euro ...', 'per bottle', 'per case'
-    - служебные маркеры (T1, T2, weeks, on stock)
+    Очищает поле 'name' от всего, что не относится к названию товара.
+    Убирает:
+      - логистику (FTL, EXW, DAP, lead time, on floor и т.п.)
+      - валюты и цены (eur, usd, per bottle/case, price)
+      - упаковку и статусы (cases, bottles, coded, GBX, NRF, etc.)
     """
     if not isinstance(s, str):
         return s
-    s = re.sub(r'^(FTL\.?|EXW\.?)\s*', '', s, flags=re.I)           # убираем FTL., EXW.
-    s = re.sub(r'@.*', '', s)                                        # всё после @ (цену и условия)
-    s = re.sub(r'\bT[0-9]\b', '', s, flags=re.I)                     # T1, T2
-    s = re.sub(r'\b\d+\s*weeks?\b', '', s, flags=re.I)               # "2 weeks"
-    s = re.sub(r'\bon stock\b', '', s, flags=re.I)                   # "on stock"
-    s = re.sub(r'\s+', ' ', s).strip()
+
+    original = s
+    s = s.strip()
+
+    # убираем FTL., EXW. и всё после @
+    s = re.sub(r'^(FTL\.?|EXW\.?)\s*', '', s, flags=re.I)
+    s = re.sub(r'@.*', '', s)
+
+    # убираем служебные и торговые маркеры
+    s = re.sub(
+        r'\b(?:coded?|gbx|nogbx|nrf|rf|ftl|exw|dap|loendersloot|riga|niderland|deposit|confirm|'
+        r'lead\s*time|on\s*floor|price|per\s*bottle|per\s*case|eur|usd|\$|€|t\d|weeks?|days?|cases?|bottles?)\b',
+        '',
+        s,
+        flags=re.I,
+    )
+
+    # чистим дублирующиеся запятые и пробелы
+    s = re.sub(r'[,\s]+', ' ', s).strip()
+    s = re.sub(r'\s{2,}', ' ', s)
+
+    if s != original:
+        print(f"[DEBUG clean_name] '{original}' → '{s}'")
+
     return s
+
 
 def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataFrame | None = None) -> pd.DataFrame:
 
@@ -57,7 +77,9 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
     # дополнительно чистим от лишних слов и хвостов
     df[col_name] = df[col_name].map(_clean_name_extras)
 
-    
+    # --- запуск верифаера с графовым состоянием ---    
+    verifier.set_state("graph")
+    print(verifier.report())
 
     # ---- ДОзаполнение и чистка числовых полей ----
     if "bottles_per_case" in df.columns:
