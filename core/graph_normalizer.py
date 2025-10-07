@@ -37,6 +37,9 @@ BRANDS = load_brands()
 def _normalize(s: str) -> str:
     s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
     s = s.lower().replace("&", "and")
+    # collapse apostrophes (e.g. "grant's" -> "grants")
+    s = re.sub(r"(\w)'s\b", r"\1s", s)
+    s = re.sub(r"'", "", s)
     s = re.sub(r"[^a-z0-9 ]", " ", s)
     return re.sub(r"\s+", " ", s).strip()
 
@@ -78,6 +81,35 @@ def score_brand(raw, brand_norm):
 
     return score
 
+# ==========================================================
+# COMBINED BRAND + SERIES SCORING
+# ==========================================================
+def score_brand_series(raw, brand_norm, series_norm=None):
+    """
+    Extended scoring that boosts candidates matching both brand and series.
+    Does not penalize missing series unless the raw string contains a series fragment.
+    """
+    base = score_brand(raw, brand_norm)
+
+    if not series_norm:
+        return base
+
+    raw_norm = _normalize(raw)
+    series_tokens = series_norm.split()
+
+    # detect if raw text even *has* series-like info
+    has_series_fragment = any(tok in raw_norm for tok in series_tokens)
+
+    # 1️⃣ bonus for full series presence together with brand
+    if has_series_fragment and all(tok in raw_norm for tok in series_tokens):
+        base += 1.5
+
+    # 2️⃣ soft bonus for partial overlap
+    elif has_series_fragment:
+        base += 0.5
+
+    return base
+
 
 # ==========================================================
 # BRAND + SERIES DETECTION
@@ -95,7 +127,7 @@ def extract_brand_series(raw: str):
             continue
 
         for b_norm, b_orig in BRANDS.items():
-            sc = score_brand(raw, b_norm)
+            sc = score_brand_series(raw, b_norm)
             if sc > 0:
                 scores[b_orig] = sc
             b_tokens = b_norm.split()
@@ -118,7 +150,14 @@ def extract_brand_series(raw: str):
     series = None
     if idx != -1:
         after = raw[idx + len(brand):].strip()
-        series = " ".join(after.split()[:3]) if after else None
+        if after:
+            # tokenize what follows brand
+            after_tokens = re.findall(r"[A-Za-z0-9%+]+", after)
+            # keep only plausible series words (exclude pure numbers or very short junk)
+            valid = [t for t in after_tokens if not t.isdigit() and len(t) > 2]
+            # join top 1–3 tokens max
+            if valid:
+                series = " ".join(valid[:3])
 
     print(f"[DETECT] raw={raw!r} → brand={brand!r} (score={scores[brand]}), series={series!r}")
     return brand, series
