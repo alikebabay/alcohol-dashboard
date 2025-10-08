@@ -39,9 +39,9 @@ def extract_price_per_bottle(text: str):
         m = rx.search(s)
         if m:
             val = float(m.group(1).replace(",", "."))
-            print(f"[DEBUG extractor] bottle match in {text!r} → {val}")
+            
             return val
-    print(f"[DEBUG extractor] bottle no match in {text!r}")
+    
     return None
 
 
@@ -62,9 +62,124 @@ def extract_price_per_case(text: str):
         m = rx.search(s)
         if m:
             val = float(m.group(1).replace(",", "."))
-            print(f"[DEBUG extractor] case match in {text!r} → {val}")
+            
             return val
-    print(f"[DEBUG extractor] case no match in {text!r}")
+    
     return None
 
+
+def extract_access(text: str):
+    """
+    Detects stock status or lead time: 'On stock', 'T1', 'T2', 'TBO', 'on floor',
+    'lead time 2 weeks', '7 days after deposit', '2-3 weeks', etc.
+    Returns combined string like 'T2, 2 weeks'.
+    """
+    if not text:
+        return None
+    s = str(text).strip()
+
+    parts = []
+    patterns = [
+        re.compile(r'\b(T[12]|TBO)\b', re.I),
+        re.compile(r'\b(on\s*(?:stock|floor)|in\s*stock|available|ready)\b', re.I),
+        re.compile(r'\blead\s*time\s*\d+\s*(?:days?|weeks?)\b', re.I),
+        re.compile(r'\b\d+\s*(?:-\s*\d+)?\s*(?:days?|weeks?)\b(?:\s*after\s*deposit(?:\s*\w+)?)?', re.I),
+    ]
+    for rx in patterns:
+        m = rx.search(s)
+        if m:
+            parts.append(m.group(0).strip())
+
+    if parts:
+        val = ", ".join(dict.fromkeys(parts))
+        print(f"[DEBUG extractor] availability match in {text!r} → {val}")
+        return val
+
+    print(f"[DEBUG extractor] availability no match in {text!r}")
+    return None
+
+
+def extract_location(text: str):
+    """
+    Detects and normalizes shipment/warehouse location.
+    Examples:
+      'Dap Riga' → 'DAP Riga'
+      'Exw Riga or Loendersloot' → 'EXW Riga or Loendersloot'
+      'Ex Loen' → 'EXW Loendersloot'
+    Returns normalized string with proper capitalization.
+    """
+    if not text:
+        return None
+    s = str(text).strip()
+
+    # --- known city name expansions ---
+    CITY_ALIASES = {
+        "loen": "Loendersloot",
+        "niderland": "Netherlands",
+        "rig": "Riga",
+        "riga": "Riga",
+        "rot": "Rotterdam",
+        "amst": "Amsterdam",
+    }
+
+    # --- match location phrases ---
+    patterns = [
+        re.compile(r'\b(EXW|Exw|Ex|DAP|Dap|FOB|Fob|CIF|Cif)\b[\s\-]*([A-Za-zА-Яа-я\-]+(?:\s+or\s+[A-Za-zА-Яа-я\-]+)?)', re.I),
+        re.compile(r'\b(on\s*floor|warehouse|origin|склад|место\s*загрузки)\b[:\- ]*([A-ZА-Я][A-Za-zА-Яа-я0-9\- ]+)?', re.I),
+    ]
+    print(f"[DEBUG extractor] location start → {text!r}")
+
+    for rx in patterns:
+        m = rx.search(s)
+        if not m:
+            continue
+
+        prefix = m.group(1) if len(m.groups()) >= 1 else None
+        body = m.group(2) if len(m.groups()) >= 2 else ""
+        raw = (prefix or "") + " " + (body or "")
+        raw = raw.strip()
+
+        print(f"[DEBUG extractor] match found: prefix={prefix!r}, body={body!r}, raw={raw!r}")
+
+        # --- normalize prefix ---
+        norm_prefix = None
+        for candidate in ["EXW", "DAP", "FOB", "CIF"]:
+            if raw.lower().startswith(candidate.lower()[:2]):
+                norm_prefix = candidate
+                break
+        
+        #debug start
+        if norm_prefix:
+            print(f"[DEBUG extractor] normalized prefix → {norm_prefix}")
+        else:
+            print(f"[DEBUG extractor] prefix not recognized → raw={raw!r}")
+        #debug end
+
+        # --- expand city names if abbreviated ---
+        parts = raw.split()
+        norm_parts = []
+        for p in parts[1:]:
+            p_clean = p.strip(",. ").lower()
+            expanded = CITY_ALIASES.get(p_clean, CITY_ALIASES.get(p_clean[:4], p))
+            # keep proper capitalization
+            expanded = expanded[0].upper() + expanded[1:] if expanded else p
+            norm_parts.append(expanded)
+            print(f"[DEBUG extractor] city part: {p!r} → expanded={expanded!r}")
+        city_part = " ".join(norm_parts).replace("  ", " ").strip()
+        print(f"[DEBUG extractor] combined city_part → {city_part!r}")
+
+        if norm_prefix and city_part:
+            val = f"{norm_prefix} {city_part}"
+        elif norm_prefix:
+            val = norm_prefix
+        else:
+            val = raw
+
+        # cleanup
+        val = val.replace("  ", " ").strip().rstrip(",")
+        print(f"[DEBUG extractor] location match in {text!r} → {val}")
+        return val
+
+    print(f"[DEBUG extractor] location no match in {text!r}")
+    return None
 

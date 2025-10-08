@@ -79,11 +79,11 @@ PRICE_CASE_PATS = [
 
 AVAILABILITY_PATS = [
     r"stock", r"lead\s*time", r"availability", r"status", r"eta", 
-    r"ready", r"t1", r"t2", r"tbo", r"доступ", r"наличи"
+    r"ready", r"t1", r"t2", r"tbo", r"доступ", r"наличи", r"access"
 ]
 
 LOCATION_PATS = [
-    r"wareh", r"склад", r"origin", r"отгруз", r"exw", r"dap", r"fob", r"cif", r"место\s*загруз"
+    r"wareh", r"склад", r"origin", r"отгруз", r"exw", r"dap", r"fob", r"cif", r"место\s*загруз", r"location"
 ]
 
 

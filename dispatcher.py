@@ -54,6 +54,7 @@ async def dispatch_excel(update, context, supplier_choice=None):
     supplier_name = supplier_sm.get_name()
 
     # проверка перед отдачей пользователю
+    verifier.set_state("logic")
     df_distilled = verifier.run(df_distilled)
     print(verifier.report())
     

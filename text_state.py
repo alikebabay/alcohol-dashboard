@@ -2,6 +2,8 @@ import pandas as pd
 from core.text_parser import parse_text
 from core.name_enricher import filter_and_enrich
 from core.normalizer import normalize_alcohol_df
+from utils.verifier import verifier
+
 
 class TextState:
     def __init__(self, raw_text: str):
@@ -13,15 +15,17 @@ class TextState:
     def run(self) -> pd.DataFrame:
         # 1. сырой текст → DataFrame с уже разобранными колонками
         self.df_raw, self.mapping = parse_text(self.raw_text)
-        print(f"[DEBUG TextState] df_raw shape={self.df_raw.shape}")
-        print(f"[DEBUG TextState] preview:\n{self.df_raw.head()}")
+        
 
         #2. Нормализация и очистка данных
         self.df_norm, _ = normalize_alcohol_df(self.df_raw)
 
         #3. фильтрация и обогащение (этап df_distilled)
         self.df_distilled = filter_and_enrich(self.df_norm, col_name="name")
-        print(f"[DEBUG TextState] df_distilled shape={self.df_distilled.shape}")
+
+        verifier.reset()  # сброс состояния дл логики
+        print("[TextState] verifier.reset() после enrich — пайплайн завершён")
+        
         return self.df_distilled
 
     def get_distilled(self) -> pd.DataFrame:

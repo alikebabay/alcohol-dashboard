@@ -57,6 +57,13 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
 
     df = df.copy()
 
+    # --- отладка: до всего ---
+    print(f"[DEBUG enricher] вход shape={df.shape}, колонки={list(df.columns)}")
+    if "location" in df.columns:
+        print(f"[DEBUG enricher] до чистки location preview:\n{df['location'].head(5).tolist()}")
+    if "access" in df.columns:
+        print(f"[DEBUG enricher] до чистки access preview:\n{df['access'].head(5).tolist()}")
+
     # убираем категории
     mask_cat = df.apply(lambda r: looks_like_category(r[col_name], r), axis=1)
     removed = df[mask_cat]
@@ -69,13 +76,18 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
     # вытащим cl (объем) в отдельную колонку, поиск по нейме и другим колонкам
     
     df["cl"] = df.apply(lambda r: extract_volume_smart(r, df_raw=df_raw), axis=1)
-    
-
 
    # удаляем cl-часть из названия (все токены)
     df[col_name] = df[col_name].map(_remove_volume_tokens)
     # дополнительно чистим от лишних слов и хвостов
     df[col_name] = df[col_name].map(_clean_name_extras)
+
+
+    # --- проверяем, что location/access реально остались ---
+    if "location" in df.columns:
+        print(f"[DEBUG enricher] после восстановления location preview:\n{df['location'].head(5).tolist()}")
+    if "access" in df.columns:
+        print(f"[DEBUG enricher] после восстановления access preview:\n{df['access'].head(5).tolist()}")
 
     # --- запуск верифаера с графовым состоянием ---    
     verifier.set_state("graph")
@@ -90,8 +102,7 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
                 axis=1
             )
             bpc_filled = bpc_before_na - int(df["bottles_per_case"].isna().sum())
-            if bpc_filled:
-                print(f"[DEBUG distillator] дозаполнено bottles_per_case из названия: {bpc_filled}")
+           
 
     if "price_per_case" in df.columns:
         df["price_per_case"] = pd.to_numeric(df["price_per_case"], errors="coerce")

@@ -15,6 +15,8 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
         price_bottle = te.extract_price_per_bottle(line)
         bpc = te.extract_bottles_per_case(line)
         price_case = te.extract_price_per_case(line)
+        access = te.extract_access(line)
+        location = te.extract_location(line)
 
         # если есть bottle + bpc → считаем цену за кейс
         if price_case is None and price_bottle is not None and bpc is not None:
@@ -26,6 +28,8 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
             "bottles_per_case": bpc,
             "price_per_bottle": price_bottle,
             "price_per_case": price_case,
+            "access": access,
+            "location": location,
             "raw": line                  # оригинальная строка для отладки
         })
 

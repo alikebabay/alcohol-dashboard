@@ -29,7 +29,7 @@ def _get_worksheet():
 
 def load_master_from_gsheets() -> pd.DataFrame:
     """Загружает мастер-таблицу из Google Sheets в DataFrame."""
-    print("[DEBUG] load_master_from_gsheets вызвана")
+    
     ws = _get_worksheet()
     data = ws.get_all_records(value_render_option="UNFORMATTED_VALUE")
     if not data:
