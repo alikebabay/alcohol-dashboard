@@ -6,6 +6,7 @@ print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 import re
 import pandas as pd
 from core.distillator import _extract_volume, _infer_bpc_from_name, RX_ABV
+import json
 
 def extract_volume(text: str):
     return _extract_volume(text)
@@ -146,55 +147,78 @@ def extract_access(text: str):
 
 def extract_location(text: str):
     """
-    Detects and normalizes shipment or warehouse *location*.
-    Handles:
-      - EXW / DAP / FOB / CIF patterns
-      - 'in Riga', 'at Rotterdam', 'from Amsterdam'
-      - city aliases (Loen → Loendersloot, Niderland → Netherlands)
-    Returns clean, combined string like:
-      'EXW Riga or Loendersloot'
+    Извлекает и нормализует *локацию поставки/склада*.
+    Принципы:
+      1️⃣ Должен содержать Incoterm (EXW, DAP, CIF, FOB, и т.д.)
+      2️⃣ Должен содержать известное географическое слово (город/страна)
+      3️⃣ Может содержать несколько городов через “or”, “/”, “and”
+      4️⃣ Обычно находится ближе к концу строки
+      5️⃣ Исправляет опечатки (например, “Niderland” → “Netherlands”)
     """
+
     if not text:
         return None
     s = str(text).strip()
 
-    CITY_ALIASES = {
-        "loen": "Loendersloot",
-        "niderland": "Netherlands",
-        "rig": "Riga",
-        "riga": "Riga",
-        "rot": "Rotterdam",
-        "amst": "Amsterdam",
-    }
+    # загрузка словарей
+    with open("aliases/city_aliases.json", encoding="utf-8") as f:
+        CITY_ALIASES = json.load(f)["aliases"]
+    with open("aliases/incoterms_aliases.json", encoding="utf-8") as f:
+        INCOTERM_ALIASES = json.load(f)["aliases"]
 
-    found = []
+    # предварительная очистка и нормализация
+    s = re.sub(r'\s+', ' ', s)
+    s = s.replace(",", ", ").replace("  ", " ").strip()
 
-    # 1️⃣ EXW / DAP / FOB / CIF (поддержка "or")
-    for m in re.finditer(
-        r'\b(EXW|Exw|Ex|DAP|Dap|FOB|Fob|CIF|Cif)\b[\s\-]*([A-Za-zА-Яа-я\-]+(?:\s+or\s+[A-Za-zА-Яа-я\-]+)?)',
-        s, re.I):
-        prefix = m.group(1).upper()
-        cities_raw = m.group(2)
-        parts = []
-        for p in re.split(r'\s+or\s+', cities_raw):
-            p_clean = p.strip(",. ")
-            expanded = CITY_ALIASES.get(p_clean.lower()[:4], p_clean)
-            parts.append(expanded[0].upper() + expanded[1:])
-        found.append(f"{prefix} {' or '.join(parts)}")
+    # ищем incoterm (возможен любой вариант из словаря)
+    incoterm = None
+    for key, val in INCOTERM_ALIASES.items():
+        if re.search(rf'\b{re.escape(key)}\b', s, re.I):
+            incoterm = val.upper()
+            break
 
-    # 2️⃣ in / at / from X
-    for m in re.finditer(r'\b(?:in|at|from)\s+([A-ZА-Я][A-Za-zА-Яа-я\-]+)\b', s, re.I):
-        city = m.group(1)
-        expanded = CITY_ALIASES.get(city.lower()[:4], city)
-        # избегаем дубликатов (например, 'EXW Riga' и 'in Riga')
-        if expanded not in " ".join(found):
-            found.append(expanded[0].upper() + expanded[1:])
-
-    if not found:
+    # если нет инкотерма, ищем конструкцию "in/at/from <city>"
+    if not incoterm:
+        m = re.search(r'\b(?:in|at|from)\s+([A-ZА-Я][A-Za-zА-Яа-я\-]+)\b', s, re.I)
+        if m:
+            city = m.group(1)
+            expanded = CITY_ALIASES.get(city.lower()[:4], city)
+            print(f"[DEBUG extractor] ℹ️ fallback: found city-only location → {expanded!r}")
+            return expanded
+        print(f"[DEBUG extractor] ❌ no incoterm in: {text!r}")
         return None
 
-    # Очистка и объединение
-    val = ", ".join(found)
-    val = re.sub(r'\s+', " ", val).replace(" ,", ",").strip(" ,")
-    return val
 
+    print(f"[DEBUG extractor] 🔍 input: {text!r} | incoterm={incoterm}")
+
+    # выделяем часть ближе к концу строки
+    tail = s[-100:]  # последние 100 символов чаще всего содержат локацию
+
+    # ищем все потенциальные города/страны
+    found_cities = []
+    for alias, canonical in CITY_ALIASES.items():
+        if re.search(rf'\b{re.escape(alias)}\b', tail, re.I):
+            if canonical not in found_cities:
+                found_cities.append(canonical)
+
+    if not found_cities:
+        # нет географических совпадений — мусор
+        print(f"[DEBUG extractor] ❌ discarded: no known cities in tail='{tail}'")
+        return None
+
+    # нормализуем написание: соединяем города через " or " / "/" / "and"
+    clean_parts = []
+    for p in found_cities:
+        p_clean = re.sub(r'\b(or|and|s)\b$', '', p, flags=re.I).strip(",. ")
+        clean_parts.append(p_clean)
+    joined = re.sub(r'\s+', ' ', ' or '.join(clean_parts)).strip()
+    # финальная сборка
+    val = f"{incoterm} {joined}".strip()
+
+    # финальная постпроверка — только если Incoterm + город известен
+    if not any(alias.lower() in val.lower() for alias in CITY_ALIASES.values()):
+        print(f"[DEBUG extractor] ❌ discarded (no alias match): {val!r}")
+        return None
+
+    print(f"[DEBUG extractor] ✅ accepted: {val!r}")
+    return val
