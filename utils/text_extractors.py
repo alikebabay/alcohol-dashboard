@@ -62,7 +62,7 @@ class PriceExtractor:
         self.price_bottle = self._match_any(s, self.RX_BOTTLE)
         if self.price_bottle is not None:
             self.state = "bottle"
-            print(f"[DEBUG extractor] found bottle price → {self.price_bottle}")
+            
             self._derive_case()
             return self._result()
 
@@ -70,13 +70,13 @@ class PriceExtractor:
         self.price_case = self._match_any(s, self.RX_CASE)
         if self.price_case is not None:
             self.state = "case"
-            print(f"[DEBUG extractor] found case price → {self.price_case}")
+            
             self._derive_bottle()
             return self._result()
 
         # 3️⃣ derived nothing
         self.state = "none"
-        print(f"[DEBUG extractor] no price found in {text!r}")
+        
         return self._result()
 
     # --- helpers ---
@@ -96,13 +96,13 @@ class PriceExtractor:
         if self.price_bottle and self.bottles_per_case:
             self.price_case = round(self.price_bottle * self.bottles_per_case, 2)
             self.state = "derived"
-            print(f"[DEBUG extractor] derived case price {self.price_case} = {self.price_bottle}×{self.bottles_per_case}")
+            
 
     def _derive_bottle(self):
         if self.price_case and self.bottles_per_case:
             self.price_bottle = round(self.price_case / self.bottles_per_case, 4)
             self.state = "derived"
-            print(f"[DEBUG extractor] derived bottle price {self.price_bottle} = {self.price_case}/{self.bottles_per_case}")
+            
 
     def _result(self):
         return {
@@ -146,18 +146,18 @@ def extract_access(text: str):
 
 def extract_location(text: str):
     """
-    Detects and normalizes shipment/warehouse location.
-    Examples:
-      'Dap Riga' → 'DAP Riga'
-      'Exw Riga or Loendersloot' → 'EXW Riga or Loendersloot'
-      'Ex Loen' → 'EXW Loendersloot'
-    Returns normalized string with proper capitalization.
+    Detects and normalizes shipment or warehouse *location*.
+    Handles:
+      - EXW / DAP / FOB / CIF patterns
+      - 'in Riga', 'at Rotterdam', 'from Amsterdam'
+      - city aliases (Loen → Loendersloot, Niderland → Netherlands)
+    Returns clean, combined string like:
+      'EXW Riga or Loendersloot'
     """
     if not text:
         return None
     s = str(text).strip()
 
-    # --- known city name expansions ---
     CITY_ALIASES = {
         "loen": "Loendersloot",
         "niderland": "Netherlands",
@@ -167,58 +167,34 @@ def extract_location(text: str):
         "amst": "Amsterdam",
     }
 
-    # --- match location phrases ---
-    patterns = [
-        re.compile(r'\b(EXW|Exw|Ex|DAP|Dap|FOB|Fob|CIF|Cif)\b[\s\-]*([A-Za-zА-Яа-я\-]+(?:\s+or\s+[A-Za-zА-Яа-я\-]+)?)', re.I),
-        re.compile(r'\b(on\s*floor|warehouse|origin|склад|место\s*загрузки)\b[:\- ]*([A-ZА-Я][A-Za-zА-Яа-я0-9\- ]+)?', re.I),
-    ]
-   
+    found = []
 
-    for rx in patterns:
-        m = rx.search(s)
-        if not m:
-            continue
+    # 1️⃣ EXW / DAP / FOB / CIF (поддержка "or")
+    for m in re.finditer(
+        r'\b(EXW|Exw|Ex|DAP|Dap|FOB|Fob|CIF|Cif)\b[\s\-]*([A-Za-zА-Яа-я\-]+(?:\s+or\s+[A-Za-zА-Яа-я\-]+)?)',
+        s, re.I):
+        prefix = m.group(1).upper()
+        cities_raw = m.group(2)
+        parts = []
+        for p in re.split(r'\s+or\s+', cities_raw):
+            p_clean = p.strip(",. ")
+            expanded = CITY_ALIASES.get(p_clean.lower()[:4], p_clean)
+            parts.append(expanded[0].upper() + expanded[1:])
+        found.append(f"{prefix} {' or '.join(parts)}")
 
-        prefix = m.group(1) if len(m.groups()) >= 1 else None
-        body = m.group(2) if len(m.groups()) >= 2 else ""
-        raw = (prefix or "") + " " + (body or "")
-        raw = raw.strip()
+    # 2️⃣ in / at / from X
+    for m in re.finditer(r'\b(?:in|at|from)\s+([A-ZА-Я][A-Za-zА-Яа-я\-]+)\b', s, re.I):
+        city = m.group(1)
+        expanded = CITY_ALIASES.get(city.lower()[:4], city)
+        # избегаем дубликатов (например, 'EXW Riga' и 'in Riga')
+        if expanded not in " ".join(found):
+            found.append(expanded[0].upper() + expanded[1:])
 
-        
+    if not found:
+        return None
 
-        # --- normalize prefix ---
-        norm_prefix = None
-        for candidate in ["EXW", "DAP", "FOB", "CIF"]:
-            if raw.lower().startswith(candidate.lower()[:2]):
-                norm_prefix = candidate
-                break
-        
-
-        # --- expand city names if abbreviated ---
-        parts = raw.split()
-        norm_parts = []
-        for p in parts[1:]:
-            p_clean = p.strip(",. ").lower()
-            expanded = CITY_ALIASES.get(p_clean, CITY_ALIASES.get(p_clean[:4], p))
-            # keep proper capitalization
-            expanded = expanded[0].upper() + expanded[1:] if expanded else p
-            norm_parts.append(expanded)
-            
-        city_part = " ".join(norm_parts).replace("  ", " ").strip()
-        
-
-        if norm_prefix and city_part:
-            val = f"{norm_prefix} {city_part}"
-        elif norm_prefix:
-            val = norm_prefix
-        else:
-            val = raw
-
-        # cleanup
-        val = val.replace("  ", " ").strip().rstrip(",")
-        
-        return val
-
-   
-    return None
+    # Очистка и объединение
+    val = ", ".join(found)
+    val = re.sub(r'\s+', " ", val).replace(" ,", ",").strip(" ,")
+    return val
 

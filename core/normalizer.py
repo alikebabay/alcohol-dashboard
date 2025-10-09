@@ -150,11 +150,11 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     if price_bottle_cols:
         tmp = df[price_bottle_cols].bfill(axis=1)
         out["price_per_bottle"] = pd.to_numeric(tmp.iloc[:, 0], errors="coerce").round(4)
-        print(f"[DEBUG distillator] used existing price_per_bottle column(s): {price_bottle_cols}")
+        
     else:
         out["price_per_bottle"] = out["price_per_case"] / out["bottles_per_case"]
         out["price_per_bottle"] = pd.to_numeric(out["price_per_bottle"], errors="coerce").round(4)
-        print("[DEBUG distillator] calculated price_per_bottle from case and bottles_per_case")
+        
 
     # --- доступность и место загрузки ---
     if avail_cols:
