@@ -1,3 +1,7 @@
+#проверка свежести кода
+import time
+print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+
 # text_extractors.py
 import re
 from core.distillator import _extract_volume, _infer_bpc_from_name, RX_ABV
@@ -18,8 +22,9 @@ def extract_abv(text: str):
 
 def extract_price_per_bottle(text: str):
     """
-    Находит цену за бутылку: '28.75 per bottle', '€28.75/btl', 'Euro 28.75 per bottle',
-    а также '28.75 eur per bottle', 'price per bottle 13.2 eur', 'price 13 eur per bottle'.
+    Detects bottle price patterns like:
+    '€28.75 per bottle', '28.75 eur per bottle', 'price per bottle 13.2 eur',
+    'price 13 eur per bottle', '23 eur per bottle', 'on floor Exw Riga 23 eur per bottle'.
     """
     if not text:
         return None
@@ -38,10 +43,7 @@ def extract_price_per_bottle(text: str):
     for rx in patterns:
         m = rx.search(s)
         if m:
-            val = float(m.group(1).replace(",", "."))
-            
-            return val
-    
+            return float(m.group(1).replace(",", "."))
     return None
 
 

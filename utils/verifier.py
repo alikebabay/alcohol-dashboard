@@ -100,6 +100,21 @@ def check_location_columns(df: pd.DataFrame, messages: list):
                 if numeric_ratio > 0.7:
                     messages.append(f"[WARN] {col} looks numeric ({numeric_ratio:.2%}). Clearing.")
                     df[col] = None
+                    
+        # --- очистка значений колонки cl ---
+        if col.lower() == "cl":
+            before = df[col].copy()
+            df[col] = (
+                df[col]
+                .astype(str)
+                .str.replace(r"(?i)\s*cl\b", "", regex=True)
+                .str.replace(r"(?i)\s*мл\b", "", regex=True)
+                .str.strip()
+            )
+            diff_count = (before != df[col]).sum()
+            if diff_count > 0:
+                messages.append(f"[INFO] cleaned {diff_count} values in column '{col}' (removed 'cl'/'мл').")
+
     return df
 
 

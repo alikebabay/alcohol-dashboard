@@ -97,7 +97,6 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
       - mapping: какие исходные колонки были использованы.
     """
 
-
     df = df_in.copy()
 
     # --- поиск колонок ---
@@ -106,12 +105,13 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     bpc_cols   = [c for c in _find_cols(df, BOTTLES_PER_CASE_PATS) if c not in price_cols]
     avail_cols = _find_cols(df, AVAILABILITY_PATS)
     loc_cols   = _find_cols(df, LOCATION_PATS)
+    price_bottle_cols = _find_cols(df, ["price_per_bottle", "цена за бутылку", "bottle price"])  # новый поиск
 
     mapping = {
         "name": name_cols,
         "bottles_per_case": bpc_cols,
         "price_per_case": price_cols,
-        "price_per_bottle": "calculated",
+        "price_per_bottle": price_bottle_cols or "calculated",
     }
 
 
@@ -146,9 +146,15 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     else:
         out["price_per_case"] = None
 
-    # --- Расчёт цены за бутылку ---
-    out["price_per_bottle"] = out["price_per_case"] / out["bottles_per_case"]
-    out["price_per_bottle"] = pd.to_numeric(out["price_per_bottle"], errors="coerce").round(4)
+    # --- Цена за бутылку (из входных данных или расчетная) ---
+    if price_bottle_cols:
+        tmp = df[price_bottle_cols].bfill(axis=1)
+        out["price_per_bottle"] = pd.to_numeric(tmp.iloc[:, 0], errors="coerce").round(4)
+        print(f"[DEBUG distillator] used existing price_per_bottle column(s): {price_bottle_cols}")
+    else:
+        out["price_per_bottle"] = out["price_per_case"] / out["bottles_per_case"]
+        out["price_per_bottle"] = pd.to_numeric(out["price_per_bottle"], errors="coerce").round(4)
+        print("[DEBUG distillator] calculated price_per_bottle from case and bottles_per_case")
 
     # --- доступность и место загрузки ---
     if avail_cols:
@@ -170,6 +176,7 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     # --- Очистка пустых строк ---
     if name_cols:
         out = out[~out["name"].fillna("").str.strip().eq("")].reset_index(drop=True)
-
+    
+    
 
     return out, mapping
