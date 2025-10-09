@@ -26,7 +26,7 @@ def load_brands(path="tests/multiword_brands.json"):
         re.sub(r"[^a-z0-9 ]", "", b.lower().replace("&", "and")).strip(): b
         for b in brands
     }
-    print(f"[INIT] Loaded {len(normalized)} brands")
+    #print(f"[INIT] Loaded {len(normalized)} brands")
     return normalized
 
 BRANDS = load_brands()
@@ -116,7 +116,7 @@ def score_brand_series(raw, brand_norm, series_norm=None):
 # ==========================================================
 def extract_brand_series(raw: str):
     tokens = [t for t in re.findall(r"[A-Za-z0-9%+]+", raw)]
-    print(f"[TOKENS] {tokens}")
+   # print(f"[TOKENS] {tokens}")
 
    # score brands
     scores = {}
@@ -139,7 +139,7 @@ def extract_brand_series(raw: str):
                 scores[b_orig] = scores.get(b_orig, 0) + 0.25
 
     if not scores:
-        print(f"[DETECT] no brand candidates found in: {raw}")
+        #print(f"[DETECT] no brand candidates found in: {raw}")
         return None, None
 
     # pick highest score, tie-breaker by brand length
@@ -159,7 +159,7 @@ def extract_brand_series(raw: str):
             if valid:
                 series = " ".join(valid[:3])
 
-    print(f"[DETECT] raw={raw!r} → brand={brand!r} (score={scores[brand]}), series={series!r}")
+   # print(f"[DETECT] raw={raw!r} → brand={brand!r} (score={scores[brand]}), series={series!r}")
     return brand, series
 
 # ==========================================================
@@ -209,7 +209,7 @@ def find_canonical(tx, brand, series, raw):
         return None
 
     best = sorted(scored, key=lambda x: (-x[1], len(x[0])))[0][0]
-    print(f"[MATCH] best canonical → {best}")
+    
     return best
 
 
@@ -226,12 +226,14 @@ def normalize_dataframe(df: pd.DataFrame, col_name: str = "Наименован�
         for i, raw in enumerate(df[col].fillna("").astype(str)):
             if not raw.strip():
                 continue
-            print(f"\n[CANON] start: {raw}")
+            
             brand, series = extract_brand_series(raw)
             found = s.execute_read(find_canonical, brand, series, raw)
             if found:
                 df.at[i, col] = found
-                print(f"[CANON] → {found}")
+                # print(f"[CANON] → {found}")
+                pass
             else:
-                print(f"[CANON] no match for {raw}")
+                # print(f"[CANON] no match for {raw}")
+                pass
     return df

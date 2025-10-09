@@ -11,11 +11,11 @@ from typing import Optional
 # Объём вида 50ml, 75cl, 1L, 37.5cl
 # Теперь после ml|cl|l может быть конец строки, пробел, запятая, %, или буква x
 RX_VOLUME = re.compile(
-    r'(?i)(\d{1,4}(?:[.,]\d{1,2})?\s?(?:ml|cl|l))?(?:\b|(?=[x%]))'
+    r'(?i)(\d{1,4}(?:[.,]\d{1,2})?\s?(?:ml|cl|l))(?=\b|[x% ,]|$)'
 )
 # NxVol (12x75cl, 06x1L, 120x5cl) — разрешаем слепленные варианты
 _RX_CASEVOL = re.compile(
-    r'(?i)\b(\d{1,3})\s*[x×]\s*(\d{1,4}(?:[.,]\d{1,2})?)\s*(ml|cl|l)(?:\b|(?=[x%]))'
+    r'(?i)\b(\d{1,3})\s*[x×]\s*(\d{1,4}(?:[.,]\d{1,3})?)\s*(ml|cl|l)(?:\b|(?=[x%]))'
 )
 #особый случай: NxVolxABV (6x100x40%)
 _RX_CASEVOL_ABV = re.compile(
@@ -91,28 +91,39 @@ def _remove_volume_tokens(name: str) -> str:
 def extract_volume_smart(row: pd.Series, df_raw: pd.DataFrame | None = None) -> float | str | None:
     """
     Пытается вытащить объём (cl/ml/l) из разных полей строки:
-    1. name / Наименование
-    2. Size / Size/规格 / 规格
-    3. (если не найдено) ищет в исходном df_raw
+    1. name / Наименование / Description
+    2. Size / 规格 / Size/规格
+    3. (если не найдено) ищет в df_raw по этой же строке
     """
-    possible_fields = ["name", "Наименование", "Size", "Size/规格", "规格"]
+    possible_fields = ["name", "Наименование", "Size", "规格", "Description"]
+    if row.name == 0:
+        print(f"[DEBUG volume_smart] columns in row → {list(row.index)}")
 
-    # основной цикл
-    for field in possible_fields:
-        if field in row and isinstance(row[field], str):
-            val = _extract_volume(row[field])
-            if val:                
-                return val
+    # 1️⃣ Перебираем колонки текущей строки
+    for col in row.index:
+        col_name = str(col).lower()
+        for key in possible_fields:
+            if key.lower() in col_name:
+                cell_val = row[col]
+                if isinstance(cell_val, str):
+                    print(f"[TRACE] checking {col}={cell_val!r}")
+                    val = _extract_volume(cell_val)
+                    if val:
+                        print(f"[DEBUG volume_smart] found {val} from {col}")
+                        return val
 
-    # fallback — поиск в сыром df_raw
-    if df_raw is not None:
+    # 2️⃣ fallback — если есть df_raw и индекс совпадает
+    if df_raw is not None and row.name in df_raw.index:
         for col in df_raw.columns:
-            joined_text = " ".join(df_raw[col].astype(str).tolist())
-            val = _extract_volume(joined_text)
-            if val:
-                return val
+            cell_val = df_raw.at[row.name, col]
+            if isinstance(cell_val, str):
+                val = _extract_volume(cell_val)
+                if val:
+                    print(f"[DEBUG volume_smart] fallback {val} from df_raw[{col}]")
+                    return val
 
     return None
+
 
 
 
