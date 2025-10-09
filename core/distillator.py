@@ -11,12 +11,18 @@ from typing import Optional
 # Объём вида 50ml, 75cl, 1L, 37.5cl
 # Теперь после ml|cl|l может быть конец строки, пробел, запятая, %, или буква x
 RX_VOLUME = re.compile(
-    r'(?i)(\d{1,4}(?:[.,]\d{1,2})?\s?(?:ml|cl|l))(?:\b|(?=[x%]))'
+    r'(?i)(\d{1,4}(?:[.,]\d{1,2})?\s?(?:ml|cl|l))?(?:\b|(?=[x%]))'
 )
 # NxVol (12x75cl, 06x1L, 120x5cl) — разрешаем слепленные варианты
 _RX_CASEVOL = re.compile(
     r'(?i)\b(\d{1,3})\s*[x×]\s*(\d{1,4}(?:[.,]\d{1,2})?)\s*(ml|cl|l)(?:\b|(?=[x%]))'
 )
+#особый случай: NxVolxABV (6x100x40%)
+_RX_CASEVOL_ABV = re.compile(
+    r'(?i)\b\d{1,3}\s*[x×]\s*(\d{1,4}(?:[.,]\d{1,2})?)\s*[x×]\s*\d{1,2}\s*%'
+)
+
+
 # ABV: 40%, 46.3%, можно слепленные (70clx40%)
 RX_ABV = re.compile(
     r'(?i)\b(\d{1,2}(?:[.,]\d)?)\s?%(?:\s*abv)?'
@@ -114,23 +120,26 @@ def _extract_volume(text: str):
     if not isinstance(text, str):
         return None
     s = text.lower().replace('\xa0',' ')
-    # сначала ищем форматы 12x75cl, 6x1l и т.п.
+    # 1) классика: 6x70cl, 12x1l — unit обязателен
     m = _RX_CASEVOL.search(s)
     if m:
-        val, unit = m.group(2), m.group(3).lower()
-    else:
-        m = RX_VOLUME.search(s)
-        if not m:
-            return None
-        # здесь m.group(1) = "75cl", надо разнести
-        val_unit = m.group(0).replace(" ", "").lower()
-        return val_unit   # ← сразу возвращаем как строку ("75cl", "1l", "50ml")
+        val = float(m.group(2).replace(',', '.'))
+        unit = m.group(3).lower()
+        if unit == "ml": return round(val/10, 2)   # 750ml -> 75.0
+        if unit == "l":  return round(val*100, 2)  # 1l -> 100.0
+        return val
 
-    # нормализуем в cl
-    val = float(val.replace(',', '.'))
-    if unit == "ml": return round(val/10, 2)   # 750ml -> 75.0
-    if unit == "l":  return round(val*100, 2)  # 1l -> 100.0
-    return val
+    # 2) особый случай: две 'x' и есть '%': 6x100x15% → берём второе число как объём (в cl)
+    m2 = _RX_CASEVOL_ABV.search(s)
+    if m2:
+        return float(m2.group(1).replace(',', '.'))
+
+    # 3) одиночные форматы: 75cl / 1l / 50ml
+    m = RX_VOLUME.search(s)
+    if not m:
+        return None
+    val_unit = m.group(0).replace(" ", "").lower()
+    return val_unit   # ("75cl", "1l", "50ml")
 
 def _infer_bpc_from_name(text: str) -> float | None:
     """Пытаемся понять bottles_per_case из строки (включая кривые форматы 6x70clx40%)."""

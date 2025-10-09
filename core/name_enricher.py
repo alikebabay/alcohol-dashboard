@@ -91,6 +91,7 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
 
     # --- запуск верифаера с графовым состоянием ---    
     verifier.set_state("graph")
+    df = verifier.run(df)
     print(verifier.report())
 
     # ---- ДОзаполнение и чистка числовых полей ----
