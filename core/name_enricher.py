@@ -105,12 +105,4 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
         if drop_cnt:
             print(f"[DEBUG distillator] удалено без цены: {drop_cnt} (примеры: {df.loc[mask_invalid, col_name].head(5).tolist()})")
         df = df[~mask_invalid].reset_index(drop=True)
-
-    if {"name","bottles_per_case"}.issubset(df.columns):
-        before = len(df)
-        df = df.drop_duplicates(subset=["name","bottles_per_case"], keep="last")
-        removed_dups = before - len(df)
-        if removed_dups:
-            print(f"[DEBUG distillator] удалено дублей: {removed_dups}")
-
     return df

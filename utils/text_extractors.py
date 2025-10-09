@@ -4,6 +4,7 @@ print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
 # text_extractors.py
 import re
+import pandas as pd
 from core.distillator import _extract_volume, _infer_bpc_from_name, RX_ABV
 
 def extract_volume(text: str):
@@ -20,54 +21,96 @@ def extract_abv(text: str):
         return float(m.group(0).replace("%", "").replace(",", "."))
     return None
 
-def extract_price_per_bottle(text: str):
+class PriceExtractor:
     """
-    Detects bottle price patterns like:
-    '€28.75 per bottle', '28.75 eur per bottle', 'price per bottle 13.2 eur',
-    'price 13 eur per bottle', '23 eur per bottle', 'on floor Exw Riga 23 eur per bottle'.
+    Унифицированный извлекатель цен.
+    Состояния:
+      - 'bottle'  → ищет цену за бутылку
+      - 'case'    → ищет цену за кейс
+      - 'derived' → вычисляет недостающую цену из другой и кол-ва бутылок
     """
-    if not text:
-        return None
 
-    s = str(text)
-    patterns = [
-        # вариант: валюта перед числом ("€28.75 per bottle")
-        re.compile(r'(?:@?\s*(?:eur|euro|€|usd|gbp))\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:per\s*bottle|btl)\b', re.I),
-        # вариант: число перед валютой ("28.75 eur per bottle")
+    RX_BOTTLE = [
+        re.compile(r'(?:eur|euro|€|usd|gbp)\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:per\s*bottle|btl)\b', re.I),
         re.compile(r'([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\s*(?:per\s*bottle|btl)\b', re.I),
-        # вариант: price per bottle 13.2 eur
-        re.compile(r'price\s+per\s+bottle\s+([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
-        # вариант: price 13 eur per bottle
-        re.compile(r'price\s+([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\s+per\s+bottle\b', re.I),
+        re.compile(r'price\s+per\s*bottle\s+([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
     ]
-    for rx in patterns:
-        m = rx.search(s)
-        if m:
-            return float(m.group(1).replace(",", "."))
-    return None
 
+    RX_CASE = [
+        re.compile(r'(?:eur|euro|€|usd|gbp)\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:per\s*case|case|cs)\b', re.I),
+        re.compile(r'([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\s*(?:per\s*case|case|cs)\b', re.I),
+        re.compile(r'price\s+per\s*case\s+([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
+    ]
 
-def extract_price_per_case(text: str):
-    """
-    Находит цену за кейс: '172.5 per case', '€172.5/cs', 'price 180 eur per case'
-    """
-    if not text:
+    RX_BPC = re.compile(r'(\d{1,2})\s*[x×]\s*\d{1,3}', re.I)
+
+    def __init__(self):
+        self.state = "init"
+        self.price_bottle = None
+        self.price_case = None
+        self.bottles_per_case = None
+
+    # --- main entry ---
+    def extract(self, text: str) -> dict:
+        if not text:
+            return {}
+
+        s = str(text)
+        self._extract_bpc(s)
+
+        # 1️⃣ bottle price direct
+        self.price_bottle = self._match_any(s, self.RX_BOTTLE)
+        if self.price_bottle is not None:
+            self.state = "bottle"
+            print(f"[DEBUG extractor] found bottle price → {self.price_bottle}")
+            self._derive_case()
+            return self._result()
+
+        # 2️⃣ case price direct
+        self.price_case = self._match_any(s, self.RX_CASE)
+        if self.price_case is not None:
+            self.state = "case"
+            print(f"[DEBUG extractor] found case price → {self.price_case}")
+            self._derive_bottle()
+            return self._result()
+
+        # 3️⃣ derived nothing
+        self.state = "none"
+        print(f"[DEBUG extractor] no price found in {text!r}")
+        return self._result()
+
+    # --- helpers ---
+    def _match_any(self, text, patterns):
+        for rx in patterns:
+            m = rx.search(text)
+            if m:
+                return float(m.group(1).replace(",", "."))
         return None
-    s = str(text)
-    patterns = [
-        # стандарт: "€183 per case"
-        re.compile(r'(?:@?\s*(?:eur|euro|€|usd|gbp))?\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:per\s*case|case|cs)\b', re.I),
-        # вариант: "price 180 eur per case"
-        re.compile(r'price\s+([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\s+per\s*case\b', re.I),
-    ]
-    for rx in patterns:
-        m = rx.search(s)
+
+    def _extract_bpc(self, text):
+        m = self.RX_BPC.search(text)
         if m:
-            val = float(m.group(1).replace(",", "."))
-            
-            return val
-    
-    return None
+            self.bottles_per_case = int(m.group(1))
+
+    def _derive_case(self):
+        if self.price_bottle and self.bottles_per_case:
+            self.price_case = round(self.price_bottle * self.bottles_per_case, 2)
+            self.state = "derived"
+            print(f"[DEBUG extractor] derived case price {self.price_case} = {self.price_bottle}×{self.bottles_per_case}")
+
+    def _derive_bottle(self):
+        if self.price_case and self.bottles_per_case:
+            self.price_bottle = round(self.price_case / self.bottles_per_case, 4)
+            self.state = "derived"
+            print(f"[DEBUG extractor] derived bottle price {self.price_bottle} = {self.price_case}/{self.bottles_per_case}")
+
+    def _result(self):
+        return {
+            "state": self.state,
+            "price_bottle": self.price_bottle,
+            "price_case": self.price_case,
+            "bottles_per_case": self.bottles_per_case,
+        }
 
 
 def extract_access(text: str):
