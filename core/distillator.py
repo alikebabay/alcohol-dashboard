@@ -96,8 +96,7 @@ def extract_volume_smart(row: pd.Series, df_raw: pd.DataFrame | None = None) -> 
     3. (если не найдено) ищет в df_raw по этой же строке
     """
     possible_fields = ["name", "Наименование", "Size", "规格", "Description"]
-    if row.name == 0:
-        print(f"[DEBUG volume_smart] columns in row → {list(row.index)}")
+    
 
     # 1️⃣ Перебираем колонки текущей строки
     for col in row.index:
@@ -106,10 +105,10 @@ def extract_volume_smart(row: pd.Series, df_raw: pd.DataFrame | None = None) -> 
             if key.lower() in col_name:
                 cell_val = row[col]
                 if isinstance(cell_val, str):
-                    print(f"[TRACE] checking {col}={cell_val!r}")
+                    
                     val = _extract_volume(cell_val)
                     if val:
-                        print(f"[DEBUG volume_smart] found {val} from {col}")
+                        
                         return val
 
     # 2️⃣ fallback — если есть df_raw и индекс совпадает
@@ -119,7 +118,7 @@ def extract_volume_smart(row: pd.Series, df_raw: pd.DataFrame | None = None) -> 
             if isinstance(cell_val, str):
                 val = _extract_volume(cell_val)
                 if val:
-                    print(f"[DEBUG volume_smart] fallback {val} from df_raw[{col}]")
+                    
                     return val
 
     return None

@@ -92,10 +92,10 @@ def extract_access(text: str):
 
     if parts:
         val = ", ".join(dict.fromkeys(parts))
-        print(f"[DEBUG extractor] availability match in {text!r} → {val}")
+        
         return val
 
-    print(f"[DEBUG extractor] availability no match in {text!r}")
+    
     return None
 
 
@@ -127,7 +127,7 @@ def extract_location(text: str):
         re.compile(r'\b(EXW|Exw|Ex|DAP|Dap|FOB|Fob|CIF|Cif)\b[\s\-]*([A-Za-zА-Яа-я\-]+(?:\s+or\s+[A-Za-zА-Яа-я\-]+)?)', re.I),
         re.compile(r'\b(on\s*floor|warehouse|origin|склад|место\s*загрузки)\b[:\- ]*([A-ZА-Я][A-Za-zА-Яа-я0-9\- ]+)?', re.I),
     ]
-    print(f"[DEBUG extractor] location start → {text!r}")
+   
 
     for rx in patterns:
         m = rx.search(s)
@@ -139,7 +139,7 @@ def extract_location(text: str):
         raw = (prefix or "") + " " + (body or "")
         raw = raw.strip()
 
-        print(f"[DEBUG extractor] match found: prefix={prefix!r}, body={body!r}, raw={raw!r}")
+        
 
         # --- normalize prefix ---
         norm_prefix = None
@@ -148,12 +148,6 @@ def extract_location(text: str):
                 norm_prefix = candidate
                 break
         
-        #debug start
-        if norm_prefix:
-            print(f"[DEBUG extractor] normalized prefix → {norm_prefix}")
-        else:
-            print(f"[DEBUG extractor] prefix not recognized → raw={raw!r}")
-        #debug end
 
         # --- expand city names if abbreviated ---
         parts = raw.split()
@@ -164,9 +158,9 @@ def extract_location(text: str):
             # keep proper capitalization
             expanded = expanded[0].upper() + expanded[1:] if expanded else p
             norm_parts.append(expanded)
-            print(f"[DEBUG extractor] city part: {p!r} → expanded={expanded!r}")
+            
         city_part = " ".join(norm_parts).replace("  ", " ").strip()
-        print(f"[DEBUG extractor] combined city_part → {city_part!r}")
+        
 
         if norm_prefix and city_part:
             val = f"{norm_prefix} {city_part}"
@@ -177,9 +171,9 @@ def extract_location(text: str):
 
         # cleanup
         val = val.replace("  ", " ").strip().rstrip(",")
-        print(f"[DEBUG extractor] location match in {text!r} → {val}")
+        
         return val
 
-    print(f"[DEBUG extractor] location no match in {text!r}")
+   
     return None
 
