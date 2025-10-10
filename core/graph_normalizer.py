@@ -116,7 +116,7 @@ def score_brand_series(raw, brand_norm, series_norm=None):
 # ==========================================================
 def extract_brand_series(raw: str):
     tokens = [t for t in re.findall(r"[A-Za-z0-9%+]+", raw)]
-    print(f"[TOKENS] {tokens}")
+   
 
    # score brands
     scores = {}
@@ -137,6 +137,7 @@ def extract_brand_series(raw: str):
             # allow weak partial matches (for fuzzy names like glenfiddich / glen)
             elif len(t_norm) >= 4 and t_norm in b_norm:
                 scores[b_orig] = scores.get(b_orig, 0) + 0.25
+    
 
     if not scores:
         print(f"[DETECT] no brand candidates found in: {raw}")
@@ -144,6 +145,7 @@ def extract_brand_series(raw: str):
 
     # pick highest score, tie-breaker by brand length
     brand = sorted(scores.items(), key=lambda x: (-x[1], -len(x[0])))[0][0]
+    
 
     # extract series
     idx = _normalize(raw).find(_normalize(brand))
@@ -159,7 +161,7 @@ def extract_brand_series(raw: str):
             if valid:
                 series = " ".join(valid[:3])
 
-    print(f"[DETECT] raw={raw!r} → brand={brand!r} (score={scores[brand]}), series={series!r}")
+   
     return brand, series
 
 # ==========================================================

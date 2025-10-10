@@ -1,6 +1,7 @@
 import pandas as pd
 import utils.text_extractors as te
 from utils.text_extractors import PriceExtractor
+from core.location_assistant import LocationAssistant
 
 def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
     """
@@ -9,32 +10,30 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
     """
     rows = []
     extractor = PriceExtractor()
-    for line in raw_text.splitlines():
-        line = line.strip()
+
+    # ← добавили: заранее посчитать финальные локации
+    assistant = LocationAssistant(te.extract_location)
+    assistant.prepare(raw_text)
+    all_lines = assistant.lines()
+    final_locations = assistant.resolve_locations()
+
+    for idx, raw in enumerate(all_lines):
+        line = raw.strip()
         if not line:
             continue
 
-        #цены
         result = extractor.extract(line)
-        price_bottle = result.get("price_bottle")
-        price_case = result.get("price_case")
-        bpc = result.get("bottles_per_case")
-
-        access = te.extract_access(line)
-        location = te.extract_location(line)
-
-
         rows.append({
-            "name": line,                # пока кладём полное имя, очистка в filter_and_enrich
+            "name": line,
             "cl": te.extract_volume(line),
-            "bottles_per_case": bpc,
-            "price_per_bottle": price_bottle,
-            "price_per_case": price_case,
-            "access": access,
-            "location": location,
-            "raw": line                  # оригинальная строка для отладки
+            "bottles_per_case": result.get("bottles_per_case"),
+            "price_per_bottle": result.get("price_bottle"),
+            "price_per_case": result.get("price_case"),
+            "access": te.extract_access(line),          # access не трогаем
+            "location": final_locations[idx],           # ← готовое решение помощника
+            "raw": line
         })
 
     df = pd.DataFrame(rows)
-    mapping = {"source": "text"}
-    return df, mapping
+    mapping = {"source": "text"}   # ← как у вас
+    return df, mapping             # ← как у вас

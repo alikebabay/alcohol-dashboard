@@ -5,8 +5,11 @@ print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 # text_extractors.py
 import re
 import pandas as pd
-from core.distillator import _extract_volume, _infer_bpc_from_name, RX_ABV
 import json
+
+from core.distillator import _extract_volume, _infer_bpc_from_name, RX_ABV
+from utils.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC
+
 
 def extract_volume(text: str):
     return _extract_volume(text)
@@ -31,19 +34,10 @@ class PriceExtractor:
       - 'derived' → вычисляет недостающую цену из другой и кол-ва бутылок
     """
 
-    RX_BOTTLE = [
-        re.compile(r'(?:eur|euro|€|usd|gbp)\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:per\s*bottle|btl)\b', re.I),
-        re.compile(r'([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\s*(?:per\s*bottle|btl)\b', re.I),
-        re.compile(r'price\s+per\s*bottle\s+([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
-    ]
-
-    RX_CASE = [
-        re.compile(r'(?:eur|euro|€|usd|gbp)\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:per\s*case|case|cs)\b', re.I),
-        re.compile(r'([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\s*(?:per\s*case|case|cs)\b', re.I),
-        re.compile(r'price\s+per\s*case\s+([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
-    ]
-
-    RX_BPC = re.compile(r'(\d{1,2})\s*[x×]\s*\d{1,3}', re.I)
+    # берём из единого источника
+    RX_BOTTLE = RX_BOTTLE
+    RX_CASE = RX_CASE
+    RX_BPC = RX_BPC
 
     def __init__(self):
         self.state = "init"
