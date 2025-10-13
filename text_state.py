@@ -21,7 +21,14 @@ class TextState:
         self.df_norm, _ = normalize_alcohol_df(self.df_raw)
 
         #3. фильтрация и обогащение (этап df_distilled)
+        #debug code
+        print(f"[DEBUG] df_norm.shape={self.df_norm.shape}")
+        print(self.df_norm.head(3))
+        #debug code
         self.df_distilled = filter_and_enrich(self.df_norm, col_name="name")
+        #debug code
+        print(f"[DEBUG] df_distilled={type(self.df_distilled)}, shape={getattr(self.df_distilled, 'shape', None)}")
+        #debug code
 
         verifier.reset()  # сброс состояния дл логики
         print("[TextState] verifier.reset() после enrich — пайплайн завершён")

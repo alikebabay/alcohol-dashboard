@@ -3,6 +3,9 @@ import utils.text_extractors as te
 from utils.text_extractors import PriceExtractor
 from core.location_assistant import LocationAssistant
 
+
+print(PriceExtractor().extract("Dom Perignon vintage naked 6 x 75cl at 143 USD"))
+
 def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
     """
     Базовый адаптер: превращает сырой текст в DataFrame

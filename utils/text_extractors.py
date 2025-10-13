@@ -177,13 +177,13 @@ def extract_location(text: str):
         if m:
             city = m.group(1)
             expanded = CITY_ALIASES.get(city.lower()[:4], city)
-            print(f"[DEBUG extractor] ℹ️ fallback: found city-only location → {expanded!r}")
+            
             return expanded
-        print(f"[DEBUG extractor] ❌ no incoterm in: {text!r}")
+        
         return None
 
 
-    print(f"[DEBUG extractor] 🔍 input: {text!r} | incoterm={incoterm}")
+   
 
     # выделяем часть ближе к концу строки
     tail = s[-100:]  # последние 100 символов чаще всего содержат локацию
@@ -197,7 +197,7 @@ def extract_location(text: str):
 
     if not found_cities:
         # нет географических совпадений — мусор
-        print(f"[DEBUG extractor] ❌ discarded: no known cities in tail='{tail}'")
+        
         return None
 
     # нормализуем написание: соединяем города через " or " / "/" / "and"
@@ -211,8 +211,8 @@ def extract_location(text: str):
 
     # финальная постпроверка — только если Incoterm + город известен
     if not any(alias.lower() in val.lower() for alias in CITY_ALIASES.values()):
-        print(f"[DEBUG extractor] ❌ discarded (no alias match): {val!r}")
+        
         return None
 
-    print(f"[DEBUG extractor] ✅ accepted: {val!r}")
+    
     return val

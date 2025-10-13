@@ -16,8 +16,9 @@ class LocationAssistant:
 
     RX_SIGNATURE = re.compile(r"(kind\s+regards|best\s+regards|www\.|@\w+\.\w+|mobile|whatsapp|phone)", re.I)
 
-    def __init__(self, extract_location_fn: Callable[[str], Optional[str]]):
+    def __init__(self, extract_location_fn: Callable[[str], Optional[str]],*, single_message: bool = True):
         self._extract_location = extract_location_fn
+        self._single_message = single_message
         self._lines: List[str] = []
         self._final: List[Optional[str]] = []
 
@@ -39,6 +40,7 @@ class LocationAssistant:
         header_hint: Optional[str] = None
         in_block = False
         block_start: Optional[int] = None
+        last_block: Optional[tuple[int, int]] = None  # (start, end_inclusive)
 
         def is_blank(i): return not self._lines[i].strip()
         def is_signature(i): return bool(self.RX_SIGNATURE.search(self._lines[i]))
@@ -56,8 +58,6 @@ class LocationAssistant:
         def apply_footer_back(start_idx: int, end_idx_excl: int, loc: str):
             j = end_idx_excl - 1
             while j >= (start_idx if start_idx is not None else 0):
-                if is_blank(j):
-                    break
                 if ctx_location(j):  # не перескакиваем другой контекст
                     break
                 if is_product(j) and self._final[j] is None:
@@ -67,9 +67,13 @@ class LocationAssistant:
         for i, raw in enumerate(self._lines):
             s = raw.strip()
             if not s:
-                in_block = False
-                block_start = None
-                continue
+                # закрываем текущий блок и запоминаем его границы
+               if in_block and block_start is not None:
+                   last_block = (block_start, i - 1)
+                   print(f"[DEBUG location] 📦 Закрыт блок товаров {last_block}")
+               in_block = False
+               block_start = None
+               continue
             if is_signature(i):
                 continue
 
@@ -78,20 +82,42 @@ class LocationAssistant:
                 if not in_block:
                     in_block = True
                     block_start = i
+                    print(f"[DEBUG location] ▶️ Новый блок товаров с {block_start}")
                 inline_loc = self._extract_location(self._lines[i])
                 if inline_loc:
                     self._final[i] = inline_loc   # ← inline-приоритет, футер не трогает
+                    print(f"[DEBUG location] 📍 Inline-локация для строки {i}: {inline_loc}")
                 elif header_hint and self._final[i] is None:
                     self._final[i] = header_hint  # временно, может перекрыться футером позже
+                    print(f"[DEBUG location] ↪️  Применён header-hint '{header_hint}' для строки {i}")
                 continue
 
             # 2) контекст (header/footer)
             loc_ctx = ctx_location(i)
             if loc_ctx:
-                if not in_block:
-                    header_hint = loc_ctx          # HEADER → вперёд
+                if in_block:
+                    # FOOTER внутри текущего блока
+                    apply_footer_back(block_start, i, loc_ctx)
+                    print(f"[DEBUG location] 🔻 Footer внутри блока {block_start}–{i}: {loc_ctx}")
                 else:
-                    apply_footer_back(block_start, i, loc_ctx)  # FOOTER → назад
+                    # Возможный FOOTER сразу после блока (через пустую строку)
+                    if last_block is not None:
+                        start, end_incl = last_block
+                        # допускаем маленький «зазор» из пустых строк между блоком и footer
+                        gap_is_blank = all(is_blank(k) for k in range(end_incl + 1, i))
+                        if gap_is_blank:
+                            # применяем footer к последнему блоку
+                            apply_footer_back(start, end_incl + 1, loc_ctx)
+                            # если письмо одно — растягиваем footer на все предыдущие товарные строки
+                            if self._single_message:
+                                apply_footer_back(0, end_incl + 1, loc_ctx)
+                            # применили как footer, не записываем в header_hint
+                            last_block = None
+                            print(f"[DEBUG location] 🔙 Footer после блока {start}–{end_incl}: {loc_ctx}")
+                            continue
+                    # иначе это реальный HEADER → вперёд
+                    header_hint = loc_ctx
+                    print(f"[DEBUG location] ⬆️ Header-hint установлен: {header_hint}")
                 continue
             # остальное игнор
 
