@@ -21,6 +21,14 @@ def upload_json_to_graph(path):
         session.run("MATCH (n) DETACH DELETE n")
         print("✅ Database cleared.")
 
+        # 2️⃣ Убедимся, что все типы связей объявлены (во избежание warning'ов)
+        print("🧩 Ensuring relationship types exist...")
+        session.run("CALL db.createRelationshipType('HAS_SERIES')")
+        session.run("CALL db.createRelationshipType('HAS_VARIANT')")
+        session.run("CALL db.createRelationshipType('HAS_CANONICAL')")
+        session.run("CALL db.createRelationshipType('SAME_AS')")
+        print("✅ Relationship types ready.")
+
     with driver.session(database="neo4j") as session:
         res = session.run("RETURN 1 AS ok").single()
         print("✅ Connected to Neo4j:", res["ok"])
@@ -74,6 +82,16 @@ def upload_json_to_graph(path):
 
     print(f"✅ Uploaded {len(data)} canonical alcohol groups into Neo4j")
 
+# ==========================================================
+# 🧮 Обновлённые Cypher-запросы (для поиска серий)
+# ----------------------------------------------------------
+# заменяем ':HAS_SERIES|:HAS_VARIANT' → ':HAS_SERIES|HAS_VARIANT'
+# ==========================================================
+
+# Пример использования:
+# MATCH (b:Brand)-[:HAS_SERIES|HAS_VARIANT]->(s:Series)
+# WHERE toLower(replace(b.name,'&','and')) CONTAINS $bn
+# RETURN DISTINCT s.name AS name
 
 if __name__ == "__main__":
     upload_json_to_graph(r"tests\\canonical_mapping_master.json")

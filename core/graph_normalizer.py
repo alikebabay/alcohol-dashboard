@@ -125,7 +125,8 @@ def build_series_resolver(driver):
         bnorm = _normalize(brand)
         with driver.session() as s:
             rows = s.run("""
-                MATCH (b:Brand)-[:HAS_SERIES|:HAS_VARIANT]->(s:Series)
+                // ⚙️ исправлено: убран депрекейтнутый синтаксис ':HAS_SERIES|:HAS_VARIANT'
+                MATCH (b:Brand)-[:HAS_SERIES|HAS_VARIANT]->(s:Series)
                 WHERE toLower(replace(b.name,'&','and')) CONTAINS $bn
                 RETURN DISTINCT s.name AS name
             """, bn=bnorm).values()
@@ -188,8 +189,7 @@ class BrandSeriesExtractor:
         brand = self.last_brand
         brand_norm = _normalize(brand)
 
-        print(f"[DEBUG] handle_brand: last_brand={brand}, raw={raw_norm}")
-        print(f"[DEBUG] check: brand_norm in raw_norm? {brand_norm in raw_norm}")
+        
 
         # 1️⃣ если строка всё ещё содержит бренд — ищем серию после него
         if brand_norm in raw_norm:
@@ -259,11 +259,13 @@ class BrandSeriesExtractor:
     # ==========================================================
     # Базовая логика извлечения бренда/серии (как раньше)
     # ==========================================================
+    
     def _extract_brand_series(self, raw: str):
         """Оригинальная версия без FSM-ограничений (мягкий скоринг, полное сканирование)."""
         tokens = [t for t in re.findall(r"[A-Za-z0-9%+]+", raw)]
+        print(f"[TOKENS] {tokens}")
         scores = {}
-
+        print(f"[SCORES] {scores}")
         for token in tokens[:6]:  # ограничиваем первые токены
             t_norm = _normalize(token)
             if len(t_norm) < 3 or t_norm.isdigit():

@@ -7,6 +7,7 @@ import re
 import pandas as pd
 import json
 
+
 from core.distillator import _extract_volume, _infer_bpc_from_name, RX_ABV
 from utils.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC
 
@@ -24,6 +25,7 @@ def extract_abv(text: str):
     if m:
         return float(m.group(0).replace("%", "").replace(",", "."))
     return None
+
 
 class PriceExtractor:
     """
@@ -44,6 +46,8 @@ class PriceExtractor:
         self.price_bottle = None
         self.price_case = None
         self.bottles_per_case = None
+        
+
 
     # --- main entry ---
     def extract(self, text: str) -> dict:
@@ -51,27 +55,73 @@ class PriceExtractor:
             return {}
 
         s = str(text)
-        self._extract_bpc(s)
+        print(f"\n[DEBUG] raw: {s}")       
 
-        # 1️⃣ bottle price direct
+        self._extract_bpc(s)
+        print(f"[DEBUG] bottles_per_case: {self.bottles_per_case}")
+
+        # 🧠 Предварительная эвристика: если явно указано 'cases' → считаем ценой за кейс
+        if re.search(r'\bcases?\b', s, re.I):
+            m = re.search(r'at\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', s, re.I)
+            if m:
+                self.price_case = float(m.group(1).replace(",", "."))
+                self.state = "case"
+                self._derive_bottle()
+                print(f"[DEBUG] early heuristic→case, derived bottle={self.price_bottle}")
+                return self._result()
+
+        # 1️⃣ явные указания (per bottle / per case)
         self.price_bottle = self._match_any(s, self.RX_BOTTLE)
+        print(f"[DEBUG] direct bottle price: {self.price_bottle}")
         if self.price_bottle is not None:
             self.state = "bottle"
             
             self._derive_case()
+            print(f"[DEBUG] derived case price: {self.price_case}")
             return self._result()
 
-        # 2️⃣ case price direct
+       
         self.price_case = self._match_any(s, self.RX_CASE)
+        print(f"[DEBUG] direct case price: {self.price_case}")
         if self.price_case is not None:
             self.state = "case"
             
             self._derive_bottle()
+            print(f"[DEBUG] derived bottle price: {self.price_bottle}")
             return self._result()
+
+        # 2️⃣  эвристика по контексту
+        at_match = re.search(r'at\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', s, re.I)
+        print(f"[DEBUG] at_match: {bool(at_match)}")
+        if at_match:
+            val = float(at_match.group(1).replace(',', '.'))
+            has_cases = re.search(r'\bcases?\b', s, re.I)
+            has_bpc = bool(self.RX_BPC.search(s))
+            print(f"[DEBUG] heuristic: value={val}, has_cases={bool(has_cases)}, has_bpc={has_bpc}")
+ 
+
+            # если есть 'cases' — считаем ценой за кейс
+            if has_cases:
+                self.price_case = val
+                self.state = "case"
+                self._derive_bottle()
+                print(f"[DEBUG] heuristic→case, derived bottle={self.price_bottle}")
+                return self._result()
+
+            # если нет 'cases', но есть 6x75cl/12x70cl — считаем ценой за бутылку
+            if has_bpc:
+                self.price_bottle = val
+                self.state = "bottle"
+                self._derive_case()
+                print(f"[DEBUG] heuristic→bottle, derived case={self.price_case}")
+                return self._result()
+                return self._result()
+
+
 
         # 3️⃣ derived nothing
         self.state = "none"
-        
+        print(f"[DEBUG] nothing matched, state=none")
         return self._result()
 
     # --- helpers ---
@@ -79,25 +129,30 @@ class PriceExtractor:
         for rx in patterns:
             m = rx.search(text)
             if m:
-                return float(m.group(1).replace(",", "."))
+                val = float(m.group(1).replace(",", "."))
+                print(f"[DEBUG] matched regex: {rx.pattern} → {val}")
+                return val
         return None
 
     def _extract_bpc(self, text):
         m = self.RX_BPC.search(text)
         if m:
             self.bottles_per_case = int(m.group(1))
+            print(f"[DEBUG] RX_BPC matched: {m.group(0)} → {self.bottles_per_case}")
+           
+ 
 
     def _derive_case(self):
         if self.price_bottle and self.bottles_per_case:
             self.price_case = round(self.price_bottle * self.bottles_per_case, 2)
             self.state = "derived"
-            
+          
 
     def _derive_bottle(self):
         if self.price_case and self.bottles_per_case:
             self.price_bottle = round(self.price_case / self.bottles_per_case, 4)
             self.state = "derived"
-            
+           
 
     def _result(self):
         return {

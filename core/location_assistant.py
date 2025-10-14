@@ -70,7 +70,7 @@ class LocationAssistant:
                 # закрываем текущий блок и запоминаем его границы
                if in_block and block_start is not None:
                    last_block = (block_start, i - 1)
-                   print(f"[DEBUG location] 📦 Закрыт блок товаров {last_block}")
+                   
                in_block = False
                block_start = None
                continue
@@ -82,14 +82,14 @@ class LocationAssistant:
                 if not in_block:
                     in_block = True
                     block_start = i
-                    print(f"[DEBUG location] ▶️ Новый блок товаров с {block_start}")
+                    
                 inline_loc = self._extract_location(self._lines[i])
                 if inline_loc:
                     self._final[i] = inline_loc   # ← inline-приоритет, футер не трогает
-                    print(f"[DEBUG location] 📍 Inline-локация для строки {i}: {inline_loc}")
+                    
                 elif header_hint and self._final[i] is None:
                     self._final[i] = header_hint  # временно, может перекрыться футером позже
-                    print(f"[DEBUG location] ↪️  Применён header-hint '{header_hint}' для строки {i}")
+                    
                 continue
 
             # 2) контекст (header/footer)
@@ -117,7 +117,7 @@ class LocationAssistant:
                             continue
                     # иначе это реальный HEADER → вперёд
                     header_hint = loc_ctx
-                    print(f"[DEBUG location] ⬆️ Header-hint установлен: {header_hint}")
+                   
                 continue
             # остальное игнор
 
