@@ -110,59 +110,228 @@ def score_brand_series(raw, brand_norm, series_norm=None):
 
     return base
 
+# ==========================================================
+# GRAPH SERIES RESOLVER (упрощённая)
+# ==========================================================
+def build_series_resolver(driver):
+    """
+    Возвращает функцию resolve(brand)->list[str].
+    Ищет серии, связанные с брендом, в графе.
+    Если ничего не найдено — возвращает None и пишет предупреждение.
+    """
+    def resolve(brand: str):
+        if not brand:
+            return None
+        bnorm = _normalize(brand)
+        with driver.session() as s:
+            rows = s.run("""
+                MATCH (b:Brand)-[:HAS_SERIES|:HAS_VARIANT]->(s:Series)
+                WHERE toLower(replace(b.name,'&','and')) CONTAINS $bn
+                RETURN DISTINCT s.name AS name
+            """, bn=bnorm).values()
+        if not rows:
+            print(f"[GRAPH] no series found for brand: {brand}")
+            return None
+        series = [r[0] for r in rows if r and len(r[0]) > 1]
+        print(f"[GRAPH] found {len(series)} series for brand: {brand}")
+        return series
+    return resolve
+
 
 # ==========================================================
 # BRAND + SERIES DETECTION
 # ==========================================================
-def extract_brand_series(raw: str):
-    tokens = [t for t in re.findall(r"[A-Za-z0-9%+]+", raw)]
-   
+class BrandSeriesExtractor:
+    """
+    Состояние-машина для последовательной обработки строк.
+    Управляет контекстом (INIT → BRAND → INIT).
+    """
 
-   # score brands
-    scores = {}
-    for token in tokens[:6]:  # limit to first 6 tokens for sanity
-        t_norm = _normalize(token)
-        # skip meaningless tokens (short, numeric)
-        if len(t_norm) < 3 or t_norm.isdigit():
-            continue
+    def __init__(self, brands_dict, series_resolver=None):
+        self.state = "INIT"
+        self.last_brand = None
+        self.brands = brands_dict
+        # callback: series_resolver(brand:str) -> list[str] (из графа)
+        self.series_resolver = series_resolver
+        self._series_cache = {}  # cache: norm_brand -> list[str]
 
-        for b_norm, b_orig in BRANDS.items():
-            sc = score_brand_series(raw, b_norm)
-            if sc > 0:
-                scores[b_orig] = sc
-            b_tokens = b_norm.split()
-            # prefer exact token matches
-            if t_norm in b_tokens or t_norm == b_norm:
-                scores[b_orig] = scores.get(b_orig, 0) + 1
-            # allow weak partial matches (for fuzzy names like glenfiddich / glen)
-            elif len(t_norm) >= 4 and t_norm in b_norm:
-                scores[b_orig] = scores.get(b_orig, 0) + 0.25
-    
+    # ==========================================================
+    # Публичный метод
+    # ==========================================================
+    def extract(self, raw: str):
+        raw_norm = _normalize(raw)
 
-    if not scores:
-        print(f"[DETECT] no brand candidates found in: {raw}")
+        if self.state == "INIT":
+            return self._handle_init(raw, raw_norm)
+        elif self.state == "BRAND":
+            return self._handle_brand(raw, raw_norm)
+        else:
+            raise RuntimeError(f"Unknown state {self.state}")
+
+    # ==========================================================
+    # INIT → ищем новый бренд
+    # ==========================================================
+    def _handle_init(self, raw, raw_norm):
+        brand, series = self._extract_brand_series(raw)
+        if brand:
+            self.last_brand = brand
+            self.state = "BRAND"
+            print(f"[STATE] INIT → BRAND ({brand})")
+        else:
+            print(f"[STATE] INIT stays INIT (no brand)")
+        return brand, series
+
+    # ==========================================================
+    # BRAND → ищем только серии внутри текущего бренда
+    # ==========================================================
+    def _handle_brand(self, raw, raw_norm):
+        brand = self.last_brand
+        brand_norm = _normalize(brand)
+
+        print(f"[DEBUG] handle_brand: last_brand={brand}, raw={raw_norm}")
+        print(f"[DEBUG] check: brand_norm in raw_norm? {brand_norm in raw_norm}")
+
+        # 1️⃣ если строка всё ещё содержит бренд — ищем серию после него
+        if brand_norm in raw_norm:
+            series = self._extract_series_after_brand(raw, brand_norm)
+            if series:
+                print(f"[STATE] BRAND (brand present, found series; keep {brand})")
+                return brand, series
+            print(f"[STATE] BRAND (brand present, no series; keep {brand})")
+            return brand, None
+
+        # 2️⃣ если бренд не встречается — пробуем искать серии этого бренда в строке
+        # (например, "Rose Imperial" для "Moet & Chandon")
+        series = self._extract_series_for_brand_via_graph(raw, brand)
+        if series:
+            print(f"[STATE] BRAND (series via graph; keep {brand})")
+            return brand, series
+
+        # 3️⃣ если серии текущего бренда не нашли — ищем новый бренд
+        new_brand, new_series = self._extract_brand_series(raw)
+        if new_brand:
+            print(f"[STATE] BRAND → BRAND ({brand} → {new_brand})")
+            self.last_brand = new_brand
+            return new_brand, new_series
+
+        # 4️⃣ если не нашли ни серию, ни бренд — сбрасываем
+        print(f"[STATE] BRAND → INIT (no brand/series context)")
+        self.state = "INIT"
+        self.last_brand = None
         return None, None
+    
+    
+    # ==========================================================
+    # серии для текущего бренда через граф (Neo4j)
+    # ==========================================================
+    def _extract_series_for_brand_via_graph(self, raw: str, brand: str):
+        """
+        Достаём из графа список серий для brand и пытаемся найти их в raw.
+        Матчим по нормализованной подстроке (многословные серии поддерживаются).
+        Возвращаем найденную серию (как строку), либо None.
+        """
+        if not self.series_resolver or not brand:
+            return None
+        bkey = _normalize(brand)
+        if bkey not in self._series_cache:
+            try:
+                series_list = self.series_resolver(brand) or []
+            except Exception as e:
+                print(f"[WARN] series_resolver failed for '{brand}': {e}")
+                series_list = []
+            # храним нормализованные фразы, но и оригиналы тоже, чтобы вернуть красиво
+            self._series_cache[bkey] = [(s, _normalize(s)) for s in series_list if s and len(s) > 1]
 
-    # pick highest score, tie-breaker by brand length
-    brand = sorted(scores.items(), key=lambda x: (-x[1], -len(x[0])))[0][0]
+        raw_norm = _normalize(raw)
+        # выбираем самое длинное совпадение по нормализованной подстроке
+        matches = []
+        for s_original, s_norm in self._series_cache[bkey]:
+            if not s_norm:
+                continue
+            if s_norm in raw_norm:
+                matches.append((len(s_norm), s_original))
+        if not matches:
+            return None
+        # берём наиболее «длинную» серию (чаще всего наиболее специфичная)
+        matches.sort(key=lambda x: -x[0])
+        return matches[0][1]
+
+    # ==========================================================
+    # Базовая логика извлечения бренда/серии (как раньше)
+    # ==========================================================
+    def _extract_brand_series(self, raw: str):
+        """Оригинальная версия без FSM-ограничений (мягкий скоринг, полное сканирование)."""
+        tokens = [t for t in re.findall(r"[A-Za-z0-9%+]+", raw)]
+        scores = {}
+
+        for token in tokens[:6]:  # ограничиваем первые токены
+            t_norm = _normalize(token)
+            if len(t_norm) < 3 or t_norm.isdigit():
+                continue
+
+            for b_norm, b_orig in self.brands.items():
+                sc = score_brand_series(raw, b_norm)
+                b_tokens = b_norm.split()
+
+                # дебаг
+                # print(f"[DEBUG] token={t_norm} vs brand={b_norm}")
+
+                # прямые совпадения
+                if t_norm in b_tokens or t_norm == b_norm:
+                    sc += 1
+                    # print(f"  + exact token match with {b_orig}")
+                elif len(t_norm) >= 4 and any(t_norm in bt for bt in b_tokens):
+                    sc += 0.25
+                    # print(f"  + partial token match in {b_tokens}")
+
+                # ✅ исправленный plural-fix
+                for bt in b_tokens:
+                    if t_norm.rstrip("s") == bt or bt.rstrip("s") == t_norm:
+                        sc += 0.6
+                        # print(f"  + plural fix match {t_norm} ~ {bt}")
+                    elif t_norm.endswith("es") and t_norm[:-2] == bt:
+                        sc += 0.5
+                        # print(f"  + plural 'es' match {t_norm} ~ {bt}")
+                    elif t_norm.endswith("ies") and bt.endswith("y") and t_norm[:-3] + "y" == bt:
+                        sc += 0.5
+                        # print(f"  + plural 'ies' match {t_norm} ~ {bt}")
+
+                if sc > 0:
+                    scores[b_orig] = scores.get(b_orig, 0) + sc
+
+
+        if not scores:
+            print(f"[DETECT] no brand candidates found in: {raw}")
+            return None, None
+
+        # выбираем лучший по скору, при равенстве — по длине
+        brand = sorted(scores.items(), key=lambda x: (-x[1], -len(x[0])))[0][0]
+
+        # извлекаем серию после бренда
+        idx = _normalize(raw).find(_normalize(brand))
+        series = None
+        if idx != -1:
+            after = raw[idx + len(brand):].strip()
+            if after:
+                after_tokens = re.findall(r"[A-Za-z0-9%+]+", after)
+                valid = [t for t in after_tokens if not t.isdigit() and len(t) > 2]
+                if valid:
+                    series = " ".join(valid[:3])
+
+        return brand, series
+    
+    def _extract_series_after_brand(self, raw, brand_norm):
+        idx = _normalize(raw).find(brand_norm)
+        if idx == -1:
+            return None
+        after = raw[idx + len(brand_norm):]
+        tokens = re.findall(r"[A-Za-z0-9%+]+", after)
+        valid = [t for t in tokens if not t.isdigit() and len(t) > 2]
+        return " ".join(valid[:3]) if valid else None
+    
     
 
-    # extract series
-    idx = _normalize(raw).find(_normalize(brand))
-    series = None
-    if idx != -1:
-        after = raw[idx + len(brand):].strip()
-        if after:
-            # tokenize what follows brand
-            after_tokens = re.findall(r"[A-Za-z0-9%+]+", after)
-            # keep only plausible series words (exclude pure numbers or very short junk)
-            valid = [t for t in after_tokens if not t.isdigit() and len(t) > 2]
-            # join top 1–3 tokens max
-            if valid:
-                series = " ".join(valid[:3])
 
-   
-    return brand, series
 
 # ==========================================================
 # NEO4J LOOKUPS
@@ -187,6 +356,16 @@ def find_canonical(tx, brand, series, raw):
         # reward if series appears and is present in both
         if snorm and snorm in cn_norm and snorm in rnorm:
             score += 0.6
+        # --- NEW: token-overlap bonus (brand-agnostic), helps when series is None
+        # compare only non-brand tokens
+        c_tokens = cn_norm.split()
+        b_tokens = set(bnorm.split()) if bnorm else set()
+        nb_tokens = [t for t in c_tokens if t not in b_tokens]  # non-brand tokens of candidate
+        raw_tokens = set(rnorm.split())
+        overlap_cnt = sum(1 for t in nb_tokens if t in raw_tokens)
+        if overlap_cnt > 0:
+            # small bonus per matching non-brand token
+            score += 0.25 * overlap_cnt
 
         # penalty if canonical contains tokens not present in raw
         extra_tokens = [t for t in cn_norm.split() if t not in rnorm.split()]
@@ -223,19 +402,25 @@ def normalize_dataframe(df: pd.DataFrame, col_name: str = "Наименован�
     if col not in df.columns:
         print(f"[WARN] no '{col}' column")
         return df
+    
+    series_resolver = build_series_resolver(driver)
+    extractor = BrandSeriesExtractor(BRANDS, series_resolver=series_resolver)
 
     with driver.session() as s:
-        for i, raw in enumerate(df[col].fillna("").astype(str)):
+        for i, raw in enumerate(df[col_name].fillna("").astype(str)):
             if not raw.strip():
                 continue
-            
-            brand, series = extract_brand_series(raw)
+
+            brand, series = extractor.extract(raw)
+
+            if not brand:
+                continue
+
             found = s.execute_read(find_canonical, brand, series, raw)
             if found:
-                df.at[i, col] = found
+                df.at[i, col_name] = found
                 print(f"[CANON] → {found}")
-                pass
             else:
                 print(f"[CANON] no match for {raw}")
-                pass
+
     return df

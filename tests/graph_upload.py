@@ -46,6 +46,31 @@ def upload_json_to_graph(path):
                     MERGE (c:Canonical {name:$canonical})
                     MERGE (v)-[:SAME_AS]->(c)
                 """, variant=variant_clean, canonical=canonical_clean)
+            # ==========================================================
+            # 🧩 Brand / Series связи — теперь берём из JSON напрямую
+            # ==========================================================
+            brand = entry.get("brand")
+            series = entry.get("series")
+
+            if brand:
+                session.run("MERGE (b:Brand {name:$brand})", brand=brand)
+
+            if series:
+                session.run("""
+                    MERGE (s:Series {name:$series})
+                    MERGE (b:Brand {name:$brand})
+                    MERGE (b)-[:HAS_SERIES]->(s)
+                    MERGE (s)-[:HAS_CANONICAL]->(c:Canonical {name:$canonical})
+                """, brand=brand, series=series, canonical=canonical_clean)
+                print(f"→ Linked Brand '{brand}' → Series '{series}'")
+            elif brand:
+                # Если серии нет — всё равно связываем бренд напрямую с каноном
+                session.run("""
+                    MERGE (b:Brand {name:$brand})
+                    MERGE (c:Canonical {name:$canonical})
+                    MERGE (b)-[:HAS_CANONICAL]->(c)
+                """, brand=brand, canonical=canonical_clean)
+                print(f"→ Linked Brand '{brand}' → Canonical '{canonical_clean}'")
 
     print(f"✅ Uploaded {len(data)} canonical alcohol groups into Neo4j")
 
