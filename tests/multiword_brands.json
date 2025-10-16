@@ -79,7 +79,14 @@
     "Buchanan’s",
     "Malibu",
     "Dalmore",
-    "Courvoisier"
+    "Courvoisier",
+    "Budweiser",
+    "Heineken",
+    "Guinness",
+    "Leffe",
+    "Krombacher",
+    "Hofbrau",
+    "Peroni"
   ],
   "two_word": [
     "Dom Perignon",
@@ -143,7 +150,8 @@
     "Redd Rose Vodka",
     "Archie Rose",
     "Tenuta dell'Ornellaia",
-    "The Yamazaki"
+    "The Yamazaki",
+    "Pilsner Urquell"
   ],
   "three_word": [
     "Dal Forno Romano",

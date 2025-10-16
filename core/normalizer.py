@@ -56,7 +56,7 @@ def _cases_from_size_text(x) -> Optional[float]:
 # --- ядро нормализации -----------------------------------------------------
 
 NAME_PATS = [
-    r"^name", r"^наимен", r"^descr", r"описан", r"товар", r"product", r"бренд|марка"
+    r"^name", r"^наимен", r"^descr", r"описан", r"товар", r"product", r"бренд|марка", r"item"
 ]
 
 BOTTLES_PER_CASE_PATS = [
@@ -79,16 +79,18 @@ PRICE_CASE_PATS = [
 
 AVAILABILITY_PATS = [
     r"stock", r"lead\s*time", r"availability", r"status", r"eta", 
-    r"ready", r"t1", r"t2", r"tbo", r"доступ", r"наличи", r"access"
+    r"ready", r"t1", r"t2", r"tbo", r"доступ", r"наличи", r"access",
 ]
 
 LOCATION_PATS = [
-    r"wareh", r"склад", r"origin", r"отгруз", r"exw", r"dap", r"fob", r"cif", r"место\s*загруз", r"location"
+    r"wareh", r"склад", r"origin", r"отгруз", r"exw", r"dap", r"fob", r"cif", r"место\s*загруз", r"location", r"incoterm"
 ]
 
 
 
 def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, Optional[str]]]:
+
+    print(f"[RUN] normalize_alcohol_df started, shape={df_in.shape}")
     """
     Нормализует DataFrame с произвольными заголовками.
     Возвращает:
@@ -106,6 +108,7 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     avail_cols = _find_cols(df, AVAILABILITY_PATS)
     loc_cols   = _find_cols(df, LOCATION_PATS)
     price_bottle_cols = _find_cols(df, ["price_per_bottle", "цена за бутылку", "bottle price"])  # новый поиск
+    print(f"[DEBUG normalize] found cols: name={name_cols}, price_case={price_cols}, bpc={bpc_cols}")
 
     mapping = {
         "name": name_cols,

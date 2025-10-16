@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 #проверка свежести кода
 import time
 print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
 from io import BytesIO
+
 
 from utils.resolve_supplier_name import resolve_supplier_name
 from text_state import TextState
@@ -11,6 +14,7 @@ from core.normalizer import normalize_alcohol_df
 from core.name_enricher import filter_and_enrich
 
 class AlcoholStateMachine:
+    _active_instance: "AlcoholStateMachine" | None = None
     def __init__(self, file_name: str, supplier_choice: str = None):
         self.name = resolve_supplier_name(file_name, supplier_choice)
 
@@ -34,6 +38,7 @@ class AlcoholStateMachine:
         return ts.run()
 
     def handle_file(self, file_src: BytesIO):
+        self.activate()  # ✅ теперь self доступна глобально как "активная"
         df_raw, _ = parse_excel(file_src)
         self.df_raw = df_raw.copy()  # 💾 сохраняем исходный датафрейм для доп. поиска
         df_norm, _ = normalize_alcohol_df(df_raw)
@@ -67,3 +72,13 @@ class AlcoholStateMachine:
         self.df_raw = None
         self.df_out = None
         self.name = None
+
+    # 👇 Регистрируем активную FSM
+    def activate(self):
+        AlcoholStateMachine._active_instance = self
+        print(f"[FSM] Activated instance for supplier: {self.name}")
+    
+    # 👇 Получаем текущую FSM откуда угодно
+    @staticmethod
+    def get_active() -> "AlcoholStateMachine | None":
+        return AlcoholStateMachine._active_instance

@@ -21,3 +21,38 @@ RX_CASE = [
 
 # Bottles-per-case (6x75, 12×70 и т.п.)
 RX_BPC = re.compile(r'(\d{1,2})\s*[x×]\s*\d{1,3}', re.I)
+
+
+
+
+# --- регексы для признаков продукта ---
+# Объём вида 50ml, 75cl, 1L, 37.5cl
+# Теперь после ml|cl|l может быть конец строки, пробел, запятая, %, или буква x
+RX_VOLUME = re.compile(
+    r'(?i)(\d{1,4}(?:[.,]\d{1,2})?\s?(?:ml|cl|l))(?=\b|[x% ,]|$)'
+)
+# NxVol (12x75cl, 06x1L, 120x5cl) — разрешаем слепленные варианты
+_RX_CASEVOL = re.compile(
+    r'(?i)\b(\d{1,3})\s*[x×]\s*(\d{1,4}(?:[.,]\d{1,3})?)\s*(ml|cl|l)(?:\b|(?=[x%]))'
+)
+#особый случай: NxVolxABV (6x100x40%)
+_RX_CASEVOL_ABV = re.compile(
+    r'(?i)\b\d{1,3}\s*[x×]\s*(\d{1,4}(?:[.,]\d{1,2})?)\s*[x×]\s*\d{1,2}\s*%'
+)
+
+
+# ABV: 40%, 46.3%, можно слепленные (70clx40%)
+RX_ABV = re.compile(
+    r'(?i)\b(\d{1,2}(?:[.,]\d)?)\s?%(?:\s*abv)?'
+)
+RX_AGE      = re.compile(r'(?i)\b(\d{1,2})\s?(yo|years?|лет)\b')
+RX_VINTAGE  = re.compile(r'\b(19\d{2}|20(0\d|1\d|2[0-6]))\b')
+
+
+
+# извлечение количества бутылок из паттернов вида 6x75cl, 12x0.7l, 24x200ml
+RX_PACK_CASES_FLEX = re.compile(
+    r'(?i)\b(?P<cases>\d{1,2})\s*[x×]\s*\d{1,4}(?:[.,]\d{1,2})?\s?(?:ml|cl|l)'
+)
+# извлечение количества бутылок из паттернов вида 6 pcs, 12шт
+RX_PACK_PCS = re.compile(r'(?i)\(?\b(?P<cases>\d{1,3})\s*(?:pcs|шт)\b\)?')

@@ -8,7 +8,7 @@ from typing import List, Tuple
 # Порядок для сортировки в итоговом файле
 CATEGORY_ORDER: List[str] = [
     "Whiskey", "Cognac", "Brandy", "Vodka", "Gin", "Rum", "Tequila",
-    "Liqueur", "Champagne", "Wine", "Без категории"
+    "Liqueur", "Champagne", "Wine", "Beer" "Без категории"
 ]
 
 # Бренды → категория (покрыл то, что встречается у тебя в логах и в примерах)
@@ -23,6 +23,9 @@ BRAND_TO_CATEGORY: List[Tuple[re.Pattern, str]] = [
 ]
 
 BRAND_TO_CATEGORY.extend([
+    # Beer
+    (re.compile(r"\b(budweiser|heineken|guinness|leffe|krombacher|hofbrau|peroni|pilsner\s+urquell|stella\s+artois|corona|carlsberg|asahi|tuborg|paulaner|hoegaarden|warsteiner|bitburger)\b", re.I), "Beer"),
+
     # Whiskey – шотландцы и не только
     (re.compile(r"\b(balvenie|caol\s*ila|glen\s*scotia|glenfarclas|glenlivet|glenmorangie|loch\s*lomond|singleton|tomatin|tomintoul)\b", re.I), "Whiskey"),
     (re.compile(r"\b(chichibu|mars\s*kasei|senju)\b", re.I), "Whiskey"),
@@ -59,6 +62,7 @@ KEYWORD_RULES: List[Tuple[re.Pattern, str]] = [
     (re.compile(r"\bliqueur\b|\bliquer\b|\bamaro\b|\bsambuca\b|\btriple\s+sec\b|\bcr[eè]me\s+de\b|\baperitif\b|\baperitivo\b", re.I), "Liqueur"),
     (re.compile(r"\bchampagne\b|\bprosecco\b|\bcava\b", re.I), "Champagne"),
     (re.compile(r"\bwine(s)?\b", re.I), "Wine"),
+    (re.compile(r"\bbeer\b|\blager\b|\bpils\b|\bstout\b|\bipa\b|\bale\b", re.I), "Beer"),
 ]
 
 def _categorize_name(name: str) -> str:

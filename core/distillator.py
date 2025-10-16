@@ -5,41 +5,17 @@ print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 import re
 import pandas as pd
 from typing import Optional
+import importlib
+
+from utils.regular_expressions import RX_VOLUME, _RX_CASEVOL, _RX_CASEVOL_ABV, RX_PACK_CASES_FLEX, RX_PACK_PCS, RX_ABV, RX_AGE, RX_VINTAGE
 
 
-# --- регексы для признаков продукта ---
-# Объём вида 50ml, 75cl, 1L, 37.5cl
-# Теперь после ml|cl|l может быть конец строки, пробел, запятая, %, или буква x
-RX_VOLUME = re.compile(
-    r'(?i)(\d{1,4}(?:[.,]\d{1,2})?\s?(?:ml|cl|l))(?=\b|[x% ,]|$)'
-)
-# NxVol (12x75cl, 06x1L, 120x5cl) — разрешаем слепленные варианты
-_RX_CASEVOL = re.compile(
-    r'(?i)\b(\d{1,3})\s*[x×]\s*(\d{1,4}(?:[.,]\d{1,3})?)\s*(ml|cl|l)(?:\b|(?=[x%]))'
-)
-#особый случай: NxVolxABV (6x100x40%)
-_RX_CASEVOL_ABV = re.compile(
-    r'(?i)\b\d{1,3}\s*[x×]\s*(\d{1,4}(?:[.,]\d{1,2})?)\s*[x×]\s*\d{1,2}\s*%'
-)
-
-
-# ABV: 40%, 46.3%, можно слепленные (70clx40%)
-RX_ABV = re.compile(
-    r'(?i)\b(\d{1,2}(?:[.,]\d)?)\s?%(?:\s*abv)?'
-)
-RX_AGE      = re.compile(r'(?i)\b(\d{1,2})\s?(yo|years?|лет)\b')
-RX_VINTAGE  = re.compile(r'\b(19\d{2}|20(0\d|1\d|2[0-6]))\b')
 
 CATEGORY_LEX = {
     'vodka','gin','rum','tequila','whisky','whiskies','whiskey',
     'bourbon','cognac','brandy','liqueur','champagne','champagnes',
     'wines','wine','spirits','spirits/liquors','sparkling wines'
 }
-
-# извлечение количества бутылок из паттернов вида 6x75cl, 12x0.7l, 24x200ml
-RX_PACK_CASES_FLEX = re.compile(
-    r'(?i)\b(?P<cases>\d{1,2})\s*[x×]\s*\d{1,4}(?:[.,]\d{1,2})?\s?(?:ml|cl|l)'
-)
 
 
 def _normalize_token(s: str) -> str:
@@ -95,7 +71,7 @@ def extract_volume_smart(row: pd.Series, df_raw: pd.DataFrame | None = None) -> 
     2. Size / 规格 / Size/规格
     3. (если не найдено) ищет в df_raw по этой же строке
     """
-    possible_fields = ["name", "Наименование", "Size", "规格", "Description"]
+    possible_fields = ["name", "Наименование", "Size", "规格", "Description", "Item"]
     
 
     # 1️⃣ Перебираем колонки текущей строки
@@ -156,17 +132,52 @@ def _infer_bpc_from_name(text: str) -> float | None:
     if not text:
         return None
     s = _normalize_token(text)
+    print(f"[BPC] raw='{text}' | normalized='{s}'")
 
-    m = RX_PACK_CASES_FLEX.search(s)
+    m = RX_PACK_CASES_FLEX.search(s) or RX_PACK_PCS.search(s)
     if m:
-        cases = float(m.group("cases"))        
+        cases = float(m.group("cases"))   
+        print(f"[BPC] matched primary regex: '{m.group(0)}' → cases={cases}")     
         return cases
 
     # fallback — ищем просто N x число
     m = re.search(r'(?i)\b(?P<cases>\d{1,2})\s*[x×]\s*\d+', s)
     if m:
         cases = float(m.group("cases"))
+        print(f"[BPC] matched fallback regex: '{m.group(0)}' → cases={cases}")
         return cases    
+    
+    # 🔹 fallback через FSM (лениво)
+    print("[BPC] trying FSM fallback...")
+
+    try:
+        import importlib
+        fsm_module = importlib.import_module("state_machine")
+        fsm_cls = getattr(fsm_module, "AlcoholStateMachine", None)
+        fsm = fsm_cls.get_active() if fsm_cls else None
+    except Exception as e:
+        print(f"[BPC] FSM import failed: {e}")
+        fsm = None
+
+    if not fsm:
+        print("[BPC] FSM not active → skip fallback")
+        return None
+
+    if getattr(fsm, "df_raw", None) is None:
+        print("[BPC] FSM has no df_raw → skip fallback")
+        return None
+
+    print(f"[BPC] FSM active, scanning df_raw ({len(fsm.df_raw)} rows)...")
+
+    for _, row in fsm.df_raw.iterrows():
+        row_str = " ".join(map(str, row.values))
+        m2 = RX_PACK_CASES_FLEX.search(row_str) or RX_PACK_PCS.search(row_str)
+        if m2:
+            cases = float(m2.group("cases"))
+            print(f"[BPC] extracted {cases} from df_raw row: '{row_str[:80]}...'")
+            return cases
+
+    print("[BPC] no pattern matched in df_raw → None")
     return None
 
 def looks_like_category(name: str, row: pd.Series | None = None) -> bool:

@@ -117,6 +117,43 @@ def check_location_columns(df: pd.DataFrame, messages: list):
 
     return df
 
+# --- правило восстановления цен и согласования логики ---
+@verifier.register(state="logic")
+def verify_logic(df: pd.DataFrame, messages: list):
+    """Проверка согласованности числовых полей и восстановление пропущенных значений."""
+    df = df.copy()
+    messages.append(f"[VERIFY] started, rows={len(df)}")
+
+    df["bottles_per_case"] = pd.to_numeric(df.get("bottles_per_case"), errors="coerce")
+    df["price_per_case"] = pd.to_numeric(df.get("price_per_case"), errors="coerce")
+    df["price_per_bottle"] = pd.to_numeric(df.get("price_per_bottle"), errors="coerce")
+
+    cond = df["bottles_per_case"].notna() & df["price_per_case"].notna() & df["price_per_bottle"].isna()
+    if cond.any():
+        df.loc[cond, "price_per_bottle"] = (df.loc[cond, "price_per_case"] / df.loc[cond, "bottles_per_case"]).round(4)
+        messages.append(f"[VERIFY] recalculated price_per_bottle for {cond.sum()} rows")
+
+    cond = df["bottles_per_case"].notna() & df["price_per_bottle"].notna() & df["price_per_case"].isna()
+    if cond.any():
+        df.loc[cond, "price_per_case"] = (df.loc[cond, "price_per_bottle"] * df.loc[cond, "bottles_per_case"]).round(4)
+        messages.append(f"[VERIFY] recalculated price_per_case for {cond.sum()} rows")
+
+    cond = (
+        df["bottles_per_case"].notna()
+        & df["price_per_case"].notna()
+        & df["price_per_bottle"].notna()
+    )
+    if cond.any():
+        diff = (df.loc[cond, "price_per_case"] / df.loc[cond, "bottles_per_case"]) - df.loc[cond, "price_per_bottle"]
+        mismatches = (diff.abs() > 0.01).sum()
+        if mismatches:
+            messages.append(f"[VERIFY] warning: {mismatches} inconsistent rows (case vs bottle mismatch >0.01)")
+
+    messages.append(
+        f"[VERIFY] done, non-null price_case={df['price_per_case'].notna().sum()}, "
+        f"price_bottle={df['price_per_bottle'].notna().sum()}"
+    )
+    return df
 
 
 # --- правило для типизационного состояния ---
