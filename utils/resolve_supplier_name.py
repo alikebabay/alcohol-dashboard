@@ -11,7 +11,7 @@ def resolve_supplier_name(file_name: str | None, supplier_choice: str | None) ->
     match supplier_choice:
         case "Поставщик 1" | "Поставщик 2" | "Поставщик 3":
             return supplier_choice
-        case "Из файла" | None:
+        case "Определить по названию файла" | None:
             if file_name:
                 return Path(file_name).stem or "unknown"
             return "manual"

@@ -3,6 +3,9 @@ from __future__ import annotations
 import pandas as pd
 from utils.verifier import verifier
 
+from state_machine import AlcoholStateMachine
+
+
 # --- создание матрицы ------------------------------------------------------------
 
 def merge_with_master(old: pd.DataFrame, new: pd.DataFrame, supplier: str) -> pd.DataFrame:
@@ -17,6 +20,7 @@ def merge_with_master(old: pd.DataFrame, new: pd.DataFrame, supplier: str) -> pd
         f"Доступ {supplier}",
         f"Место загрузки {supplier}",
         f"цена за кейс {supplier}",
+        f"currency {supplier}",
     ]
     for c in need_cols:
         if c not in old.columns:
@@ -58,6 +62,12 @@ def merge_with_master(old: pd.DataFrame, new: pd.DataFrame, supplier: str) -> pd
                 if pd.isna(old.loc[mask, col]).all() or not (old.loc[mask, col].astype(str) == str(location)).all():
                     old.loc[mask, col] = location
 
+            # валюта — просто пишем без проверок
+            col = f"currency {supplier}"
+            if col not in old.columns:
+                old[col] = None
+            old.loc[mask, col] = row.get(f"currency {supplier}", "")
+
         else:
             # новой строки нет → создаём
             new_row = {
@@ -67,8 +77,10 @@ def merge_with_master(old: pd.DataFrame, new: pd.DataFrame, supplier: str) -> pd
                 "шт / кор": bpc,
                 f"цена за бутылку {supplier}": price_bottle,
                 f"цена за кейс {supplier}": price_case,
+                f"currency {supplier}": row.get(f"currency {supplier}", ""),
                 f"Доступ {supplier}": access,
                 f"Место загрузки {supplier}": location,
+                
             }
             # добьём отсутствующие базовые колонки, если вдруг нет
             for base in ["Тип", "Наименование", "cl", "шт / кор"]:
@@ -84,13 +96,31 @@ def merge_with_master(old: pd.DataFrame, new: pd.DataFrame, supplier: str) -> pd
     })
     ordered = base_cols[:]
     for s in suppliers:
-        ordered += [f"цена за бутылку {s}", f"Доступ {s}", f"Место загрузки {s}", f"цена за кейс {s}"]
+        ordered += [f"цена за бутылку {s}", f"цена за кейс {s}", f"currency {s}", f"Доступ {s}", f"Место загрузки {s}", ]
     # добрособираем хвост
     tail = [c for c in old.columns if c not in ordered]
     old = old.reindex(columns=ordered + tail)
     return old
 
 
+def detect_currency(df_raw: pd.DataFrame) -> str:
+    """Простейшее определение валюты по df_raw"""
+    if df_raw is None or df_raw.empty:
+        return ""
+    
+    # проверяем текст всех ячеек
+    text = " ".join(df_raw.astype(str).fillna("").values.ravel()).lower()
+    for cur in ["eur", "€", "usd", "$", "₸", "kzt", "rub", "₽"]:
+        if cur in text:
+            if cur in ["eur", "€"]:
+                return "EUR"
+            if cur in ["usd", "$"]:
+                return "USD"
+            if cur in ["₸", "kzt"]:
+                return "KZT"
+            if cur in ["rub", "₽"]:
+                return "RUB"
+    return ""
 
 # --- сохранение ------------------------------------------------------------
 
@@ -140,7 +170,14 @@ def save_to_excel(df: pd.DataFrame, supplier: str) -> pd.DataFrame:
         df_out[col_location] = location_src
 
     # 3) минимальная чистка
-    return df_out.fillna("")
+    df_out = df_out.fillna("")
+
+# 4) 💰 добавляем колонку валюты
+    fsm = AlcoholStateMachine.get_active()
+    currency = detect_currency(fsm.df_raw if fsm else None)
+    df_out[f"currency {supplier}"] = currency
+
+    return df_out
 
 
 

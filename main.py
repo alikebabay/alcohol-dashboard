@@ -28,7 +28,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.chat_data["_fsm"] = "SUPPLIER"
     keyboard = [
         [KeyboardButton("Поставщик 1"), KeyboardButton("Поставщик 2")],
-        [KeyboardButton("Поставщик 3"), KeyboardButton("По названию файла")],
+        [KeyboardButton("Поставщик 3"), KeyboardButton("Определить по названию файла")],
     ]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     await update.message.reply_text(
@@ -47,7 +47,13 @@ async def handle_supplier_choice(update: Update, context: ContextTypes.DEFAULT_T
     logger.info(f"Поставщик выбран: {choice}")
 
     # фиксированные кнопки
-    fixed_choices = ["Поставщик 1", "Поставщик 2", "Поставщик 3", "По названию файла"]
+    fixed_choices = ["Поставщик 1", "Поставщик 2", "Поставщик 3", "Определить по названию файла"]
+
+    # проверяем длину текста
+    if len(choice) > 20 and choice not in fixed_choices:
+        await update.message.reply_text("Число символов превышено, попробуйте заново.")
+        return  # ничего не делаем дальше
+    
     if choice in fixed_choices:
         context.chat_data["supplier_choice"] = choice
         await update.message.reply_text(

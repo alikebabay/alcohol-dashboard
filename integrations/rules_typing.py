@@ -15,6 +15,9 @@ def enforce_base_types(df: pd.DataFrame, messages: list) -> pd.DataFrame:
     float_cols = [c for c in df.columns if c.startswith("цена за бутылку") or c.startswith("цена за кейс")]
     str_cols   = [c for c in df.columns if c.startswith("Доступ") or c.startswith("Место загрузки")]
 
+    # --- валютные колонки по поставщикам ---
+    currency_cols = [c for c in df.columns if c.startswith("currency ")]
+
     # применяем базовые типы
     for col, dtype in base_types.items():
         if col in df.columns:
@@ -48,6 +51,12 @@ def enforce_base_types(df: pd.DataFrame, messages: list) -> pd.DataFrame:
 
     # доступ/место = string
     for col in str_cols:
+        try:
+            df[col] = df[col].astype("string")
+        except Exception as e:
+            messages.append(f"[WARN] {col}: cannot convert to string ({e})")
+    # currency = string
+    for col in currency_cols:
         try:
             df[col] = df[col].astype("string")
         except Exception as e:

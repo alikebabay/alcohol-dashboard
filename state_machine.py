@@ -34,9 +34,17 @@ class AlcoholStateMachine:
         return self.state
 
     def handle_text(self, file_src: str):
-        ts = TextState(file_src)
-        return ts.run()
+        self.activate()  # (1)
+        ts = TextState(file_src)  # (2)
+        df_out = ts.run()  # (3)
 
+        # (4)
+        if ts.df_raw is not None:
+            self.df_raw = ts.df_raw.copy()
+            print(f"[FSM] Saved df_raw from TextState, shape={self.df_raw.shape}")
+
+        return df_out  # (5)
+    
     def handle_file(self, file_src: BytesIO):
         self.activate()  # ✅ теперь self доступна глобально как "активная"
         df_raw, _ = parse_excel(file_src)
