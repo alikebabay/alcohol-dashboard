@@ -11,6 +11,14 @@ def enforce_base_types(df: pd.DataFrame, messages: list) -> pd.DataFrame:
         "шт / кор": "Int64",
     }
 
+    # --- новые технические колонки ---
+    tech_types = {
+        "Поставщик": "string",
+        "date_int": "Int64",
+        "crc32_hash": "string",
+        "b64": "string",
+    }
+
     # --- динамические колонки по поставщикам ---
     float_cols = [c for c in df.columns if c.startswith("цена за бутылку") or c.startswith("цена за кейс")]
     str_cols   = [c for c in df.columns if c.startswith("Доступ") or c.startswith("Место загрузки")]
@@ -19,7 +27,7 @@ def enforce_base_types(df: pd.DataFrame, messages: list) -> pd.DataFrame:
     currency_cols = [c for c in df.columns if c.startswith("currency ")]
 
     # применяем базовые типы
-    for col, dtype in base_types.items():
+    for col, dtype in {**base_types, **tech_types}.items():
         if col in df.columns:
             try:
                 if dtype == "Int64":

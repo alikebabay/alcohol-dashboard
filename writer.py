@@ -1,9 +1,10 @@
 
 from __future__ import annotations
 import pandas as pd
-from utils.verifier import verifier
+import base64, zlib
 
 from state_machine import AlcoholStateMachine
+from integrations.fingerprint_utils import add_offer_metadata
 
 
 # --- создание матрицы ------------------------------------------------------------
@@ -122,6 +123,9 @@ def detect_currency(df_raw: pd.DataFrame) -> str:
                 return "RUB"
     return ""
 
+  
+
+
 # --- сохранение ------------------------------------------------------------
 
 def save_to_excel(df: pd.DataFrame, supplier: str) -> pd.DataFrame:
@@ -148,13 +152,21 @@ def save_to_excel(df: pd.DataFrame, supplier: str) -> pd.DataFrame:
 
     # 2) поставщик-специфичные колонки
     col_price_bottle = f"цена за бутылку {supplier}"
-    col_price_case   = f"цена за кейс {supplier}"
+    col_price_case   = f"цена за кейс {supplier}"   
+
     col_access       = f"Доступ {supplier}"
     col_location     = f"Место загрузки {supplier}"
 
     # цена за бутылку (из нормализатора)
     if "price_per_bottle" in df.columns:
         df_out[col_price_bottle] = df["price_per_bottle"]
+
+    # 3) 💰 добавляем колонку валюты
+    fsm = AlcoholStateMachine.get_active()
+    currency = detect_currency(fsm.df_raw if fsm else None)
+    df_out[f"currency {supplier}"] = currency
+
+    df_out[f"Поставщик"] = supplier
 
     # цена за кейс (если вдруг уже есть в df)
     if "price_per_case" in df.columns:
@@ -167,18 +179,16 @@ def save_to_excel(df: pd.DataFrame, supplier: str) -> pd.DataFrame:
     if access_src is not None:
         df_out[col_access] = access_src
     if location_src is not None:
-        df_out[col_location] = location_src
+        df_out[col_location] = location_src    
 
     # 3) минимальная чистка
     df_out = df_out.fillna("")
 
-# 4) 💰 добавляем колонку валюты
-    fsm = AlcoholStateMachine.get_active()
-    currency = detect_currency(fsm.df_raw if fsm else None)
-    df_out[f"currency {supplier}"] = currency
+    # 4) добавляем отпечатки предложений, колонки: crc32_hash, b64 
+    
+    df_out = add_offer_metadata(df_out)
 
     return df_out
-
 
 
 
