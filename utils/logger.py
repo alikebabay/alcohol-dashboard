@@ -2,66 +2,79 @@
 import logging
 from pathlib import Path
 
+
 def setup_logging(global_level=logging.INFO):
     """
-    Централизованная настройка логгирования для всего проекта.
-    Здесь можно задавать уровни для отдельных модулей.
+    Глобальная централизованная настройка логгирования для всего проекта.
+    Каждый модуль может писать свои DEBUG/INFO/ERROR-сообщения.
+    Отдельные файлы создаются для ключевых подсистем.
     """
-    log_path = Path("matrix_debug.txt")
 
-    # форматтер
+    root_logger = logging.getLogger()
+
+    # 🧠 не инициализируем повторно
+    if getattr(root_logger, "_global_initialized", False):
+        return
+    root_logger._global_initialized = True
+
+    # === Формат ===
     fmt = logging.Formatter(
         "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%H:%M:%S",
     )
 
-    # корневой логгер
-    root_logger = logging.getLogger()
+    # === Корневой логгер ===
     root_logger.setLevel(global_level)
 
-    # очистим старые хэндлеры, чтобы не дублировались
-    for h in root_logger.handlers[:]:
-        root_logger.removeHandler(h)
-
-    # консоль
+    # Консоль
     sh = logging.StreamHandler()
     sh.setFormatter(fmt)
     sh.setLevel(global_level)
     root_logger.addHandler(sh)
 
-    # файл
-    fh = logging.FileHandler(log_path, encoding="utf-8")
+    # Общий файл для всех модулей
+    main_log_path = Path("project_debug.txt")
+    fh = logging.FileHandler(main_log_path, encoding="utf-8")
     fh.setFormatter(fmt)
     fh.setLevel(logging.DEBUG)
     root_logger.addHandler(fh)
 
-    # 🔧 индивидуальные уровни
+    # === Уровни для конкретных модулей ===
     per_module_levels = {
-        # "matrix_merger" можно временно выключить, поставив WARNING или ERROR
-        "integrations.matrix_merger": logging.ERROR,
-        # а если захочешь включить — просто logging.DEBUG
-        # "fingerprint_utils": logging.INFO,
-        "core.graph_normalizer": logging.ERROR,   # 🔇 полностью выключить, только ошибки
-        "integrations.rules_typing": logging.ERROR,
-        "integrations.graph_offers": logging.DEBUG,  # 🧩 включаем логи для нового модуля
+        # инфраструктура
+        "integrations.matrix_merger": logging.INFO,
+        "core.graph_normalizer": logging.WARNING,
+        "integrations.rules_typing": logging.INFO,
+        "integrations.graph_offers": logging.INFO,
+        # утилиты и извлекатели
+        "utils.text_extractors": logging.DEBUG,
+        "core.normalizer": logging.DEBUG,
     }
 
-    for module_name, level in per_module_levels.items():
-        logging.getLogger(module_name).setLevel(level)
+    for name, level in per_module_levels.items():
+        logging.getLogger(name).setLevel(level)
 
-    # --- отдельные файлы для подмодулей ---
-    # --- typing ---
-    typing_log_path = Path("typing_debug.txt")
-    typing_fh = logging.FileHandler(typing_log_path, encoding="utf-8")
-    typing_fh.setFormatter(fmt)
-    typing_fh.setLevel(logging.DEBUG)
-    logging.getLogger("integrations.rules_typing").addHandler(typing_fh)
-    
-    # graph_offers
-    graph_log_path = Path("graph_offers_debug.txt")
-    graph_fh = logging.FileHandler(graph_log_path, encoding="utf-8")
-    graph_fh.setFormatter(fmt)
-    graph_fh.setLevel(logging.DEBUG)
-    logging.getLogger("integrations.graph_offers").addHandler(graph_fh)
+    # === Отдельные файлы для ключевых подсистем ===
+    special_logs = {
+        "integrations.matrix_merger": "matrix_debug.txt",
+        "integrations.rules_typing": "typing_debug.txt",
+        "integrations.graph_offers": "graph_offers_debug.txt",
+        "utils.text_extractors": "text_extractors_debug.txt",
+        "core.normalizer": "normalizer_debug.txt",
+    }
 
-    logging.info("✅ Logging initialized (matrix + typing + graph_offers split)")
+    for module, filename in special_logs.items():
+        path = Path(filename)
+        fh = logging.FileHandler(path, encoding="utf-8")
+        fh.setFormatter(fmt)
+        fh.setLevel(logging.DEBUG)
+        logging.getLogger(module).addHandler(fh)
+
+    logging.getLogger(__name__).info("✅ Global logging initialized")
+
+
+# Для локального теста
+if __name__ == "__main__":
+    setup_logging(logging.DEBUG)
+    log = logging.getLogger("utils.text_extractors")
+    log.debug("Тестовый DEBUG из text_extractors")

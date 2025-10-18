@@ -1,0 +1,84 @@
+20:56:09 [INFO] core.normalizer: 🚀 normalize_alcohol_df: старт, shape=(189, 8)
+20:56:09 [DEBUG] core.normalizer: _find_cols: найдено ['Description'] по паттернам ['^name', '^наимен', '^descr', 'описан', 'товар', 'product', 'бренд|марка', 'item']
+20:56:09 [DEBUG] core.normalizer: _find_cols: найдено ['USD/cs'] по паттернам ['(?:price|цена).*(?:case|cs|ctn|carton)', '(?:usd|eur|\\$|€)\\s*(?:/|per)?\\s*(?:case|cs|ctn|carton)', 'usd.?/?cs', 'eur.?/?cs', '\\b\\$\\s*/?\\s*cs\\b', '\\b€\\s*/?\\s*cs\\b']
+20:56:09 [DEBUG] core.normalizer: _find_cols: найдено ['Bt/Cs'] по паттернам ['bottles_per_case', '^\\s*bt\\s*/?\\s*cs\\s*$', 'bt.?/?cs', 'btl.?/?case', '\\bbottles?\\b', 'bottl.?/case', 'шт.*[/ ]*кор', 'шт.*в.*кор', 'шт.*в.*ящ', 'pcs.*[/ ]*case', 'qty.*case', 'size(?!.*price)', '规格']
+20:56:09 [DEBUG] core.normalizer: _find_cols: найдено ['ETA Rdam'] по паттернам ['stock', 'lead\\s*time', 'availability', 'status', 'eta', 'ready', 't1', 't2', 'tbo', 'доступ', 'наличи', 'access']
+20:56:09 [DEBUG] core.normalizer: normalize_alcohol_df: mapping → {'name': ['Description'], 'bottles_per_case': ['Bt/Cs'], 'price_per_case': ['USD/cs'], 'price_per_bottle': 'calculated'}
+20:56:09 [DEBUG] core.normalizer: access заполнено из ['ETA Rdam']
+20:56:09 [DEBUG] core.normalizer: normalize_alcohol_df: удалено пустых строк 0
+20:56:09 [INFO] core.normalizer: ✅ normalize_alcohol_df: завершено, итог shape=(189, 6)
+21:36:05 [INFO] core.normalizer: 🚀 normalize_alcohol_df: старт, shape=(189, 8)
+21:36:05 [DEBUG] core.normalizer: _find_cols: найдено ['Description'] по паттернам ['^name', '^наимен', '^descr', 'описан', 'товар', 'product', 'бренд|марка', 'item']
+21:36:05 [DEBUG] core.normalizer: _find_cols: найдено ['USD/cs'] по паттернам ['(?:price|цена).*(?:case|cs|ctn|carton)', '(?:usd|eur|\\$|€)\\s*(?:/|per)?\\s*(?:case|cs|ctn|carton)', 'usd.?/?cs', 'eur.?/?cs', '\\b\\$\\s*/?\\s*cs\\b', '\\b€\\s*/?\\s*cs\\b']
+21:36:05 [DEBUG] core.normalizer: _find_cols: найдено ['Bt/Cs'] по паттернам ['bottles_per_case', '^\\s*bt\\s*/?\\s*cs\\s*$', 'bt.?/?cs', 'btl.?/?case', '\\bbottles?\\b', 'bottl.?/case', 'шт.*[/ ]*кор', 'шт.*в.*кор', 'шт.*в.*ящ', 'pcs.*[/ ]*case', 'qty.*case', 'size(?!.*price)', '规格']
+21:36:05 [DEBUG] core.normalizer: _find_cols: найдено ['ETA Rdam'] по паттернам ['stock', 'lead\\s*time', 'availability', 'status', 'eta', 'ready', 't1', 't2', 'tbo', 'доступ', 'наличи', 'access']
+21:36:05 [DEBUG] core.normalizer: normalize_alcohol_df: mapping → {'name': ['Description'], 'bottles_per_case': ['Bt/Cs'], 'price_per_case': ['USD/cs'], 'price_per_bottle': 'calculated'}
+21:36:05 [DEBUG] core.normalizer: access заполнено из ['ETA Rdam']
+21:36:05 [DEBUG] core.normalizer: normalize_alcohol_df: удалено пустых строк 0
+21:36:05 [INFO] core.normalizer: ✅ normalize_alcohol_df: завершено, итог shape=(189, 6)
+21:43:34 [INFO] core.normalizer: 🚀 normalize_alcohol_df: старт, shape=(189, 8)
+21:43:34 [DEBUG] core.normalizer: _find_cols: найдено ['Description'] по паттернам ['^name', '^наимен', '^descr', 'описан', 'товар', 'product', 'бренд|марка', 'item']
+21:43:34 [DEBUG] core.normalizer: _find_cols: найдено ['USD/cs'] по паттернам ['(?:price|цена).*(?:case|cs|ctn|carton)', '(?:usd|eur|\\$|€)\\s*(?:/|per)?\\s*(?:case|cs|ctn|carton)', 'usd.?/?cs', 'eur.?/?cs', '\\b\\$\\s*/?\\s*cs\\b', '\\b€\\s*/?\\s*cs\\b']
+21:43:34 [DEBUG] core.normalizer: _find_cols: найдено ['Bt/Cs'] по паттернам ['bottles_per_case', '^\\s*bt\\s*/?\\s*cs\\s*$', 'bt.?/?cs', 'btl.?/?case', '\\bbottles?\\b', 'bottl.?/case', 'шт.*[/ ]*кор', 'шт.*в.*кор', 'шт.*в.*ящ', 'pcs.*[/ ]*case', 'qty.*case', 'size(?!.*price)', '规格']
+21:43:34 [DEBUG] core.normalizer: _find_cols: найдено ['ETA Rdam'] по паттернам ['stock', 'lead\\s*time', 'availability', 'status', 'eta', 'ready', 't1', 't2', 'tbo', 'доступ', 'наличи', 'access']
+21:43:34 [DEBUG] core.normalizer: normalize_alcohol_df: mapping → {'name': ['Description'], 'bottles_per_case': ['Bt/Cs'], 'price_per_case': ['USD/cs'], 'price_per_bottle': 'calculated'}
+21:43:34 [DEBUG] core.normalizer: AccessLocationClassifier: ETA Rdam → добавлена колонка location (по header)
+21:43:34 [DEBUG] core.normalizer: access заполнено из ['ETA Rdam']
+21:43:34 [DEBUG] core.normalizer: location заполнено из ['ETA Rdam_location']
+21:43:34 [DEBUG] core.normalizer: normalize_alcohol_df: удалено пустых строк 0
+21:43:34 [INFO] core.normalizer: ✅ normalize_alcohol_df: завершено, итог shape=(189, 6)
+21:56:11 [INFO] core.normalizer: 🚀 normalize_alcohol_df: старт, shape=(189, 8)
+21:56:11 [DEBUG] core.normalizer: _find_cols: найдено ['Description'] по паттернам ['^name', '^наимен', '^descr', 'описан', 'товар', 'product', 'бренд|марка', 'item']
+21:56:11 [DEBUG] core.normalizer: _find_cols: найдено ['USD/cs'] по паттернам ['(?:price|цена).*(?:case|cs|ctn|carton)', '(?:usd|eur|\\$|€)\\s*(?:/|per)?\\s*(?:case|cs|ctn|carton)', 'usd.?/?cs', 'eur.?/?cs', '\\b\\$\\s*/?\\s*cs\\b', '\\b€\\s*/?\\s*cs\\b']
+21:56:11 [DEBUG] core.normalizer: _find_cols: найдено ['Bt/Cs'] по паттернам ['bottles_per_case', '^\\s*bt\\s*/?\\s*cs\\s*$', 'bt.?/?cs', 'btl.?/?case', '\\bbottles?\\b', 'bottl.?/case', 'шт.*[/ ]*кор', 'шт.*в.*кор', 'шт.*в.*ящ', 'pcs.*[/ ]*case', 'qty.*case', 'size(?!.*price)', '规格']
+21:56:11 [DEBUG] core.normalizer: _find_cols: найдено ['ETA Rdam'] по паттернам ['stock', 'lead\\s*time', 'availability', 'status', 'eta', 'ready', 't1', 't2', 'tbo', 'доступ', 'наличи', 'access']
+21:56:11 [DEBUG] core.normalizer: normalize_alcohol_df: mapping → {'name': ['Description'], 'bottles_per_case': ['Bt/Cs'], 'price_per_case': ['USD/cs'], 'price_per_bottle': 'calculated'}
+21:56:11 [DEBUG] core.normalizer: AccessLocationClassifier: нет location — пробуем заполнить по содержимому access-колонок
+21:56:11 [DEBUG] core.normalizer: AccessLocationClassifier: location не найдено
+21:56:11 [DEBUG] core.normalizer: access заполнено из ['ETA Rdam']
+21:56:11 [DEBUG] core.normalizer: normalize_alcohol_df: удалено пустых строк 0
+21:56:11 [INFO] core.normalizer: ✅ normalize_alcohol_df: завершено, итог shape=(189, 6)
+22:07:07 [INFO] core.normalizer: 🚀 normalize_alcohol_df: старт, shape=(189, 8)
+22:07:07 [DEBUG] core.normalizer: _find_cols: найдено ['Description'] по паттернам ['^name', '^наимен', '^descr', 'описан', 'товар', 'product', 'бренд|марка', 'item']
+22:07:07 [DEBUG] core.normalizer: _find_cols: найдено ['USD/cs'] по паттернам ['(?:price|цена).*(?:case|cs|ctn|carton)', '(?:usd|eur|\\$|€)\\s*(?:/|per)?\\s*(?:case|cs|ctn|carton)', 'usd.?/?cs', 'eur.?/?cs', '\\b\\$\\s*/?\\s*cs\\b', '\\b€\\s*/?\\s*cs\\b']
+22:07:07 [DEBUG] core.normalizer: _find_cols: найдено ['Bt/Cs'] по паттернам ['bottles_per_case', '^\\s*bt\\s*/?\\s*cs\\s*$', 'bt.?/?cs', 'btl.?/?case', '\\bbottles?\\b', 'bottl.?/case', 'шт.*[/ ]*кор', 'шт.*в.*кор', 'шт.*в.*ящ', 'pcs.*[/ ]*case', 'qty.*case', 'size(?!.*price)', '规格']
+22:07:07 [DEBUG] core.normalizer: _find_cols: найдено ['ETA Rdam'] по паттернам ['stock', 'lead\\s*time', 'availability', 'status', 'eta', 'ready', 't1', 't2', 'tbo', 'доступ', 'наличи', 'access']
+22:07:07 [DEBUG] core.normalizer: normalize_alcohol_df: mapping → {'name': ['Description'], 'bottles_per_case': ['Bt/Cs'], 'price_per_case': ['USD/cs'], 'price_per_bottle': 'calculated'}
+22:07:07 [DEBUG] core.normalizer: AccessLocationClassifier: ETA Rdam → добавлена колонка location (по header)
+22:07:07 [DEBUG] core.normalizer: access заполнено из ['ETA Rdam']
+22:07:07 [DEBUG] core.normalizer: location заполнено из ['ETA Rdam_location']
+22:07:07 [DEBUG] core.normalizer: normalize_alcohol_df: удалено пустых строк 0
+22:07:07 [INFO] core.normalizer: ✅ normalize_alcohol_df: завершено, итог shape=(189, 6)
+22:13:17 [INFO] core.normalizer: 🚀 normalize_alcohol_df: старт, shape=(189, 8)
+22:13:17 [DEBUG] core.normalizer: _find_cols: найдено ['Description'] по паттернам ['^name', '^наимен', '^descr', 'описан', 'товар', 'product', 'бренд|марка', 'item']
+22:13:17 [DEBUG] core.normalizer: _find_cols: найдено ['USD/cs'] по паттернам ['(?:price|цена).*(?:case|cs|ctn|carton)', '(?:usd|eur|\\$|€)\\s*(?:/|per)?\\s*(?:case|cs|ctn|carton)', 'usd.?/?cs', 'eur.?/?cs', '\\b\\$\\s*/?\\s*cs\\b', '\\b€\\s*/?\\s*cs\\b']
+22:13:17 [DEBUG] core.normalizer: _find_cols: найдено ['Bt/Cs'] по паттернам ['bottles_per_case', '^\\s*bt\\s*/?\\s*cs\\s*$', 'bt.?/?cs', 'btl.?/?case', '\\bbottles?\\b', 'bottl.?/case', 'шт.*[/ ]*кор', 'шт.*в.*кор', 'шт.*в.*ящ', 'pcs.*[/ ]*case', 'qty.*case', 'size(?!.*price)', '规格']
+22:13:17 [DEBUG] core.normalizer: _find_cols: найдено ['ETA Rdam'] по паттернам ['stock', 'lead\\s*time', 'availability', 'status', 'eta', 'ready', 't1', 't2', 'tbo', 'доступ', 'наличи', 'access']
+22:13:17 [DEBUG] core.normalizer: normalize_alcohol_df: mapping → {'name': ['Description'], 'bottles_per_case': ['Bt/Cs'], 'price_per_case': ['USD/cs'], 'price_per_bottle': 'calculated'}
+22:13:17 [DEBUG] core.normalizer: AccessLocationClassifier: ETA Rdam → добавлена колонка location (по header)
+22:13:17 [DEBUG] core.normalizer: access заполнено из ['ETA Rdam']
+22:13:17 [DEBUG] core.normalizer: location заполнено из ['ETA Rdam_location']
+22:13:17 [DEBUG] core.normalizer: normalize_alcohol_df: удалено пустых строк 0
+22:13:17 [INFO] core.normalizer: ✅ normalize_alcohol_df: завершено, итог shape=(189, 6)
+22:14:28 [INFO] core.normalizer: 🚀 normalize_alcohol_df: старт, shape=(87, 20)
+22:14:28 [DEBUG] core.normalizer: _find_cols: найдено ['Description ( Moutai Series )', 'Description', 'Description: Cigaronne Royal Slim XL Fliter-Black/White'] по паттернам ['^name', '^наимен', '^descr', 'описан', 'товар', 'product', 'бренд|марка', 'item']
+22:14:28 [DEBUG] core.normalizer: _find_cols: найдено ['Price(USD)/Cs', 'Price(USD)/ Ctn'] по паттернам ['(?:price|цена).*(?:case|cs|ctn|carton)', '(?:usd|eur|\\$|€)\\s*(?:/|per)?\\s*(?:case|cs|ctn|carton)', 'usd.?/?cs', 'eur.?/?cs', '\\b\\$\\s*/?\\s*cs\\b', '\\b€\\s*/?\\s*cs\\b']
+22:14:28 [DEBUG] core.normalizer: _find_cols: найдено ['Size/规格'] по паттернам ['bottles_per_case', '^\\s*bt\\s*/?\\s*cs\\s*$', 'bt.?/?cs', 'btl.?/?case', '\\bbottles?\\b', 'bottl.?/case', 'шт.*[/ ]*кор', 'шт.*в.*кор', 'шт.*в.*ящ', 'pcs.*[/ ]*case', 'qty.*case', 'size(?!.*price)', '规格']
+22:14:28 [DEBUG] core.normalizer: _find_cols: найдено ['Status'] по паттернам ['stock', 'lead\\s*time', 'availability', 'status', 'eta', 'ready', 't1', 't2', 'tbo', 'доступ', 'наличи', 'access']
+22:14:28 [DEBUG] core.normalizer: _find_cols: найдено ['Warehouse'] по паттернам ['wareh', 'склад', 'origin', 'отгруз', 'exw', 'dap', 'fob', 'cif', 'место\\s*загруз', 'location', 'incoterm', 'ETA\\s*Rdam']
+22:14:28 [DEBUG] core.normalizer: normalize_alcohol_df: mapping → {'name': ['Description ( Moutai Series )', 'Description', 'Description: Cigaronne Royal Slim XL Fliter-Black/White'], 'bottles_per_case': ['Size/规格'], 'price_per_case': ['Price(USD)/Cs', 'Price(USD)/ Ctn'], 'price_per_bottle': 'calculated'}
+22:14:28 [DEBUG] core.normalizer: access заполнено из ['Status']
+22:14:28 [DEBUG] core.normalizer: location заполнено из ['Warehouse']
+22:14:28 [DEBUG] core.normalizer: normalize_alcohol_df: удалено пустых строк 0
+22:14:28 [INFO] core.normalizer: ✅ normalize_alcohol_df: завершено, итог shape=(87, 6)
+22:15:04 [INFO] core.normalizer: 🚀 normalize_alcohol_df: старт, shape=(87, 20)
+22:15:04 [DEBUG] core.normalizer: _find_cols: найдено ['Description ( Moutai Series )', 'Description', 'Description: Cigaronne Royal Slim XL Fliter-Black/White'] по паттернам ['^name', '^наимен', '^descr', 'описан', 'товар', 'product', 'бренд|марка', 'item']
+22:15:04 [DEBUG] core.normalizer: _find_cols: найдено ['Price(USD)/Cs', 'Price(USD)/ Ctn'] по паттернам ['(?:price|цена).*(?:case|cs|ctn|carton)', '(?:usd|eur|\\$|€)\\s*(?:/|per)?\\s*(?:case|cs|ctn|carton)', 'usd.?/?cs', 'eur.?/?cs', '\\b\\$\\s*/?\\s*cs\\b', '\\b€\\s*/?\\s*cs\\b']
+22:15:04 [DEBUG] core.normalizer: _find_cols: найдено ['Size/规格'] по паттернам ['bottles_per_case', '^\\s*bt\\s*/?\\s*cs\\s*$', 'bt.?/?cs', 'btl.?/?case', '\\bbottles?\\b', 'bottl.?/case', 'шт.*[/ ]*кор', 'шт.*в.*кор', 'шт.*в.*ящ', 'pcs.*[/ ]*case', 'qty.*case', 'size(?!.*price)', '规格']
+22:15:04 [DEBUG] core.normalizer: _find_cols: найдено ['Status'] по паттернам ['stock', 'lead\\s*time', 'availability', 'status', 'eta', 'ready', 't1', 't2', 'tbo', 'доступ', 'наличи', 'access']
+22:15:04 [DEBUG] core.normalizer: _find_cols: найдено ['Warehouse'] по паттернам ['wareh', 'склад', 'origin', 'отгруз', 'exw', 'dap', 'fob', 'cif', 'место\\s*загруз', 'location', 'incoterm', 'ETA\\s*Rdam']
+22:15:04 [DEBUG] core.normalizer: normalize_alcohol_df: mapping → {'name': ['Description ( Moutai Series )', 'Description', 'Description: Cigaronne Royal Slim XL Fliter-Black/White'], 'bottles_per_case': ['Size/规格'], 'price_per_case': ['Price(USD)/Cs', 'Price(USD)/ Ctn'], 'price_per_bottle': 'calculated'}
+22:15:04 [DEBUG] core.normalizer: access заполнено из ['Status']
+22:15:04 [DEBUG] core.normalizer: location заполнено из ['Warehouse']
+22:15:04 [DEBUG] core.normalizer: normalize_alcohol_df: удалено пустых строк 0
+22:15:04 [INFO] core.normalizer: ✅ normalize_alcohol_df: завершено, итог shape=(87, 6)

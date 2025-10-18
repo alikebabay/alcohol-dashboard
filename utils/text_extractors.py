@@ -6,11 +6,12 @@ print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 import re
 import pandas as pd
 import json
-
+import logging
 
 from core.distillator import _extract_volume, _infer_bpc_from_name, RX_ABV
 from utils.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC
 
+logger = logging.getLogger(__name__)
 
 def extract_volume(text: str):
     return _extract_volume(text)
@@ -169,6 +170,7 @@ def extract_access(text: str):
     Returns combined string like 'T2, 2 weeks'.
     """
     if not text:
+        logger.debug("extract_access: пустой ввод")
         return None
     s = str(text).strip()
 
@@ -186,10 +188,10 @@ def extract_access(text: str):
 
     if parts:
         val = ", ".join(dict.fromkeys(parts))
-        
+        logger.debug(f"extract_access: найдено → {val!r}")
         return val
 
-    
+    logger.debug(f"extract_access: ничего не найдено в '{s}'")
     return None
 
 
@@ -205,6 +207,7 @@ def extract_location(text: str):
     """
 
     if not text:
+        logger.debug("extract_location: пустой ввод")
         return None
     s = str(text).strip()
 
@@ -231,9 +234,9 @@ def extract_location(text: str):
         if m:
             city = m.group(1)
             expanded = CITY_ALIASES.get(city.lower()[:4], city)
-            
+            logger.debug(f"extract_location: без Incoterm, найден город {expanded!r}")
             return expanded
-        
+        logger.debug(f"extract_location: Incoterm не найден, город не распознан → {s!r}")
         return None
 
 
@@ -251,7 +254,7 @@ def extract_location(text: str):
 
     if not found_cities:
         # нет географических совпадений — мусор
-        
+        logger.debug(f"extract_location: нет городов в '{tail}'")
         return None
 
     # нормализуем написание: соединяем города через " or " / "/" / "and"
@@ -265,8 +268,8 @@ def extract_location(text: str):
 
     # финальная постпроверка — только если Incoterm + город известен
     if not any(alias.lower() in val.lower() for alias in CITY_ALIASES.values()):
-        
+        logger.debug(f"extract_location: финальная проверка не прошла → {val!r}")
         return None
 
-    
+    logger.debug(f"extract_location: успешно → {val!r}")
     return val

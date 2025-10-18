@@ -2,10 +2,14 @@ from __future__ import annotations
 import re
 import pandas as pd
 from typing import Dict, List, Optional, Tuple
+import logging
+import json
 
 #проверка свежести кода
 import time
 print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+
+logger = logging.getLogger(__name__)
 
 # --- утилиты ---------------------------------------------------------------
 
@@ -37,6 +41,8 @@ def _find_cols(df: pd.DataFrame, patterns: List[str]) -> List[str]:
     for col, norm in norm_cols.items():
         if any(re.search(pat, norm) for pat in patterns):
             out.append(col)
+    if out:
+        logger.debug(f"_find_cols: найдено {out} по паттернам {patterns}")
     return out
 
 
@@ -49,8 +55,15 @@ def _cases_from_size_text(x) -> Optional[float]:
         try:
             return float(m.group(1))
         except Exception:
+            logger.debug(f"_cases_from_size_text: не удалось извлечь число из {x!r}")
             return None
     return _to_number(x)
+    
+    
+        
+
+
+
 
 
 # --- ядро нормализации -----------------------------------------------------
@@ -83,14 +96,121 @@ AVAILABILITY_PATS = [
 ]
 
 LOCATION_PATS = [
-    r"wareh", r"склад", r"origin", r"отгруз", r"exw", r"dap", r"fob", r"cif", r"место\s*загруз", r"location", r"incoterm"
+    r"wareh", r"склад", r"origin", r"отгруз", r"exw", r"dap", r"fob", r"cif", r"место\s*загруз", r"location", r"incoterm", r"ETA\s*Rdam",
 ]
 
 
+class AccessLocationClassifier:
+    """
+    Проверяет найденные availability/location колонки по оси и шапке.
+    Может создать недостающую колонку (access или location),
+    и заполняет её токенами из aliases JSON.
+    """
 
+    def __init__(self, df, avail_cols, loc_cols):
+        self.df = df
+        self.avail_cols = avail_cols
+        self.loc_cols = loc_cols
+
+        with open("aliases/city_aliases.json", encoding="utf-8") as f:
+            self.city_aliases = json.load(f)["aliases"]
+        with open("aliases/incoterms_aliases.json", encoding="utf-8") as f:
+            self.incoterms_aliases = json.load(f)["aliases"]
+
+        # паттерны для анализа содержимого по вертикали
+        self.rx_access = re.compile(r"\b(ready|t[12]|tbo|stock|lead\s*time|\d+\s*(?:day|week))", re.I)
+        self.rx_location = re.compile(
+            r"\b(" + "|".join(map(re.escape, list(self.city_aliases.keys()) + list(self.incoterms_aliases.keys()))) + r")\b",
+            re.I
+        )
+
+    def _scan_down(self, col):
+        s = self.df[col].astype(str).dropna().tolist()
+        joined = " ".join(s[:50])
+        has_access = bool(self.rx_access.search(joined))
+        has_location = bool(self.rx_location.search(joined))
+        return has_access, has_location
+
+    def _check_header_for_location(self, col):
+        h = str(col).lower()
+        return any(k.lower() in h for k in list(self.city_aliases.keys()) + list(self.incoterms_aliases.keys()))
+
+    def _normalize_location_cell(self, text: str, col_header: Optional[str] = None) -> Optional[str]:
+        """Ищет алиасы в тексте ячейки или названии колонки и возвращает нормализованный токен."""
+        # 1️⃣ проверяем содержимое ячейки
+        if isinstance(text, str):
+            txt = text.strip().lower()
+            for k, v in {**self.city_aliases, **self.incoterms_aliases}.items():
+                if k.lower() in txt:
+                    return v
+
+        # 2️⃣ fallback — проверяем заголовок колонки
+        if col_header:
+            hdr = str(col_header).lower()
+            aliases = {k.lower(): v for k, v in {**self.city_aliases, **self.incoterms_aliases}.items()}
+            for k, v in aliases.items():
+                if k in hdr:
+                    return v
+
+        return None
+
+
+    def _normalize_access_cell(self, text: str) -> Optional[str]:
+        """Приводит доступность к токену (ready/T1/T2/TBO/lead time X days...)."""
+        if not isinstance(text, str):
+            return None
+        t = text.strip().lower()
+        if "ready" in t:
+            return "READY"
+        if re.search(r"\bt1\b", t):
+            return "T1"
+        if re.search(r"\bt2\b", t):
+            return "T2"
+        if "tbo" in t:
+            return "TBO"
+        if re.search(r"\d+\s*day", t):
+            return re.findall(r"\d+\s*day", t)[0]
+        if re.search(r"\d+\s*week", t):
+            return re.findall(r"\d+\s*week", t)[0]
+        return None
+
+    def resolve(self):
+        new_access_cols = list(self.avail_cols)
+        new_loc_cols = list(self.loc_cols)
+
+        for col in set(self.avail_cols + self.loc_cols):
+            has_access, has_location = self._scan_down(col)
+
+            # ETA-гибрид
+            if has_access and has_location:
+                logger.debug(f"AccessLocationClassifier: {col} содержит и доступ, и локацию → ETA-гибрид")
+                self.df[f"{col}_access"] = self.df[col].map(self._normalize_access_cell)
+                self.df[f"{col}_location"] = self.df[col].map(self._normalize_location_cell)
+                new_access_cols.append(f"{col}_access")
+                new_loc_cols.append(f"{col}_location")
+
+            # access по содержимому + локация по header
+            elif has_access and not has_location and self._check_header_for_location(col):
+                logger.debug(f"AccessLocationClassifier: {col} → добавлена колонка location (по header)")
+                self.df[f"{col}_location"] = self.df[col].map(
+                    lambda x: self._normalize_location_cell(x, col)
+                )
+                new_loc_cols.append(f"{col}_location")
+
+            # location по содержимому, добавляем access по содержимому
+            elif has_location and not has_access:
+                has_ready = any(re.search(self.rx_access, str(v)) for v in self.df[col].head(50))
+                if has_ready:
+                    logger.debug(f"AccessLocationClassifier: {col} → добавлена колонка access (по содержимому)")
+                    self.df[f"{col}_access"] = self.df[col].map(self._normalize_access_cell)
+                    new_access_cols.append(f"{col}_access")
+
+        return new_access_cols, new_loc_cols
+
+    
 def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, Optional[str]]]:
 
-    print(f"[RUN] normalize_alcohol_df started, shape={df_in.shape}")
+    logger.info(f"🚀 normalize_alcohol_df: старт, shape={df_in.shape}")
     """
     Нормализует DataFrame с произвольными заголовками.
     Возвращает:
@@ -118,7 +238,7 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     }
 
 
-
+    logger.debug(f"normalize_alcohol_df: mapping → {mapping}")
     out = pd.DataFrame()
 
     # --- Наименование ---
@@ -127,6 +247,7 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
         out["name"] = tmp.iloc[:, 0].astype(str).str.strip()
     else:
         out["name"] = None
+        logger.warning("normalize_alcohol_df: не найдены колонки с именами товаров")
 
     # --- Кол-во бутылок в кейсе ---
     if bpc_cols:
@@ -157,8 +278,11 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     else:
         out["price_per_bottle"] = out["price_per_case"] / out["bottles_per_case"]
         out["price_per_bottle"] = pd.to_numeric(out["price_per_bottle"], errors="coerce").round(4)
-        
 
+    # --- Доступность и место загрузки классификатор ---
+    classifier = AccessLocationClassifier(df, avail_cols, loc_cols)
+    avail_cols, loc_cols = classifier.resolve()
+    
     # --- доступность и место загрузки ---
     if avail_cols:
         tmp = df[avail_cols].bfill(axis=1)
@@ -169,17 +293,28 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
             out["access"] = tmp.iloc[:,0].astype(str).str.strip()
     else:
         out["access"] = None
+    
+    if avail_cols:
+        logger.debug(f"access заполнено из {avail_cols}")
 
     if loc_cols:
         tmp = df[loc_cols].bfill(axis=1)
         out["location"] = tmp.iloc[:, 0].astype(str).str.strip()
     else:
         out["location"] = None
+    
+    if loc_cols:
+        logger.debug(f"location заполнено из {loc_cols}")
 
     # --- Очистка пустых строк ---
     if name_cols:
         out = out[~out["name"].fillna("").str.strip().eq("")].reset_index(drop=True)
     
+    # --- Очистка пустых строк ---
+    before = len(out)
+    if name_cols:
+        out = out[~out["name"].fillna("").str.strip().eq("")].reset_index(drop=True)
     
-
+    logger.debug(f"normalize_alcohol_df: удалено пустых строк {before - len(out)}")
+    logger.info(f"✅ normalize_alcohol_df: завершено, итог shape={out.shape}")
     return out, mapping

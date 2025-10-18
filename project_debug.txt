@@ -1,0 +1,369 @@
+20:42:47 [INFO] __main__: ✅ Global logging initialized
+20:42:47 [DEBUG] utils.text_extractors: Тестовый DEBUG из text_extractors
+20:42:54 [INFO] utils.logger: ✅ Global logging initialized
+20:42:57 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getMe "HTTP/1.1 200 OK"
+20:42:57 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/deleteWebhook "HTTP/1.1 200 OK"
+20:42:57 [INFO] telegram.ext.Application: Application started
+20:43:03 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:43:03 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:43:05 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:43:05 [INFO] __main__: Поставщик выбран: Определить по названию файла
+20:43:05 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:43:16 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:43:17 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:43:17 [INFO] handler_userdata: [handle_userdata] Получен ввод, supplier_choice=Определить по названию файла
+20:43:17 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:43:18 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getFile "HTTP/1.1 200 OK"
+20:43:18 [INFO] httpx: HTTP Request: GET https://api.telegram.org/file/bot8158680699%3AAAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/documents/file_231.xlsx "HTTP/1.1 200 OK"
+20:43:27 [INFO] integrations.rules_typing: [TYPE] enforced: float→['bottles_per_case', 'price_per_case', 'price_per_bottle'], int→[], str→['name', 'access', 'location', 'cl', 'Тип']
+20:43:27 [INFO] integrations.graph_offers: [GRAPH] Active supplier: 'TDT 8-7 Price list'
+20:43:28 [INFO] integrations.graph_offers: [GRAPH] добавлены=0, пропущены=167, всего=167
+20:43:28 [INFO] integrations.graph_to_sheets: ✅ Загружено 392 офферов из Neo4j.
+20:43:35 [INFO] integrations.graph_to_sheets: ✅ Данные успешно загружены в Google Sheets → master
+20:43:36 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendDocument "HTTP/1.1 200 OK"
+20:43:36 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:43:36 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:43:46 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:43:57 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:52:22 [INFO] utils.logger: ✅ Global logging initialized
+20:52:51 [INFO] utils.logger: ✅ Global logging initialized
+20:52:53 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getMe "HTTP/1.1 200 OK"
+20:52:53 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/deleteWebhook "HTTP/1.1 200 OK"
+20:52:53 [INFO] telegram.ext.Application: Application started
+20:52:57 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:52:57 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:52:58 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:52:58 [INFO] __main__: Поставщик выбран: Определить по названию файла
+20:52:59 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:53:03 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:53:03 [INFO] handler_userdata: [handle_userdata] Получен ввод, supplier_choice=Определить по названию файла
+20:53:03 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:53:04 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getFile "HTTP/1.1 200 OK"
+20:53:04 [INFO] httpx: HTTP Request: GET https://api.telegram.org/file/bot8158680699%3AAAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/documents/file_232.xlsx "HTTP/1.1 200 OK"
+20:53:04 [INFO] core.normalizer: 🚀 normalize_alcohol_df: старт, shape=(189, 8)
+20:53:04 [ERROR] __main__: Update Update(message=Message(channel_chat_created=False, chat=Chat(first_name='Alisher', id=124806689, last_name='Akhmetov', type=<ChatType.PRIVATE>, username='alikebabay'), date=datetime.datetime(2025, 10, 18, 15, 53, 3, tzinfo=datetime.timezone.utc), delete_chat_photo=False, document=Document(file_id='BQACAgIAAxkBAAIaxmjzt9_MnEd1_xEJ3hVKnd88FgXeAALghAACoBuhS98SaUK3mNAnNgQ', file_name='TDT 8-7 Price list.xlsx', file_size=25579, file_unique_id='AgAD4IQAAqAboUs', mime_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'), from_user=User(first_name='Alisher', id=124806689, is_bot=False, language_code='en', last_name='Akhmetov', username='alikebabay'), group_chat_created=False, message_id=6854, supergroup_chat_created=False), update_id=247233816) caused error name 'before' is not defined
+20:53:04 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:53:14 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:53:18 [ERROR] asyncio: Task was destroyed but it is pending!
+task: <Task pending name='Application:8158680699:update_fetcher' coro=<Application._update_fetcher() running at C:\Users\alikebabay\Documents\alcohol-dashboard\.venv\Lib\site-packages\telegram\ext\_application.py:1233> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+20:53:18 [ERROR] asyncio: Task was destroyed but it is pending!
+task: <Task pending name='Updater:start_polling:polling_task' coro=<network_retry_loop() running at C:\Users\alikebabay\Documents\alcohol-dashboard\.venv\Lib\site-packages\telegram\ext\_utils\networkloop.py:162> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[Task.task_wakeup()]>
+20:54:40 [INFO] utils.logger: ✅ Global logging initialized
+20:54:42 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getMe "HTTP/1.1 200 OK"
+20:54:42 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/deleteWebhook "HTTP/1.1 200 OK"
+20:54:42 [INFO] telegram.ext.Application: Application started
+20:54:44 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:54:44 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:54:46 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:54:46 [INFO] __main__: Поставщик выбран: Определить по названию файла
+20:54:46 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:54:51 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:54:51 [INFO] handler_userdata: [handle_userdata] Получен ввод, supplier_choice=Определить по названию файла
+20:54:52 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:54:52 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getFile "HTTP/1.1 200 OK"
+20:54:52 [INFO] httpx: HTTP Request: GET https://api.telegram.org/file/bot8158680699%3AAAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/documents/file_233.xlsx "HTTP/1.1 200 OK"
+20:54:52 [INFO] core.normalizer: 🚀 normalize_alcohol_df: старт, shape=(189, 8)
+20:54:52 [INFO] core.normalizer: ✅ normalize_alcohol_df: завершено, итог shape=(189, 6)
+20:55:02 [INFO] integrations.rules_typing: [TYPE] enforced: float→['bottles_per_case', 'price_per_case', 'price_per_bottle'], int→[], str→['name', 'access', 'location', 'cl', 'Тип']
+20:55:02 [INFO] integrations.graph_offers: [GRAPH] Active supplier: 'TDT 8-7 Price list'
+20:55:02 [INFO] integrations.graph_offers: [GRAPH] добавлены=0, пропущены=167, всего=167
+20:55:03 [INFO] integrations.graph_to_sheets: ✅ Загружено 392 офферов из Neo4j.
+20:55:09 [INFO] integrations.graph_to_sheets: ✅ Данные успешно загружены в Google Sheets → master
+20:55:10 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendDocument "HTTP/1.1 200 OK"
+20:55:10 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:55:10 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:55:20 [ERROR] asyncio: Task was destroyed but it is pending!
+task: <Task pending name='Application:8158680699:update_fetcher' coro=<Application._update_fetcher() running at C:\Users\alikebabay\Documents\alcohol-dashboard\.venv\Lib\site-packages\telegram\ext\_application.py:1233> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+20:55:20 [ERROR] asyncio: Task was destroyed but it is pending!
+task: <Task pending name='Updater:start_polling:polling_task' coro=<network_retry_loop() running at C:\Users\alikebabay\Documents\alcohol-dashboard\.venv\Lib\site-packages\telegram\ext\_utils\networkloop.py:162> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[Task.task_wakeup()]>
+20:55:59 [INFO] utils.logger: ✅ Global logging initialized
+20:56:02 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getMe "HTTP/1.1 200 OK"
+20:56:02 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/deleteWebhook "HTTP/1.1 200 OK"
+20:56:02 [INFO] telegram.ext.Application: Application started
+20:56:02 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:56:03 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:56:04 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:56:04 [INFO] __main__: Поставщик выбран: Определить по названию файла
+20:56:04 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:56:08 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:56:08 [INFO] handler_userdata: [handle_userdata] Получен ввод, supplier_choice=Определить по названию файла
+20:56:08 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:56:08 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getFile "HTTP/1.1 200 OK"
+20:56:08 [INFO] httpx: HTTP Request: GET https://api.telegram.org/file/bot8158680699%3AAAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/documents/file_234.xlsx "HTTP/1.1 200 OK"
+20:56:09 [INFO] core.normalizer: 🚀 normalize_alcohol_df: старт, shape=(189, 8)
+20:56:09 [DEBUG] core.normalizer: _find_cols: найдено ['Description'] по паттернам ['^name', '^наимен', '^descr', 'описан', 'товар', 'product', 'бренд|марка', 'item']
+20:56:09 [DEBUG] core.normalizer: _find_cols: найдено ['USD/cs'] по паттернам ['(?:price|цена).*(?:case|cs|ctn|carton)', '(?:usd|eur|\\$|€)\\s*(?:/|per)?\\s*(?:case|cs|ctn|carton)', 'usd.?/?cs', 'eur.?/?cs', '\\b\\$\\s*/?\\s*cs\\b', '\\b€\\s*/?\\s*cs\\b']
+20:56:09 [DEBUG] core.normalizer: _find_cols: найдено ['Bt/Cs'] по паттернам ['bottles_per_case', '^\\s*bt\\s*/?\\s*cs\\s*$', 'bt.?/?cs', 'btl.?/?case', '\\bbottles?\\b', 'bottl.?/case', 'шт.*[/ ]*кор', 'шт.*в.*кор', 'шт.*в.*ящ', 'pcs.*[/ ]*case', 'qty.*case', 'size(?!.*price)', '规格']
+20:56:09 [DEBUG] core.normalizer: _find_cols: найдено ['ETA Rdam'] по паттернам ['stock', 'lead\\s*time', 'availability', 'status', 'eta', 'ready', 't1', 't2', 'tbo', 'доступ', 'наличи', 'access']
+20:56:09 [DEBUG] core.normalizer: normalize_alcohol_df: mapping → {'name': ['Description'], 'bottles_per_case': ['Bt/Cs'], 'price_per_case': ['USD/cs'], 'price_per_bottle': 'calculated'}
+20:56:09 [DEBUG] core.normalizer: access заполнено из ['ETA Rdam']
+20:56:09 [DEBUG] core.normalizer: normalize_alcohol_df: удалено пустых строк 0
+20:56:09 [INFO] core.normalizer: ✅ normalize_alcohol_df: завершено, итог shape=(189, 6)
+20:56:20 [INFO] integrations.rules_typing: [TYPE] enforced: float→['bottles_per_case', 'price_per_case', 'price_per_bottle'], int→[], str→['name', 'access', 'location', 'cl', 'Тип']
+20:56:20 [INFO] integrations.graph_offers: [GRAPH] Active supplier: 'TDT 8-7 Price list'
+20:56:21 [INFO] integrations.graph_offers: [GRAPH] добавлены=0, пропущены=167, всего=167
+20:56:21 [INFO] integrations.graph_to_sheets: ✅ Загружено 392 офферов из Neo4j.
+20:56:28 [INFO] integrations.graph_to_sheets: ✅ Данные успешно загружены в Google Sheets → master
+20:56:28 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendDocument "HTTP/1.1 200 OK"
+20:56:28 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:56:28 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:56:38 [ERROR] asyncio: Task was destroyed but it is pending!
+task: <Task pending name='Application:8158680699:update_fetcher' coro=<Application._update_fetcher() running at C:\Users\alikebabay\Documents\alcohol-dashboard\.venv\Lib\site-packages\telegram\ext\_application.py:1233> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+20:56:38 [ERROR] asyncio: Task was destroyed but it is pending!
+task: <Task pending name='Updater:start_polling:polling_task' coro=<network_retry_loop() running at C:\Users\alikebabay\Documents\alcohol-dashboard\.venv\Lib\site-packages\telegram\ext\_utils\networkloop.py:162> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[Task.task_wakeup()]>
+21:08:58 [INFO] utils.logger: ✅ Global logging initialized
+21:09:00 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getMe "HTTP/1.1 200 OK"
+21:09:00 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/deleteWebhook "HTTP/1.1 200 OK"
+21:09:00 [INFO] telegram.ext.Application: Application started
+21:09:01 [ERROR] asyncio: Task was destroyed but it is pending!
+task: <Task pending name='Application:8158680699:update_fetcher' coro=<Application._update_fetcher() running at C:\Users\alikebabay\Documents\alcohol-dashboard\.venv\Lib\site-packages\telegram\ext\_application.py:1233> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+21:09:01 [ERROR] asyncio: Task was destroyed but it is pending!
+task: <Task pending name='Updater:start_polling:polling_task' coro=<network_retry_loop() running at C:\Users\alikebabay\Documents\alcohol-dashboard\.venv\Lib\site-packages\telegram\ext\_utils\networkloop.py:162> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[Task.task_wakeup()]>
+21:35:50 [INFO] utils.logger: ✅ Global logging initialized
+21:35:53 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getMe "HTTP/1.1 200 OK"
+21:35:53 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/deleteWebhook "HTTP/1.1 200 OK"
+21:35:53 [INFO] telegram.ext.Application: Application started
+21:35:56 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:35:56 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+21:35:58 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:35:58 [INFO] __main__: Поставщик выбран: Определить по названию файла
+21:35:58 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+21:36:04 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:36:04 [INFO] handler_userdata: [handle_userdata] Получен ввод, supplier_choice=Определить по названию файла
+21:36:04 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+21:36:05 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getFile "HTTP/1.1 200 OK"
+21:36:05 [INFO] httpx: HTTP Request: GET https://api.telegram.org/file/bot8158680699%3AAAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/documents/file_235.xlsx "HTTP/1.1 200 OK"
+21:36:05 [INFO] core.normalizer: 🚀 normalize_alcohol_df: старт, shape=(189, 8)
+21:36:05 [DEBUG] core.normalizer: _find_cols: найдено ['Description'] по паттернам ['^name', '^наимен', '^descr', 'описан', 'товар', 'product', 'бренд|марка', 'item']
+21:36:05 [DEBUG] core.normalizer: _find_cols: найдено ['USD/cs'] по паттернам ['(?:price|цена).*(?:case|cs|ctn|carton)', '(?:usd|eur|\\$|€)\\s*(?:/|per)?\\s*(?:case|cs|ctn|carton)', 'usd.?/?cs', 'eur.?/?cs', '\\b\\$\\s*/?\\s*cs\\b', '\\b€\\s*/?\\s*cs\\b']
+21:36:05 [DEBUG] core.normalizer: _find_cols: найдено ['Bt/Cs'] по паттернам ['bottles_per_case', '^\\s*bt\\s*/?\\s*cs\\s*$', 'bt.?/?cs', 'btl.?/?case', '\\bbottles?\\b', 'bottl.?/case', 'шт.*[/ ]*кор', 'шт.*в.*кор', 'шт.*в.*ящ', 'pcs.*[/ ]*case', 'qty.*case', 'size(?!.*price)', '规格']
+21:36:05 [DEBUG] core.normalizer: _find_cols: найдено ['ETA Rdam'] по паттернам ['stock', 'lead\\s*time', 'availability', 'status', 'eta', 'ready', 't1', 't2', 'tbo', 'доступ', 'наличи', 'access']
+21:36:05 [DEBUG] core.normalizer: normalize_alcohol_df: mapping → {'name': ['Description'], 'bottles_per_case': ['Bt/Cs'], 'price_per_case': ['USD/cs'], 'price_per_bottle': 'calculated'}
+21:36:05 [DEBUG] core.normalizer: access заполнено из ['ETA Rdam']
+21:36:05 [DEBUG] core.normalizer: normalize_alcohol_df: удалено пустых строк 0
+21:36:05 [INFO] core.normalizer: ✅ normalize_alcohol_df: завершено, итог shape=(189, 6)
+21:36:15 [INFO] integrations.rules_typing: [TYPE] enforced: float→['bottles_per_case', 'price_per_case', 'price_per_bottle'], int→[], str→['name', 'access', 'location', 'cl', 'Тип']
+21:36:15 [INFO] integrations.graph_offers: [GRAPH] Active supplier: 'TDT 8-7 Price list'
+21:36:16 [INFO] integrations.graph_offers: [GRAPH] добавлены=0, пропущены=167, всего=167
+21:36:16 [INFO] integrations.graph_to_sheets: ✅ Загружено 392 офферов из Neo4j.
+21:36:23 [INFO] integrations.graph_to_sheets: ✅ Данные успешно загружены в Google Sheets → master
+21:36:24 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendDocument "HTTP/1.1 200 OK"
+21:36:24 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+21:36:24 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+21:36:34 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:36:45 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:43:22 [INFO] utils.logger: ✅ Global logging initialized
+21:43:24 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getMe "HTTP/1.1 200 OK"
+21:43:24 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/deleteWebhook "HTTP/1.1 200 OK"
+21:43:24 [INFO] telegram.ext.Application: Application started
+21:43:25 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:43:25 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+21:43:27 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:43:27 [INFO] __main__: Поставщик выбран: Определить по названию файла
+21:43:27 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+21:43:32 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:43:32 [INFO] handler_userdata: [handle_userdata] Получен ввод, supplier_choice=Определить по названию файла
+21:43:33 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+21:43:33 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getFile "HTTP/1.1 200 OK"
+21:43:33 [INFO] httpx: HTTP Request: GET https://api.telegram.org/file/bot8158680699%3AAAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/documents/file_236.xlsx "HTTP/1.1 200 OK"
+21:43:34 [INFO] core.normalizer: 🚀 normalize_alcohol_df: старт, shape=(189, 8)
+21:43:34 [DEBUG] core.normalizer: _find_cols: найдено ['Description'] по паттернам ['^name', '^наимен', '^descr', 'описан', 'товар', 'product', 'бренд|марка', 'item']
+21:43:34 [DEBUG] core.normalizer: _find_cols: найдено ['USD/cs'] по паттернам ['(?:price|цена).*(?:case|cs|ctn|carton)', '(?:usd|eur|\\$|€)\\s*(?:/|per)?\\s*(?:case|cs|ctn|carton)', 'usd.?/?cs', 'eur.?/?cs', '\\b\\$\\s*/?\\s*cs\\b', '\\b€\\s*/?\\s*cs\\b']
+21:43:34 [DEBUG] core.normalizer: _find_cols: найдено ['Bt/Cs'] по паттернам ['bottles_per_case', '^\\s*bt\\s*/?\\s*cs\\s*$', 'bt.?/?cs', 'btl.?/?case', '\\bbottles?\\b', 'bottl.?/case', 'шт.*[/ ]*кор', 'шт.*в.*кор', 'шт.*в.*ящ', 'pcs.*[/ ]*case', 'qty.*case', 'size(?!.*price)', '规格']
+21:43:34 [DEBUG] core.normalizer: _find_cols: найдено ['ETA Rdam'] по паттернам ['stock', 'lead\\s*time', 'availability', 'status', 'eta', 'ready', 't1', 't2', 'tbo', 'доступ', 'наличи', 'access']
+21:43:34 [DEBUG] core.normalizer: normalize_alcohol_df: mapping → {'name': ['Description'], 'bottles_per_case': ['Bt/Cs'], 'price_per_case': ['USD/cs'], 'price_per_bottle': 'calculated'}
+21:43:34 [DEBUG] core.normalizer: AccessLocationClassifier: ETA Rdam → добавлена колонка location (по header)
+21:43:34 [DEBUG] core.normalizer: access заполнено из ['ETA Rdam']
+21:43:34 [DEBUG] core.normalizer: location заполнено из ['ETA Rdam_location']
+21:43:34 [DEBUG] core.normalizer: normalize_alcohol_df: удалено пустых строк 0
+21:43:34 [INFO] core.normalizer: ✅ normalize_alcohol_df: завершено, итог shape=(189, 6)
+21:43:43 [INFO] integrations.rules_typing: [TYPE] enforced: float→['bottles_per_case', 'price_per_case', 'price_per_bottle'], int→[], str→['name', 'access', 'location', 'cl', 'Тип']
+21:43:43 [INFO] integrations.graph_offers: [GRAPH] Active supplier: 'TDT 8-7 Price list'
+21:43:47 [INFO] integrations.graph_offers: [GRAPH] добавлены=164, пропущены=3, всего=167
+21:43:47 [INFO] integrations.graph_to_sheets: ✅ Загружено 556 офферов из Neo4j.
+21:43:54 [INFO] integrations.graph_to_sheets: ✅ Данные успешно загружены в Google Sheets → master
+21:43:55 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendDocument "HTTP/1.1 200 OK"
+21:43:55 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+21:43:55 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+21:44:04 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:44:15 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:44:27 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:44:38 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:55:58 [INFO] utils.logger: ✅ Global logging initialized
+21:56:00 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getMe "HTTP/1.1 200 OK"
+21:56:00 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/deleteWebhook "HTTP/1.1 200 OK"
+21:56:00 [INFO] telegram.ext.Application: Application started
+21:56:03 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:56:03 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+21:56:05 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:56:05 [INFO] __main__: Поставщик выбран: Определить по названию файла
+21:56:05 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+21:56:10 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:56:10 [INFO] handler_userdata: [handle_userdata] Получен ввод, supplier_choice=Определить по названию файла
+21:56:11 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+21:56:11 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getFile "HTTP/1.1 200 OK"
+21:56:11 [INFO] httpx: HTTP Request: GET https://api.telegram.org/file/bot8158680699%3AAAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/documents/file_237.xlsx "HTTP/1.1 200 OK"
+21:56:11 [INFO] core.normalizer: 🚀 normalize_alcohol_df: старт, shape=(189, 8)
+21:56:11 [DEBUG] core.normalizer: _find_cols: найдено ['Description'] по паттернам ['^name', '^наимен', '^descr', 'описан', 'товар', 'product', 'бренд|марка', 'item']
+21:56:11 [DEBUG] core.normalizer: _find_cols: найдено ['USD/cs'] по паттернам ['(?:price|цена).*(?:case|cs|ctn|carton)', '(?:usd|eur|\\$|€)\\s*(?:/|per)?\\s*(?:case|cs|ctn|carton)', 'usd.?/?cs', 'eur.?/?cs', '\\b\\$\\s*/?\\s*cs\\b', '\\b€\\s*/?\\s*cs\\b']
+21:56:11 [DEBUG] core.normalizer: _find_cols: найдено ['Bt/Cs'] по паттернам ['bottles_per_case', '^\\s*bt\\s*/?\\s*cs\\s*$', 'bt.?/?cs', 'btl.?/?case', '\\bbottles?\\b', 'bottl.?/case', 'шт.*[/ ]*кор', 'шт.*в.*кор', 'шт.*в.*ящ', 'pcs.*[/ ]*case', 'qty.*case', 'size(?!.*price)', '规格']
+21:56:11 [DEBUG] core.normalizer: _find_cols: найдено ['ETA Rdam'] по паттернам ['stock', 'lead\\s*time', 'availability', 'status', 'eta', 'ready', 't1', 't2', 'tbo', 'доступ', 'наличи', 'access']
+21:56:11 [DEBUG] core.normalizer: normalize_alcohol_df: mapping → {'name': ['Description'], 'bottles_per_case': ['Bt/Cs'], 'price_per_case': ['USD/cs'], 'price_per_bottle': 'calculated'}
+21:56:11 [DEBUG] core.normalizer: AccessLocationClassifier: нет location — пробуем заполнить по содержимому access-колонок
+21:56:11 [DEBUG] core.normalizer: AccessLocationClassifier: location не найдено
+21:56:11 [DEBUG] core.normalizer: access заполнено из ['ETA Rdam']
+21:56:11 [DEBUG] core.normalizer: normalize_alcohol_df: удалено пустых строк 0
+21:56:11 [INFO] core.normalizer: ✅ normalize_alcohol_df: завершено, итог shape=(189, 6)
+21:56:20 [INFO] integrations.rules_typing: [TYPE] enforced: float→['bottles_per_case', 'price_per_case', 'price_per_bottle'], int→[], str→['name', 'location', 'access', 'cl', 'Тип']
+21:56:21 [INFO] integrations.graph_offers: [GRAPH] Active supplier: 'TDT 8-7 Price list'
+21:56:22 [INFO] integrations.graph_offers: [GRAPH] добавлены=0, пропущены=167, всего=167
+21:56:22 [INFO] integrations.graph_to_sheets: ✅ Загружено 556 офферов из Neo4j.
+21:56:31 [INFO] integrations.graph_to_sheets: ✅ Данные успешно загружены в Google Sheets → master
+21:56:31 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendDocument "HTTP/1.1 200 OK"
+21:56:31 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+21:56:32 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+21:56:41 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:56:52 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:57:03 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:57:14 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:57:26 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+21:57:37 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:06:47 [INFO] utils.logger: ✅ Global logging initialized
+22:06:49 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getMe "HTTP/1.1 200 OK"
+22:06:49 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/deleteWebhook "HTTP/1.1 200 OK"
+22:06:49 [INFO] telegram.ext.Application: Application started
+22:06:51 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:06:51 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:06:53 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:06:53 [INFO] __main__: Поставщик выбран: Определить по названию файла
+22:06:53 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:07:04 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:07:06 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:07:06 [INFO] handler_userdata: [handle_userdata] Получен ввод, supplier_choice=Определить по названию файла
+22:07:06 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:07:07 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getFile "HTTP/1.1 200 OK"
+22:07:07 [INFO] httpx: HTTP Request: GET https://api.telegram.org/file/bot8158680699%3AAAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/documents/file_238.xlsx "HTTP/1.1 200 OK"
+22:07:07 [INFO] core.normalizer: 🚀 normalize_alcohol_df: старт, shape=(189, 8)
+22:07:07 [DEBUG] core.normalizer: _find_cols: найдено ['Description'] по паттернам ['^name', '^наимен', '^descr', 'описан', 'товар', 'product', 'бренд|марка', 'item']
+22:07:07 [DEBUG] core.normalizer: _find_cols: найдено ['USD/cs'] по паттернам ['(?:price|цена).*(?:case|cs|ctn|carton)', '(?:usd|eur|\\$|€)\\s*(?:/|per)?\\s*(?:case|cs|ctn|carton)', 'usd.?/?cs', 'eur.?/?cs', '\\b\\$\\s*/?\\s*cs\\b', '\\b€\\s*/?\\s*cs\\b']
+22:07:07 [DEBUG] core.normalizer: _find_cols: найдено ['Bt/Cs'] по паттернам ['bottles_per_case', '^\\s*bt\\s*/?\\s*cs\\s*$', 'bt.?/?cs', 'btl.?/?case', '\\bbottles?\\b', 'bottl.?/case', 'шт.*[/ ]*кор', 'шт.*в.*кор', 'шт.*в.*ящ', 'pcs.*[/ ]*case', 'qty.*case', 'size(?!.*price)', '规格']
+22:07:07 [DEBUG] core.normalizer: _find_cols: найдено ['ETA Rdam'] по паттернам ['stock', 'lead\\s*time', 'availability', 'status', 'eta', 'ready', 't1', 't2', 'tbo', 'доступ', 'наличи', 'access']
+22:07:07 [DEBUG] core.normalizer: normalize_alcohol_df: mapping → {'name': ['Description'], 'bottles_per_case': ['Bt/Cs'], 'price_per_case': ['USD/cs'], 'price_per_bottle': 'calculated'}
+22:07:07 [DEBUG] core.normalizer: AccessLocationClassifier: ETA Rdam → добавлена колонка location (по header)
+22:07:07 [DEBUG] core.normalizer: access заполнено из ['ETA Rdam']
+22:07:07 [DEBUG] core.normalizer: location заполнено из ['ETA Rdam_location']
+22:07:07 [DEBUG] core.normalizer: normalize_alcohol_df: удалено пустых строк 0
+22:07:07 [INFO] core.normalizer: ✅ normalize_alcohol_df: завершено, итог shape=(189, 6)
+22:07:18 [INFO] integrations.rules_typing: [TYPE] enforced: float→['bottles_per_case', 'price_per_case', 'price_per_bottle'], int→[], str→['name', 'access', 'location', 'cl', 'Тип']
+22:07:18 [INFO] integrations.graph_offers: [GRAPH] Active supplier: 'TDT 8-7 Price list'
+22:07:20 [INFO] integrations.graph_offers: [GRAPH] добавлены=164, пропущены=3, всего=167
+22:07:20 [INFO] integrations.graph_to_sheets: ✅ Загружено 720 офферов из Neo4j.
+22:07:29 [INFO] integrations.graph_to_sheets: ✅ Данные успешно загружены в Google Sheets → master
+22:07:29 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendDocument "HTTP/1.1 200 OK"
+22:07:30 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:07:30 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:07:39 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:07:50 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:08:02 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:08:13 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:13:04 [INFO] utils.logger: ✅ Global logging initialized
+22:13:06 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getMe "HTTP/1.1 200 OK"
+22:13:07 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/deleteWebhook "HTTP/1.1 200 OK"
+22:13:07 [INFO] telegram.ext.Application: Application started
+22:13:07 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:13:07 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:13:11 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:13:11 [INFO] __main__: Поставщик выбран: Определить по названию файла
+22:13:11 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:13:16 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:13:16 [INFO] handler_userdata: [handle_userdata] Получен ввод, supplier_choice=Определить по названию файла
+22:13:16 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:13:16 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getFile "HTTP/1.1 200 OK"
+22:13:17 [INFO] httpx: HTTP Request: GET https://api.telegram.org/file/bot8158680699%3AAAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/documents/file_239.xlsx "HTTP/1.1 200 OK"
+22:13:17 [INFO] core.normalizer: 🚀 normalize_alcohol_df: старт, shape=(189, 8)
+22:13:17 [DEBUG] core.normalizer: _find_cols: найдено ['Description'] по паттернам ['^name', '^наимен', '^descr', 'описан', 'товар', 'product', 'бренд|марка', 'item']
+22:13:17 [DEBUG] core.normalizer: _find_cols: найдено ['USD/cs'] по паттернам ['(?:price|цена).*(?:case|cs|ctn|carton)', '(?:usd|eur|\\$|€)\\s*(?:/|per)?\\s*(?:case|cs|ctn|carton)', 'usd.?/?cs', 'eur.?/?cs', '\\b\\$\\s*/?\\s*cs\\b', '\\b€\\s*/?\\s*cs\\b']
+22:13:17 [DEBUG] core.normalizer: _find_cols: найдено ['Bt/Cs'] по паттернам ['bottles_per_case', '^\\s*bt\\s*/?\\s*cs\\s*$', 'bt.?/?cs', 'btl.?/?case', '\\bbottles?\\b', 'bottl.?/case', 'шт.*[/ ]*кор', 'шт.*в.*кор', 'шт.*в.*ящ', 'pcs.*[/ ]*case', 'qty.*case', 'size(?!.*price)', '规格']
+22:13:17 [DEBUG] core.normalizer: _find_cols: найдено ['ETA Rdam'] по паттернам ['stock', 'lead\\s*time', 'availability', 'status', 'eta', 'ready', 't1', 't2', 'tbo', 'доступ', 'наличи', 'access']
+22:13:17 [DEBUG] core.normalizer: normalize_alcohol_df: mapping → {'name': ['Description'], 'bottles_per_case': ['Bt/Cs'], 'price_per_case': ['USD/cs'], 'price_per_bottle': 'calculated'}
+22:13:17 [DEBUG] core.normalizer: AccessLocationClassifier: ETA Rdam → добавлена колонка location (по header)
+22:13:17 [DEBUG] core.normalizer: access заполнено из ['ETA Rdam']
+22:13:17 [DEBUG] core.normalizer: location заполнено из ['ETA Rdam_location']
+22:13:17 [DEBUG] core.normalizer: normalize_alcohol_df: удалено пустых строк 0
+22:13:17 [INFO] core.normalizer: ✅ normalize_alcohol_df: завершено, итог shape=(189, 6)
+22:13:28 [INFO] integrations.rules_typing: [TYPE] enforced: float→['bottles_per_case', 'price_per_case', 'price_per_bottle'], int→[], str→['name', 'access', 'location', 'cl', 'Тип']
+22:13:28 [INFO] integrations.graph_offers: [GRAPH] Active supplier: 'TDT 8-7 Price list'
+22:13:30 [INFO] integrations.graph_offers: [GRAPH] добавлены=164, пропущены=3, всего=167
+22:13:30 [INFO] integrations.graph_to_sheets: ✅ Загружено 884 офферов из Neo4j.
+22:13:39 [INFO] integrations.graph_to_sheets: ✅ Данные успешно загружены в Google Sheets → master
+22:13:40 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendDocument "HTTP/1.1 200 OK"
+22:13:40 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:13:40 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:13:50 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:14:01 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:14:08 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:14:08 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:14:15 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:14:16 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:14:16 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:14:22 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:14:22 [INFO] __main__: Поставщик выбран: Определить по названию файла
+22:14:22 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:14:27 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:14:27 [INFO] handler_userdata: [handle_userdata] Получен ввод, supplier_choice=Определить по названию файла
+22:14:27 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:14:27 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getFile "HTTP/1.1 200 OK"
+22:14:27 [INFO] httpx: HTTP Request: GET https://api.telegram.org/file/bot8158680699%3AAAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/documents/file_240.xlsx "HTTP/1.1 200 OK"
+22:14:28 [INFO] core.normalizer: 🚀 normalize_alcohol_df: старт, shape=(87, 20)
+22:14:28 [DEBUG] core.normalizer: _find_cols: найдено ['Description ( Moutai Series )', 'Description', 'Description: Cigaronne Royal Slim XL Fliter-Black/White'] по паттернам ['^name', '^наимен', '^descr', 'описан', 'товар', 'product', 'бренд|марка', 'item']
+22:14:28 [DEBUG] core.normalizer: _find_cols: найдено ['Price(USD)/Cs', 'Price(USD)/ Ctn'] по паттернам ['(?:price|цена).*(?:case|cs|ctn|carton)', '(?:usd|eur|\\$|€)\\s*(?:/|per)?\\s*(?:case|cs|ctn|carton)', 'usd.?/?cs', 'eur.?/?cs', '\\b\\$\\s*/?\\s*cs\\b', '\\b€\\s*/?\\s*cs\\b']
+22:14:28 [DEBUG] core.normalizer: _find_cols: найдено ['Size/规格'] по паттернам ['bottles_per_case', '^\\s*bt\\s*/?\\s*cs\\s*$', 'bt.?/?cs', 'btl.?/?case', '\\bbottles?\\b', 'bottl.?/case', 'шт.*[/ ]*кор', 'шт.*в.*кор', 'шт.*в.*ящ', 'pcs.*[/ ]*case', 'qty.*case', 'size(?!.*price)', '规格']
+22:14:28 [DEBUG] core.normalizer: _find_cols: найдено ['Status'] по паттернам ['stock', 'lead\\s*time', 'availability', 'status', 'eta', 'ready', 't1', 't2', 'tbo', 'доступ', 'наличи', 'access']
+22:14:28 [DEBUG] core.normalizer: _find_cols: найдено ['Warehouse'] по паттернам ['wareh', 'склад', 'origin', 'отгруз', 'exw', 'dap', 'fob', 'cif', 'место\\s*загруз', 'location', 'incoterm', 'ETA\\s*Rdam']
+22:14:28 [DEBUG] core.normalizer: normalize_alcohol_df: mapping → {'name': ['Description ( Moutai Series )', 'Description', 'Description: Cigaronne Royal Slim XL Fliter-Black/White'], 'bottles_per_case': ['Size/规格'], 'price_per_case': ['Price(USD)/Cs', 'Price(USD)/ Ctn'], 'price_per_bottle': 'calculated'}
+22:14:28 [DEBUG] core.normalizer: access заполнено из ['Status']
+22:14:28 [DEBUG] core.normalizer: location заполнено из ['Warehouse']
+22:14:28 [DEBUG] core.normalizer: normalize_alcohol_df: удалено пустых строк 0
+22:14:28 [INFO] core.normalizer: ✅ normalize_alcohol_df: завершено, итог shape=(87, 6)
+22:14:32 [INFO] integrations.rules_typing: [TYPE] enforced: float→['bottles_per_case', 'price_per_case', 'price_per_bottle'], int→[], str→['name', 'access', 'location', 'cl', 'Тип']
+22:14:32 [INFO] integrations.graph_offers: [GRAPH] Active supplier: 'EXW Singapore stocks offers'
+22:14:32 [INFO] integrations.graph_offers: [GRAPH] добавлены=0, пропущены=50, всего=50
+22:14:32 [INFO] integrations.graph_to_sheets: ✅ Загружено 884 офферов из Neo4j.
+22:14:38 [INFO] integrations.graph_to_sheets: ✅ Данные успешно загружены в Google Sheets → master
+22:14:38 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:14:39 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendDocument "HTTP/1.1 200 OK"
+22:14:39 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:14:39 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:14:49 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:14:52 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:14:52 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:14:53 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:14:53 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:14:56 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:14:56 [INFO] __main__: Поставщик выбран: Определить по названию файла
+22:14:56 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:15:02 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:15:02 [INFO] handler_userdata: [handle_userdata] Получен ввод, supplier_choice=Определить по названию файла
+22:15:02 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:15:02 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getFile "HTTP/1.1 200 OK"
+22:15:02 [INFO] httpx: HTTP Request: GET https://api.telegram.org/file/bot8158680699%3AAAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/documents/file_241.xlsx "HTTP/1.1 200 OK"
+22:15:04 [INFO] core.normalizer: 🚀 normalize_alcohol_df: старт, shape=(87, 20)
+22:15:04 [DEBUG] core.normalizer: _find_cols: найдено ['Description ( Moutai Series )', 'Description', 'Description: Cigaronne Royal Slim XL Fliter-Black/White'] по паттернам ['^name', '^наимен', '^descr', 'описан', 'товар', 'product', 'бренд|марка', 'item']
+22:15:04 [DEBUG] core.normalizer: _find_cols: найдено ['Price(USD)/Cs', 'Price(USD)/ Ctn'] по паттернам ['(?:price|цена).*(?:case|cs|ctn|carton)', '(?:usd|eur|\\$|€)\\s*(?:/|per)?\\s*(?:case|cs|ctn|carton)', 'usd.?/?cs', 'eur.?/?cs', '\\b\\$\\s*/?\\s*cs\\b', '\\b€\\s*/?\\s*cs\\b']
+22:15:04 [DEBUG] core.normalizer: _find_cols: найдено ['Size/规格'] по паттернам ['bottles_per_case', '^\\s*bt\\s*/?\\s*cs\\s*$', 'bt.?/?cs', 'btl.?/?case', '\\bbottles?\\b', 'bottl.?/case', 'шт.*[/ ]*кор', 'шт.*в.*кор', 'шт.*в.*ящ', 'pcs.*[/ ]*case', 'qty.*case', 'size(?!.*price)', '规格']
+22:15:04 [DEBUG] core.normalizer: _find_cols: найдено ['Status'] по паттернам ['stock', 'lead\\s*time', 'availability', 'status', 'eta', 'ready', 't1', 't2', 'tbo', 'доступ', 'наличи', 'access']
+22:15:04 [DEBUG] core.normalizer: _find_cols: найдено ['Warehouse'] по паттернам ['wareh', 'склад', 'origin', 'отгруз', 'exw', 'dap', 'fob', 'cif', 'место\\s*загруз', 'location', 'incoterm', 'ETA\\s*Rdam']
+22:15:04 [DEBUG] core.normalizer: normalize_alcohol_df: mapping → {'name': ['Description ( Moutai Series )', 'Description', 'Description: Cigaronne Royal Slim XL Fliter-Black/White'], 'bottles_per_case': ['Size/规格'], 'price_per_case': ['Price(USD)/Cs', 'Price(USD)/ Ctn'], 'price_per_bottle': 'calculated'}
+22:15:04 [DEBUG] core.normalizer: access заполнено из ['Status']
+22:15:04 [DEBUG] core.normalizer: location заполнено из ['Warehouse']
+22:15:04 [DEBUG] core.normalizer: normalize_alcohol_df: удалено пустых строк 0
+22:15:04 [INFO] core.normalizer: ✅ normalize_alcohol_df: завершено, итог shape=(87, 6)
+22:15:08 [INFO] integrations.rules_typing: [TYPE] enforced: float→['bottles_per_case', 'price_per_case', 'price_per_bottle'], int→[], str→['name', 'access', 'location', 'cl', 'Тип']
+22:15:08 [INFO] integrations.graph_offers: [GRAPH] Active supplier: 'EXW Singapore stocks offers'
+22:15:08 [INFO] integrations.graph_offers: [GRAPH] добавлены=0, пропущены=50, всего=50
+22:15:08 [INFO] integrations.graph_to_sheets: ✅ Загружено 884 офферов из Neo4j.
+22:15:12 [INFO] integrations.graph_to_sheets: ✅ Данные успешно загружены в Google Sheets → master
+22:15:13 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+22:15:13 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendDocument "HTTP/1.1 200 OK"
+22:15:13 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+22:15:13 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"

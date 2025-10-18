@@ -1153,3 +1153,56 @@ task: <Task pending name='Updater:start_polling:polling_task' coro=<network_retr
 20:18:00 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
 20:18:11 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
 20:18:23 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:31:09 [INFO] root: ✅ Logging initialized (matrix + typing + graph_offers split)
+20:31:09 [INFO] root: ✅ Logging initialized (matrix + typing + graph_offers split)
+20:31:10 [INFO] root: ✅ Logging initialized (matrix + typing + graph_offers split)
+20:31:10 [INFO] root: ✅ Logging initialized (matrix + typing + graph_offers split)
+20:31:11 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getMe "HTTP/1.1 200 OK"
+20:31:11 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/deleteWebhook "HTTP/1.1 200 OK"
+20:31:11 [INFO] telegram.ext.Application: Application started
+20:31:12 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:31:12 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:31:17 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:31:17 [INFO] __main__: Поставщик выбран: Определить по названию файла
+20:31:18 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:31:23 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:31:23 [INFO] handler_userdata: [handle_userdata] Получен ввод, supplier_choice=Определить по названию файла
+20:31:23 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:31:23 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getFile "HTTP/1.1 200 OK"
+20:31:23 [INFO] httpx: HTTP Request: GET https://api.telegram.org/file/bot8158680699%3AAAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/documents/file_230.xlsx "HTTP/1.1 200 OK"
+20:31:36 [INFO] integrations.graph_to_sheets: ✅ Загружено 392 офферов из Neo4j.
+20:31:43 [INFO] integrations.graph_to_sheets: ✅ Данные успешно загружены в Google Sheets → master
+20:31:44 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendDocument "HTTP/1.1 200 OK"
+20:31:44 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:31:44 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/sendMessage "HTTP/1.1 200 OK"
+20:31:54 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:32:05 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:32:16 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:32:27 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:32:38 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:32:49 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:33:01 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:33:12 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:33:23 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:33:34 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:40:12 [INFO] root: ✅ Logging initialized (matrix + typing + graph_offers split)
+20:40:12 [DEBUG] utils.text_extractors: extract_access: найдено → 'T2, On stock, lead time 2 weeks, 2 weeks'
+20:40:12 [INFO] root: ✅ Logging initialized (matrix + typing + graph_offers split)
+20:40:13 [INFO] root: ✅ Logging initialized (matrix + typing + graph_offers split)
+20:40:13 [INFO] root: ✅ Logging initialized (matrix + typing + graph_offers split)
+20:40:13 [INFO] root: ✅ Logging initialized (matrix + typing + graph_offers split)
+20:40:14 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getMe "HTTP/1.1 200 OK"
+20:40:14 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/deleteWebhook "HTTP/1.1 200 OK"
+20:40:14 [INFO] telegram.ext.Application: Application started
+20:40:25 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:40:36 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:40:47 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:40:58 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:41:09 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:41:20 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:41:31 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:41:42 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:41:53 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:42:05 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:42:16 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
+20:42:27 [INFO] httpx: HTTP Request: POST https://api.telegram.org/bot8158680699:AAFYQtQJpGSfPKPGs1qZ8TMZvtpIC22Mi64/getUpdates "HTTP/1.1 200 OK"
