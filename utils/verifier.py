@@ -158,6 +158,6 @@ def verify_logic(df: pd.DataFrame, messages: list):
 
 # --- правило для типизационного состояния ---
 @verifier.register(state="typing")
-def enforce_types(df: pd.DataFrame, messages: list):
+def enforce_types(df: pd.DataFrame, *args):
     """Применяет типизацию (вызывается в отдельном состоянии)"""
-    return enforce_base_types(df, messages)
+    return enforce_base_types(df)

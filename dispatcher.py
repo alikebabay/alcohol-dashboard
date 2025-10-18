@@ -2,21 +2,21 @@
 import time
 print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
-
-from typing import Union
-from io import BytesIO
-from pathlib import Path
-import os
+import pandas as pd
 
 
 #code integrations
 
-from writer import save_to_excel, merge_with_master
+from writer import save_to_excel
 from integrations.gsheets_integration import update_master_to_gsheets, load_master_from_gsheets
 from core.organizer import attach_categories, order_by_category
 from state_machine import AlcoholStateMachine
 from integrations.input_loader import load
 from utils.verifier import verifier
+from integrations.graph_offers import push_offers_to_graph
+from integrations.graph_to_sheets import get_all_offers, make_master_sheet, upload_to_gsheets
+
+from integrations.matrix_merger import MatrixMerger  # 🧩 новый класс для объединения офферов
 
 from functools import wraps
 
@@ -57,45 +57,35 @@ async def dispatch_excel(update, context, supplier_choice=None):
     verifier.set_state("logic")
     df_distilled = verifier.run(df_distilled)
     print(verifier.report())
+
+    
+    # ⚡️ финальная типизация теперь всегда
+    verifier.set_state("typing")
+    verifier.run(df_distilled)
+    print(verifier.report())
     
     df_out = save_to_excel(df_distilled, supplier_name)
 
     # файл для отдачи пользователю телеграм. сохраним в state machine
     supplier_sm.set_df_out(df_out)
 
-    
-    # 5. работа с мастером в Google Sheets
+    push_offers_to_graph(df_out, supplier_name)
+
+    # 5. Обновляем Google Sheets на основе графа
     try:
-        old_master = load_master_from_gsheets()
-        # 💡 страховка: если вернул None — создаём пустой DataFrame
-        if old_master is None:
-            print("[WARN] load_master_from_gsheets() вернул None — создаю пустой DataFrame")
-            old_master = pd.DataFrame()
-
-        if old_master.empty:
-            print("[INFO] Master пустой — создаю новый из df_out")
-            df_final = df_out
-        else:
-            # обычное слияние
-            df_final = merge_with_master(old_master, df_out, supplier_name)
-        
-        # ⚡️ финальная типизация теперь всегда
-        verifier.set_state("typing")
-        verifier.run(df_final)
-        print(verifier.report())
-
-
-        update_master_to_gsheets(df_final)
-        print(f"[OK dispatcher] Master обновлён в Google Sheets, всего строк: {df_final.shape[0]}")
+        df_all = get_all_offers()
+        master_view = make_master_sheet(df_all, max_pairs=12)
+        upload_to_gsheets(master_view)
+        print(f"[OK dispatcher] Pivot обновлён: {len(master_view)} строк загружено в Google Sheets")
     except Exception as e:
-        print(f"[ERROR dispatcher] Не удалось обновить Google Sheets: {e}")
-        df_final = df_out  # fallback
+        print(f"[ERROR dispatcher] Не удалось обновить Pivot из графа: {e}")
+
+    
 
     result = supplier_sm.get_df_out()
 
     supplier_sm.reset()
     supplier_sm = None  # 💥 уничтожаем ссылку на объект FSM
     verifier.reset()  # 💥 сбрасываем глобальный верифаер
-    print("[DEBUG dispatcher] FSM и Verifier полностью обнулены после завершения цикла")
 
     return result

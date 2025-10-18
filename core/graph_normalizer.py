@@ -3,6 +3,12 @@ import re, json, unicodedata
 from pathlib import Path
 from neo4j import GraphDatabase
 import pandas as pd
+import logging
+from utils.logger import setup_logging
+
+# инициализация общего логгера
+setup_logging()
+logger = logging.getLogger(__name__)
 
 # ==========================================================
 # NEO4J CONFIG
@@ -26,7 +32,7 @@ def load_brands(path="tests/multiword_brands.json"):
         re.sub(r"[^a-z0-9 ]", "", b.lower().replace("&", "and")).strip(): b
         for b in brands
     }
-    print(f"[INIT] Loaded {len(normalized)} brands")
+    logger.info(f"[INIT] Loaded {len(normalized)} brands")
     return normalized
 
 BRANDS = load_brands()
@@ -131,10 +137,10 @@ def build_series_resolver(driver):
                 RETURN DISTINCT s.name AS name
             """, bn=bnorm).values()
         if not rows:
-            print(f"[GRAPH] no series found for brand: {brand}")
+            logger.debug(f"[GRAPH] no series found for brand: {brand}")
             return None
         series = [r[0] for r in rows if r and len(r[0]) > 1]
-        print(f"[GRAPH] found {len(series)} series for brand: {brand}")
+        logger.debug(f"[GRAPH] found {len(series)} series for brand: {brand}")
         return series
     return resolve
 
@@ -184,16 +190,17 @@ class BrandSeriesExtractor:
             self.context_type = "beer" if category == "beer" else "common"
 
             self.state = "BRAND"
-            print(f"[STATE] INIT → BRAND ({brand}) context={self.context_type}")
+            logger.debug(f"[STATE] INIT → BRAND ({brand}) context={self.context_type}")
         else:
-            print(f"[STATE] INIT stays INIT (no brand)")
+            logger.debug(f"[STATE] INIT stays INIT (no brand)")
         return brand, series
 
     # ==========================================================
     # BRAND → ищем только серии внутри текущего бренда
     # ==========================================================
     def _handle_brand(self, raw, raw_norm):
-        print(f"[CTX] handle={self.context_type.upper()} brand={self.last_brand}")
+        
+        logger.debug(f"[CTX] handle={self.context_type.upper()} brand={self.last_brand}")
         if self.context_type == "beer":
             return self._handle_beer(raw, raw_norm)
         else:
@@ -216,11 +223,13 @@ class BrandSeriesExtractor:
             meta = self.brands_meta.get(detected_brand, {})
             category = meta.get("category", "").lower()
             self.context_type = "beer" if category == "beer" else "common"
-            print(f"[CTX] beer → {self.context_type} ({detected_brand})")
+            
+            logger.debug(f"[CTX] beer → {self.context_type} ({detected_brand})")
             return detected_brand, detected_series
 
         # 3️⃣ бренд не найден → сбрасываем контекст
-        print("[BEER] no brand in line → reset INIT")
+        
+        logger.debug("[BEER] no brand in line → reset INIT")
         self.state = "INIT"
         self.last_brand = None
         self.context_type = "common"
@@ -234,24 +243,26 @@ class BrandSeriesExtractor:
         if brand_norm in raw_norm:
             series = self._extract_series_after_brand(raw, brand_norm)
             if series:
-                print(f"[COMMON] brand present, found series ({series})")
+                
+                logger.debug(f"[COMMON] brand present, found series ({series})")
                 return brand, series
-            print(f"[COMMON] brand present, no series; keep context")
+            
+            logger.debug(f"[COMMON] brand present, no series; keep context")
             return brand, None
         # 2️⃣ если бренд не встречается — пробуем искать серии этого бренда в строке 
         # # (например, "Rose Imperial" для "Moet & Chandon") 
         series = self._extract_series_for_brand_via_graph(raw, brand) 
         if series: 
-            print(f"[STATE] BRAND (series via graph; keep {brand})") 
+            logger.debug(f"[STATE] BRAND (series via graph; keep {brand})") 
             return brand, series 
         # 3️⃣ если серии текущего бренда не нашли — ищем новый бренд 
         new_brand, new_series = self._extract_brand_series(raw) 
         if new_brand:
-            print(f"[STATE] BRAND → BRAND ({brand} → {new_brand})")
+            logger.debug(f"[STATE] BRAND → BRAND ({brand} → {new_brand})")
             self.last_brand = new_brand
             return new_brand, new_series
         # 4️⃣ если не нашли ни серию, ни бренд — сбрасываем
-        print(f"[STATE] BRAND → INIT (no brand/series context)")
+        logger.debug(f"[STATE] BRAND → INIT (no brand/series context)")
         self.state = "INIT"
         self.last_brand = None
         return None, None
@@ -273,7 +284,7 @@ class BrandSeriesExtractor:
             try:
                 series_list = self.series_resolver(brand) or []
             except Exception as e:
-                print(f"[WARN] series_resolver failed for '{brand}': {e}")
+                logger.warning(f"[WARN] series_resolver failed for '{brand}': {e}")
                 series_list = []
             # храним нормализованные фразы, но и оригиналы тоже, чтобы вернуть красиво
             self._series_cache[bkey] = [(s, _normalize(s)) for s in series_list if s and len(s) > 1]
@@ -299,9 +310,9 @@ class BrandSeriesExtractor:
     def _extract_brand_series(self, raw: str):
         """Оригинальная версия без FSM-ограничений (мягкий скоринг, полное сканирование)."""
         tokens = [t for t in re.findall(r"[A-Za-z0-9%+]+", raw)]
-        print(f"[TOKENS] {tokens}")
+        logger.debug(f"[TOKENS] {tokens}")
         scores = {}
-        print(f"[SCORES] {scores}")
+        logger.debug(f"[SCORES] {scores}")
         for token in tokens[:6]:  # ограничиваем первые токены
             t_norm = _normalize(token)
             if len(t_norm) < 3 or t_norm.isdigit():
@@ -339,12 +350,12 @@ class BrandSeriesExtractor:
 
 
         if not scores:
-            print(f"[DETECT] no brand candidates found in: {raw}")
+            logger.debug(f"[DETECT] no brand candidates found in: {raw}")
             return None, None
         #debug    
         
         top = sorted(scores.items(), key=lambda x: (-x[1], -len(x[0])))[0]
-        print(f"[DEBUG SCORES] top={top}, all={list(scores.keys())[:10]}")
+        logger.debug(f"[DEBUG SCORES] top={top}, all={list(scores.keys())[:10]}")
         #debug
 
         brand = top[0]
@@ -364,7 +375,7 @@ class BrandSeriesExtractor:
                 if valid:
                     series = " ".join(valid[:3])
 
-        print(f"[RETURN DEBUG] returning brand={brand!r}, series={series!r} for raw='{raw}'")
+        logger.debug(f"[RETURN DEBUG] returning brand={brand!r}, series={series!r} for raw='{raw}'")
         return brand, series
     
     def _extract_series_after_brand(self, raw, brand_norm):
@@ -454,7 +465,7 @@ def load_brands_meta_from_graph():
 def normalize_dataframe(df: pd.DataFrame, col_name: str = "Наименование") -> pd.DataFrame:
     col = col_name  # back-compat alias
     if col not in df.columns:
-        print(f"[WARN] no '{col}' column")
+        logger.warning(f"[WARN] no '{col}' column")
         return df
     brands_meta = load_brands_meta_from_graph()
     series_resolver = build_series_resolver(driver)
@@ -473,8 +484,8 @@ def normalize_dataframe(df: pd.DataFrame, col_name: str = "Наименован�
             found = s.execute_read(find_canonical, brand, series, raw)
             if found:
                 df.at[i, col_name] = found
-                print(f"[CANON] → {found}")
+                logger.info(f"[CANON] → {found}")
             else:
-                print(f"[CANON] no match for {raw}")
+                logger.info(f"[CANON] no match for {raw}")
 
     return df

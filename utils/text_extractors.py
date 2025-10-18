@@ -55,11 +55,10 @@ class PriceExtractor:
             return {}
 
         s = str(text)
-        print(f"\n[DEBUG] raw: {s}")       
+           
 
         self._extract_bpc(s)
-        print(f"[DEBUG] bottles_per_case: {self.bottles_per_case}")
-
+       
         # 🧠 Предварительная эвристика: если явно указано 'cases' → считаем ценой за кейс
         if re.search(r'\bcases?\b', s, re.I):
             m = re.search(r'at\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', s, re.I)
@@ -67,37 +66,37 @@ class PriceExtractor:
                 self.price_case = float(m.group(1).replace(",", "."))
                 self.state = "case"
                 self._derive_bottle()
-                print(f"[DEBUG] early heuristic→case, derived bottle={self.price_bottle}")
+                
                 return self._result()
 
         # 1️⃣ явные указания (per bottle / per case)
         self.price_bottle = self._match_any(s, self.RX_BOTTLE)
-        print(f"[DEBUG] direct bottle price: {self.price_bottle}")
+        
         if self.price_bottle is not None:
             self.state = "bottle"
             
             self._derive_case()
-            print(f"[DEBUG] derived case price: {self.price_case}")
+            
             return self._result()
 
        
         self.price_case = self._match_any(s, self.RX_CASE)
-        print(f"[DEBUG] direct case price: {self.price_case}")
+        
         if self.price_case is not None:
             self.state = "case"
             
             self._derive_bottle()
-            print(f"[DEBUG] derived bottle price: {self.price_bottle}")
+            
             return self._result()
 
         # 2️⃣  эвристика по контексту
         at_match = re.search(r'at\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', s, re.I)
-        print(f"[DEBUG] at_match: {bool(at_match)}")
+       
         if at_match:
             val = float(at_match.group(1).replace(',', '.'))
             has_cases = re.search(r'\bcases?\b', s, re.I)
             has_bpc = bool(self.RX_BPC.search(s))
-            print(f"[DEBUG] heuristic: value={val}, has_cases={bool(has_cases)}, has_bpc={has_bpc}")
+            
  
 
             # если есть 'cases' — считаем ценой за кейс
@@ -105,7 +104,7 @@ class PriceExtractor:
                 self.price_case = val
                 self.state = "case"
                 self._derive_bottle()
-                print(f"[DEBUG] heuristic→case, derived bottle={self.price_bottle}")
+                
                 return self._result()
 
             # если нет 'cases', но есть 6x75cl/12x70cl — считаем ценой за бутылку
@@ -113,7 +112,7 @@ class PriceExtractor:
                 self.price_bottle = val
                 self.state = "bottle"
                 self._derive_case()
-                print(f"[DEBUG] heuristic→bottle, derived case={self.price_case}")
+                
                 return self._result()
                 return self._result()
 
@@ -121,7 +120,7 @@ class PriceExtractor:
 
         # 3️⃣ derived nothing
         self.state = "none"
-        print(f"[DEBUG] nothing matched, state=none")
+        
         return self._result()
 
     # --- helpers ---
@@ -130,7 +129,7 @@ class PriceExtractor:
             m = rx.search(text)
             if m:
                 val = float(m.group(1).replace(",", "."))
-                print(f"[DEBUG] matched regex: {rx.pattern} → {val}")
+                
                 return val
         return None
 
@@ -138,7 +137,7 @@ class PriceExtractor:
         m = self.RX_BPC.search(text)
         if m:
             self.bottles_per_case = int(m.group(1))
-            print(f"[DEBUG] RX_BPC matched: {m.group(0)} → {self.bottles_per_case}")
+            
            
  
 

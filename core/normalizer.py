@@ -108,7 +108,7 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     avail_cols = _find_cols(df, AVAILABILITY_PATS)
     loc_cols   = _find_cols(df, LOCATION_PATS)
     price_bottle_cols = _find_cols(df, ["price_per_bottle", "цена за бутылку", "bottle price"])  # новый поиск
-    print(f"[DEBUG normalize] found cols: name={name_cols}, price_case={price_cols}, bpc={bpc_cols}")
+    
 
     mapping = {
         "name": name_cols,

@@ -48,3 +48,9 @@ data/
 logs/
 import/
 plugins/
+
+#logs
+*.log
+graph_offers_debug.txt
+typing_debug.txt
+matrix_merger_debug.txt
