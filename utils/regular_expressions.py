@@ -8,6 +8,10 @@ RX_BOTTLE = [
     re.compile(r'price\s+per\s*bottle\s+([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
     # 👇 новый универсальный вариант, чтобы ловить 'at 37.15 USD'
     re.compile(r'at\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
+    # Handles '@ €121.94/btl' or 'at €121.94/btl'
+    re.compile(
+    r'[@\s]*(?:at\s*)?(?:€|eur|euro|usd|gbp)\s*([0-9]+(?:[.,][0-9]+)?)\s*/?\s*(?:btl|bottle)(?:\b|[.,])?',
+        re.I,),
 ]
 
 # Цена за кейс

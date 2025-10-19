@@ -43,12 +43,13 @@ def setup_logging(global_level=logging.INFO):
     per_module_levels = {
         # инфраструктура
         "integrations.matrix_merger": logging.INFO,
-        "core.graph_normalizer": logging.WARNING,
+        "core.graph_normalizer": logging.DEBUG,
         "integrations.rules_typing": logging.INFO,
         "integrations.graph_offers": logging.INFO,
         # утилиты и извлекатели
-        "utils.text_extractors": logging.DEBUG,
-        "core.normalizer": logging.DEBUG,
+        "utils.text_extractors": logging.ERROR,
+        "core.normalizer": logging.ERROR,
+        "core.text_parser": logging.ERROR,
     }
 
     for name, level in per_module_levels.items():
@@ -61,7 +62,19 @@ def setup_logging(global_level=logging.INFO):
         "integrations.graph_offers": "graph_offers_debug.txt",
         "utils.text_extractors": "text_extractors_debug.txt",
         "core.normalizer": "normalizer_debug.txt",
+        "core.text_parser": "text_parser_debug.txt",
+        "core.graph_normalizer": "graph_normalizer_debug.txt",
     }
+
+    # --- Silence noisy external libraries ---
+    for noisy in [
+        "neo4j",
+        "httpx",
+        "httpcore",
+        "urllib3",
+        "telegram",
+    ]:
+        logging.getLogger(noisy).setLevel(logging.WARNING)
 
     for module, filename in special_logs.items():
         path = Path(filename)
