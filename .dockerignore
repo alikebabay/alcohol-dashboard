@@ -36,3 +36,13 @@ data/
 logs/
 import/
 plugins/
+
+
+#logs
+*.log
+graph_offers_debug.txt
+typing_debug.txt
+matrix_merger_debug.txt
+normalizer_debug.txt
+text_extractors_debug.txt
+project_debug.txt
