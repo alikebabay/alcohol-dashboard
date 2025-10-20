@@ -85,7 +85,7 @@ def get_gsheets_credentials(scopes=None):
 if MODE == "prod":
     URI  = "bolt://neo4j:7687"
     USER = "neo4j"
-    PASS = get_from_vault("neo4j", "neo4j_password")
+    PASS = get_from_vault("app", "neo4j_password")
 else:
     URI  = os.getenv("NEO4J_URI")
     USER = os.getenv("NEO4J_USER")
