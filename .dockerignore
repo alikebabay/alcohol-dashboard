@@ -5,6 +5,7 @@
 # secrets
 service_account.json
 canonical_mapping_master.json
+alcohol-service-agent.json
 *.secret.json
 *.key.json
 *.pem
@@ -43,6 +44,9 @@ plugins/
 graph_offers_debug.txt
 typing_debug.txt
 matrix_merger_debug.txt
+matrix_debug.txt
+text_parser_debug.txt
+graph_normalizer_debug.txt
 normalizer_debug.txt
 text_extractors_debug.txt
 project_debug.txt

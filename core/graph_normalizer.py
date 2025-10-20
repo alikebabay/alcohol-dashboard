@@ -1,22 +1,21 @@
 # core/graph_normalizer.py
 import re, json, unicodedata
 from pathlib import Path
-from neo4j import GraphDatabase
 import pandas as pd
 import logging
 from utils.logger import setup_logging
+
+# импортируем уже сконфигурированный драйвер и MODE
+from config import driver, MODE
 
 # инициализация общего логгера
 setup_logging()
 logger = logging.getLogger(__name__)
 
 # ==========================================================
-# NEO4J CONFIG
+# 🕸 Neo4j driver (из config)
 # ==========================================================
-URI  = "bolt://localhost:7687"
-USER = "neo4j"
-PASS = "testing123"
-driver = GraphDatabase.driver(URI, auth=(USER, PASS))
+logger.info(f"[Neo4j] Using shared driver (mode={MODE})")
 
 # ==========================================================
 # BRAND LIST

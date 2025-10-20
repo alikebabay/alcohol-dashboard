@@ -1,19 +1,19 @@
 # integrations/graph_offers.py
 import logging
 import pandas as pd
-from neo4j import GraphDatabase
 from state_machine import AlcoholStateMachine
 from utils.logger import setup_logging
+
+from config import driver, MODE
 
 # активируем общий логгер (matrix_debug.txt)
 setup_logging()
 logger = logging.getLogger(__name__)
 
-# === базовые настройки Neo4j ===
-URI  = "bolt://localhost:7687"
-USER = "neo4j"
-PASS = "testing123"
-driver = GraphDatabase.driver(URI, auth=(USER, PASS))
+# ==========================================================
+# 🕸 Neo4j driver (из config)
+# ==========================================================
+logger.info(f"[Neo4j] Using shared driver (mode={MODE})")
 
 # ───────────────────────────────────────────────
 # 1️⃣ Загрузка офферов в граф

@@ -1,17 +1,11 @@
 # integrations/graph_to_sheets.py
 import pandas as pd
 import logging
-from neo4j import GraphDatabase
-from google.oauth2.service_account import Credentials
 import gspread
 from gspread_dataframe import set_with_dataframe
 
-# ─────────────────────────────
-# 🔧 Настройки
-# ─────────────────────────────
-URI = "bolt://localhost:7687"
-USER = "neo4j"
-PASS = "testing123"
+from config import driver, MODE
+from config import get_gsheets_credentials
 
 
 # ID таблицы (из URL Google Sheets)
@@ -29,17 +23,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ─────────────────────────────
-# 🧩 Инициализация Neo4j и Google Sheets
-# ─────────────────────────────
-driver = GraphDatabase.driver(URI, auth=(USER, PASS))
 
-# credentials.json (твой файл сервисного аккаунта)
-creds = Credentials.from_service_account_file(
-    "service_account.json",
-    scopes=["https://www.googleapis.com/auth/spreadsheets"]
-)
+
+# ==========================================================
+# 📊 Google Sheets creds (через config)
+# ==========================================================
+creds = get_gsheets_credentials()
 gc = gspread.authorize(creds)
+logger.info(f"[Google Sheets] Authorized via {'Vault' if MODE == 'prod' else 'local credentials'} mode")
 
 # ─────────────────────────────
 # 📊 Функции
