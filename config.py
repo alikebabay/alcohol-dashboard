@@ -58,7 +58,7 @@ def get_gsheets_credentials(scopes=None):
 
     # 1. пытаемся достать JSON из Vault
     try:
-        creds_json = get_from_vault("GOOGLE_CREDENTIALS_JSON")
+        creds_json = get_from_vault("app", "GOOGLE_CREDENTIALS_JSON")
     except Exception as e:
         print(f"[WARN] не удалось получить GOOGLE_CREDENTIALS_JSON из Vault: {e}")
         creds_json = None
