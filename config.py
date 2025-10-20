@@ -45,8 +45,8 @@ if os.path.exists("bot_token.env"):
     load_dotenv("bot_token.env")
 
 if MODE == "prod":
-    TOKEN = get_from_vault("bot", "bot_token")
-    BOT_USERNAME = get_from_vault("bot", "BOT_USERNAME")
+    TOKEN = get_from_vault("app", "bot_token")
+    BOT_USERNAME = get_from_vault("app", "BOT_USERNAME")
 else:
     TOKEN = os.getenv("bot_token")
     BOT_USERNAME = os.getenv("BOT_USERNAME")
