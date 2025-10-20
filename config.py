@@ -56,21 +56,28 @@ def get_gsheets_credentials(scopes=None):
     if scopes is None:
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 
-    # 1. сначала пробуем creds из переменной окружения (Heroku / облако)
-    if MODE == "prod":
-        creds_json = get_from_vault("google", "google_creds")
-    else:
-        creds_json = os.getenv("google_creds")
+    # 1. пытаемся достать JSON из Vault
+    try:
+        creds_json = get_from_vault("GOOGLE_CREDENTIALS_JSON")
+    except Exception as e:
+        print(f"[WARN] не удалось получить GOOGLE_CREDENTIALS_JSON из Vault: {e}")
+        creds_json = None
 
+    # 2. если удалось — используем его
     if creds_json:
-        creds_dict = json.loads(creds_json)
-        return Credentials.from_service_account_info(creds_dict, scopes=scopes)
+        try:
+            creds_dict = json.loads(creds_json)
+            return Credentials.from_service_account_info(creds_dict, scopes=scopes)
+        except Exception as e:
+            print(f"[WARN] не удалось распарсить GOOGLE_CREDENTIALS_JSON: {e}")
 
-    # 2. fallback — локальный файл service_account.json
+    # 3. fallback — локальный файл service_account.json
     if os.path.exists("service_account.json"):
+        print("[INFO] Используем локальный service_account.json")
         return Credentials.from_service_account_file("service_account.json", scopes=scopes)
 
-    raise RuntimeError("Google service account credentials not found")
+    # 4. если ничего не нашли
+    raise RuntimeError("Google service account credentials not found (Vault и локальный файл недоступны)")
 
 # ==========================================================
 # 🕸 Настройки Neo4j
