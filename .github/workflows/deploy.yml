@@ -28,7 +28,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/alcohol-dashboard:latest
+          tags: ghcr.io/${{ github.actor }}/alcohol-dashboard:latest
 
       - name: Deploy to Hetzner
         uses: appleboy/ssh-action@v1.2.1
