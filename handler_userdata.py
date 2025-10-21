@@ -24,7 +24,7 @@ async def handle_userdata(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(
                 "Наверное, вы отправили текст по ошибке. "
                 "Оффер поставщика обычно превышает по длине 300 символов.\n\n"
-                "Пожалуйста, отправьте Excel-файл или полный текст оффера."
+                "Попробуйте снова. Пожалуйста, отправьте Excel-файл или полный текст оффера."
             )
             logger.info(f"[handle_userdata] Игнорировано короткое сообщение ({len(text)} символов)")
             return INGEST # возвращаемся к состоянию ожидания ввода
