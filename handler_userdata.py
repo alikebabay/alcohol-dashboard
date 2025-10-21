@@ -5,6 +5,8 @@ from dispatcher import dispatch_excel
 from io import BytesIO
 import pandas as pd
 
+from menu_states import SUPPLIER, INGEST
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -12,6 +14,22 @@ async def handle_userdata(update: Update, context: ContextTypes.DEFAULT_TYPE):
     supplier_choice = context.chat_data.get("supplier_choice")
 
     logger.info(f"[handle_userdata] Получен ввод, supplier_choice={supplier_choice}")
+
+    # ───────────────────────────────────────────────
+    # 🧩 Проверка: если пользователь случайно прислал короткий текст
+    # ───────────────────────────────────────────────
+    if update.message.text:
+        text = update.message.text.strip()
+        if len(text) < 300 and not update.message.document:
+            await update.message.reply_text(
+                "Наверное, вы отправили текст по ошибке. "
+                "Оффер поставщика обычно превышает по длине 300 символов.\n\n"
+                "Пожалуйста, отправьте Excel-файл или полный текст оффера."
+            )
+            logger.info(f"[handle_userdata] Игнорировано короткое сообщение ({len(text)} символов)")
+            return INGEST # возвращаемся к состоянию ожидания ввода
+        # ───────────────────────────────────────────────
+
     await update.message.reply_text("Данные получены. Обработка займёт несколько секунд")
         
     df_out = await dispatch_excel(update, context, supplier_choice)

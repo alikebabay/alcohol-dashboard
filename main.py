@@ -10,6 +10,8 @@ from telegram.ext import (
 )
 from config import TOKEN 
 from handler_userdata import handle_userdata
+from menu_states import SUPPLIER, INGEST
+
 
 
 # Логирование
@@ -19,8 +21,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Состояния диалога
-SUPPLIER, INGEST = range(2)
+
 
 # /start
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
