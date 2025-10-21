@@ -72,9 +72,9 @@ def get_gsheets_credentials(scopes=None):
             print(f"[WARN] не удалось распарсить GOOGLE_CREDENTIALS_JSON: {e}")
 
     # 3. fallback — локальный файл service_account.json
-    if os.path.exists("service_account.json"):
-        print("[INFO] Используем локальный service_account.json")
-        return Credentials.from_service_account_file("service_account.json", scopes=scopes)
+    if os.path.exists("alcohol-service-agent.json"):
+        print("[INFO] Используем локальный alcohol-service-agent.json")
+        return Credentials.from_service_account_file("alcohol-service-agent.json", scopes=scopes)
 
     # 4. если ничего не нашли
     raise RuntimeError("Google service account credentials not found (Vault и локальный файл недоступны)")

@@ -9,8 +9,12 @@ from config import get_gsheets_credentials
 
 
 # ID таблицы (из URL Google Sheets)
-SPREADSHEET_ID = "1dISLvKdfi5DCTeYlQ5JXiBcyusrIlJkmikDvkWAcg60"
-SHEET_NAME = "master"   # имя листа в таблице
+if MODE == "prod":
+    SPREADSHEET_ID = "1dISLvKdfi5DCTeYlQ5JXiBcyusrIlJkmikDvkWAcg60"
+    SHEET_NAME = "master"   # имя листа в таблице
+else:
+    SPREADSHEET_ID = "1GX2fb6yhpbGjeX-4HRl04ikVZ_BQE1rLU6zPXL3heCk"
+    SHEET_NAME = "master_test"
 
 
 # ─────────────────────────────
