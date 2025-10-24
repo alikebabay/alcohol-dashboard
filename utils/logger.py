@@ -1,6 +1,15 @@
 # core/logger.py
 import logging
 from pathlib import Path
+import os
+
+def _get_level(env_name: str, default=logging.ERROR):
+    """Читает уровень логирования из переменной окружения."""
+    val = os.getenv(env_name)
+    if not val:
+        return default
+    val = val.upper()
+    return getattr(logging, val, default)
 
 
 def setup_logging(global_level=logging.INFO):
@@ -40,7 +49,7 @@ def setup_logging(global_level=logging.INFO):
     root_logger.addHandler(fh)
 
     # === Уровни для конкретных модулей ===
-    per_module_levels = {
+    modules = {
         # инфраструктура
         "integrations.matrix_merger": logging.INFO,
         "core.graph_normalizer": logging.ERROR,
@@ -49,14 +58,19 @@ def setup_logging(global_level=logging.INFO):
         # утилиты и извлекатели
         "utils.text_extractors": logging.ERROR,
         "utils.text_extractors.prices": logging.ERROR,
-        "utils.text_extractors.access": logging.DEBUG,
-        "utils.text_extractors.location": logging.DEBUG,
+        "utils.text_extractors.access": logging.ERROR,
+        "utils.text_extractors.location": logging.ERROR,
         "core.normalizer": logging.ERROR,
         "core.text_parser": logging.ERROR,
     }
 
-    for name, level in per_module_levels.items():
-        logging.getLogger(name).setLevel(level)
+    # читаем переопределения из ENV
+    for name, default_level in modules.items():
+        env_key = f"LOG_{name}"
+        env_level = _get_level(env_key, default_level)
+        logging.getLogger(name).setLevel(env_level)
+        if os.getenv(env_key):
+            print(f"[LOGGER] {name} level overridden via {env_key}={os.getenv(env_key)}")
 
     # === Отдельные файлы для ключевых подсистем ===
     special_logs = {
