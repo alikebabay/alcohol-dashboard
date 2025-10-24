@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Tuple
 import logging
 import json
 
+
 #проверка свежести кода
 import time
 print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
@@ -242,7 +243,7 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     out = pd.DataFrame()
 
     # --- Наименование ---
-    if name_cols:
+    if name_cols:        
         tmp = df[name_cols].bfill(axis=1)
         out["name"] = tmp.iloc[:, 0].astype(str).str.strip()
     else:

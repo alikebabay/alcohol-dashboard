@@ -1,9 +1,11 @@
 # verifier.py
 import pandas as pd
+import logging
 
 from integrations.rules_typing import enforce_base_types
 from core.graph_normalizer import normalize_dataframe
-
+from utils.abbreviations_helper import convert_abbreviation
+logger = logging.getLogger(__name__)
 
 class Verifier:
     def __init__(self):
@@ -79,6 +81,7 @@ def verify_graph_canonical(df: pd.DataFrame, messages: list):
         return df
 
     try:
+        
         # просто обновляем колонку 'name' внутри того же df
         normalize_dataframe(df, col_name="name")
         messages.append(f"[GRAPH] canonical_name replaced in column 'name' (in-place).")

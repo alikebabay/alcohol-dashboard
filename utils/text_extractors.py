@@ -12,6 +12,10 @@ from core.distillator import _extract_volume, _infer_bpc_from_name, RX_ABV
 from utils.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC
 
 logger = logging.getLogger(__name__)
+# отдельные логгеры для подгрупп
+price_logger = logging.getLogger("utils.text_extractors.prices")
+access_logger = logging.getLogger("utils.text_extractors.access")
+location_logger = logging.getLogger("utils.text_extractors.location")
 
 def extract_volume(text: str):
     return _extract_volume(text)
@@ -57,9 +61,9 @@ class PriceExtractor:
 
         s = str(text)
            
-
+        logger.debug(f"[PRICE] raw={text!r}")
         self._extract_bpc(s)
-       
+        price_logger.debug(f"[PRICE] bottles_per_case → {self.bottles_per_case}")
         # 🧠 Предварительная эвристика: если явно указано 'cases' → считаем ценой за кейс
         if re.search(r'\bcases?\b', s, re.I):
             m = re.search(r'at\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', s, re.I)
@@ -77,7 +81,7 @@ class PriceExtractor:
             self.state = "bottle"
             
             self._derive_case()
-            
+            price_logger.debug(f"[PRICE] matched bottle={self.price_bottle} (state={self.state})")
             return self._result()
 
        
@@ -87,7 +91,7 @@ class PriceExtractor:
             self.state = "case"
             
             self._derive_bottle()
-            
+            price_logger.debug(f"[PRICE] matched case={self.price_case} (state={self.state})")
             return self._result()
 
         # 2️⃣  эвристика по контексту
@@ -97,7 +101,7 @@ class PriceExtractor:
             val = float(at_match.group(1).replace(',', '.'))
             has_cases = re.search(r'\bcases?\b', s, re.I)
             has_bpc = bool(self.RX_BPC.search(s))
-            
+            price_logger.debug(f"[PRICE] heuristic match at={val} cases={bool(has_cases)} bpc={has_bpc}")
  
 
             # если есть 'cases' — считаем ценой за кейс
@@ -115,13 +119,12 @@ class PriceExtractor:
                 self._derive_case()
                 
                 return self._result()
-                return self._result()
 
 
 
         # 3️⃣ derived nothing
         self.state = "none"
-        
+        price_logger.debug(f"[PRICE] nothing matched → state={self.state}")
         return self._result()
 
     # --- helpers ---
@@ -129,16 +132,38 @@ class PriceExtractor:
         for rx in patterns:
             m = rx.search(text)
             if m:
-                val = float(m.group(1).replace(",", "."))
-                
-                return val
+                raw_val = m.group(1)
+                price_logger.debug(f"[REGEX] {rx.pattern} → match={raw_val!r}")
+                try:
+                    val = float(raw_val.replace(",", "").replace(" ", ""))
+                    price_logger.debug(f"[REGEX] parsed float={val}")
+                    return val
+                except Exception as e:
+                    price_logger.warning(f"[REGEX] parse fail {raw_val!r} ({e})")
+        price_logger.debug("[REGEX] no match for any price pattern")
         return None
 
     def _extract_bpc(self, text):
+        # стандартный паттерн: "6x75", "12×70"
         m = self.RX_BPC.search(text)
         if m:
             self.bottles_per_case = int(m.group(1))
-            
+            return
+
+        # формат с тире: "— 6 —" или "- 12 -"
+        m = re.search(r'[—\-–]\s*(\d{1,2})\s*[—\-–]', text)
+        if m:
+            self.bottles_per_case = int(m.group(1))
+            return
+
+        # если всё остальное не сработало — пробуем общий инфер
+        try:
+            from utils.text_extractors import _infer_bpc_from_name
+            inferred = _infer_bpc_from_name(text)
+            if inferred:
+                self.bottles_per_case = int(inferred)
+        except Exception as e:
+            print(f"[BPC] _infer_bpc_from_name() failed: {e}")
            
  
 
@@ -170,7 +195,7 @@ def extract_access(text: str):
     Returns combined string like 'T2, 2 weeks'.
     """
     if not text:
-        logger.debug("extract_access: пустой ввод")
+        price_logger.debug("extract_access: пустой ввод")
         return None
     s = str(text).strip()
 
@@ -188,10 +213,10 @@ def extract_access(text: str):
 
     if parts:
         val = ", ".join(dict.fromkeys(parts))
-        logger.debug(f"extract_access: найдено → {val!r}")
+        access_logger.debug(f"extract_access: найдено → {val!r}")
         return val
 
-    logger.debug(f"extract_access: ничего не найдено в '{s}'")
+    access_logger.debug(f"extract_access: ничего не найдено в '{s}'")
     return None
 
 
@@ -207,7 +232,7 @@ def extract_location(text: str):
     """
 
     if not text:
-        logger.debug("extract_location: пустой ввод")
+        location_logger.debug("extract_location: пустой ввод")
         return None
     s = str(text).strip()
 
@@ -234,9 +259,9 @@ def extract_location(text: str):
         if m:
             city = m.group(1)
             expanded = CITY_ALIASES.get(city.lower()[:4], city)
-            logger.debug(f"extract_location: без Incoterm, найден город {expanded!r}")
+            location_logger.debug(f"extract_location: без Incoterm, найден город {expanded!r}")
             return expanded
-        logger.debug(f"extract_location: Incoterm не найден, город не распознан → {s!r}")
+        location_logger.debug(f"extract_location: Incoterm не найден, город не распознан → {s!r}")
         return None
 
 
@@ -254,7 +279,7 @@ def extract_location(text: str):
 
     if not found_cities:
         # нет географических совпадений — мусор
-        logger.debug(f"extract_location: нет городов в '{tail}'")
+        location_logger.debug(f"extract_location: нет городов в '{tail}'")
         return None
 
     # нормализуем написание: соединяем города через " or " / "/" / "and"
@@ -268,8 +293,8 @@ def extract_location(text: str):
 
     # финальная постпроверка — только если Incoterm + город известен
     if not any(alias.lower() in val.lower() for alias in CITY_ALIASES.values()):
-        logger.debug(f"extract_location: финальная проверка не прошла → {val!r}")
+        location_logger.debug(f"extract_location: финальная проверка не прошла → {val!r}")
         return None
 
-    logger.debug(f"extract_location: успешно → {val!r}")
+    location_logger.debug(f"extract_location: успешно → {val!r}")
     return val

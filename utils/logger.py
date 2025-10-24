@@ -43,11 +43,14 @@ def setup_logging(global_level=logging.INFO):
     per_module_levels = {
         # инфраструктура
         "integrations.matrix_merger": logging.INFO,
-        "core.graph_normalizer": logging.DEBUG,
+        "core.graph_normalizer": logging.ERROR,
         "integrations.rules_typing": logging.INFO,
-        "integrations.graph_offers": logging.INFO,
+        "integrations.graph_offers": logging.ERROR,
         # утилиты и извлекатели
         "utils.text_extractors": logging.ERROR,
+        "utils.text_extractors.prices": logging.ERROR,
+        "utils.text_extractors.access": logging.DEBUG,
+        "utils.text_extractors.location": logging.DEBUG,
         "core.normalizer": logging.ERROR,
         "core.text_parser": logging.ERROR,
     }
@@ -64,6 +67,9 @@ def setup_logging(global_level=logging.INFO):
         "core.normalizer": "normalizer_debug.txt",
         "core.text_parser": "text_parser_debug.txt",
         "core.graph_normalizer": "graph_normalizer_debug.txt",
+        "utils.text_extractors.prices": "prices_debug.txt",
+        "utils.text_extractors.access": "access_debug.txt",
+        "utils.text_extractors.location": "location_debug.txt",
     }
 
     # --- Silence noisy external libraries ---

@@ -20,7 +20,7 @@ async def handle_userdata(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # ───────────────────────────────────────────────
     if update.message.text:
         text = update.message.text.strip()
-        if len(text) < 300 and not update.message.document:
+        if len(text) < 100 and not update.message.document:
             await update.message.reply_text(
                 "Наверное, вы отправили текст по ошибке. "
                 "Оффер поставщика обычно превышает по длине 300 символов.\n\n"

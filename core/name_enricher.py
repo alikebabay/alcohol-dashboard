@@ -1,9 +1,13 @@
 # enricher.py
 import pandas as pd
+import logging
+import re
+
 from core.distillator import looks_like_category, _remove_volume_tokens, extract_volume_smart, _infer_bpc_from_name
 from utils.verifier import verifier
+from utils.abbreviations_helper import convert_abbreviation
 
-import re
+logger = logging.getLogger(__name__)
 
 def _clean_name_extras(s: str) -> str:
     """
@@ -76,8 +80,8 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
     # дополнительно чистим от лишних слов и хвостов
     df[col_name] = df[col_name].map(_clean_name_extras)
 
-
-
+    df[col_name] = df[col_name].map(convert_abbreviation)
+    logger.debug("normalize_alcohol_df: применяется convert_abbreviation к наименованиям")
     # --- запуск верифаера с графовым состоянием ---    
     verifier.set_state("graph")
     df = verifier.run(df)

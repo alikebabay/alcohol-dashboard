@@ -276,7 +276,10 @@ class BrandSeriesExtractor:
         Матчим по нормализованной подстроке (многословные серии поддерживаются).
         Возвращаем найденную серию (как строку), либо None.
         """
+        logger.debug(f"[GRAPH SERIES] enter brand='{brand}' raw='{raw}'")
+
         if not self.series_resolver or not brand:
+            
             return None
         bkey = _normalize(brand)
         if bkey not in self._series_cache:
@@ -287,16 +290,22 @@ class BrandSeriesExtractor:
                 series_list = []
             # храним нормализованные фразы, но и оригиналы тоже, чтобы вернуть красиво
             self._series_cache[bkey] = [(s, _normalize(s)) for s in series_list if s and len(s) > 1]
+            logger.debug(f"[GRAPH SERIES] cached series for '{brand}': {[s for s, _ in self._series_cache[bkey]]}")
 
         raw_norm = _normalize(raw)
         # выбираем самое длинное совпадение по нормализованной подстроке
+        logger.debug(f"[GRAPH SERIES] raw_norm='{raw_norm}'")
         matches = []
         for s_original, s_norm in self._series_cache[bkey]:
             if not s_norm:
                 continue
+            logger.debug(f"[GRAPH SERIES] compare '{s_norm}' in '{raw_norm}'")
             if s_norm in raw_norm:
+                logger.debug(f"[GRAPH SERIES] MATCH '{s_norm}' ⊂ '{raw_norm}' → {s_original}")
                 matches.append((len(s_norm), s_original))
+            
         if not matches:
+            logger.debug(f"[GRAPH SERIES] no matches for brand='{brand}' raw='{raw_norm}'")
             return None
         # берём наиболее «длинную» серию (чаще всего наиболее специфичная)
         matches.sort(key=lambda x: -x[0])
@@ -321,28 +330,27 @@ class BrandSeriesExtractor:
                 sc = score_brand_series(raw, b_norm)
                 b_tokens = b_norm.split()
 
-                # дебаг
-                # print(f"[DEBUG] token={t_norm} vs brand={b_norm}")
+                
 
                 # прямые совпадения
                 if t_norm in b_tokens or t_norm == b_norm:
                     sc += 1
-                    # print(f"  + exact token match with {b_orig}")
+                    
                 elif len(t_norm) >= 4 and any(t_norm in bt for bt in b_tokens):
                     sc += 0.25
-                    # print(f"  + partial token match in {b_tokens}")
+                    
 
                 # ✅ исправленный plural-fix
                 for bt in b_tokens:
                     if t_norm.rstrip("s") == bt or bt.rstrip("s") == t_norm:
                         sc += 0.6
-                        # print(f"  + plural fix match {t_norm} ~ {bt}")
+                        
                     elif t_norm.endswith("es") and t_norm[:-2] == bt:
                         sc += 0.5
-                        # print(f"  + plural 'es' match {t_norm} ~ {bt}")
+                        
                     elif t_norm.endswith("ies") and bt.endswith("y") and t_norm[:-3] + "y" == bt:
                         sc += 0.5
-                        # print(f"  + plural 'ies' match {t_norm} ~ {bt}")
+                        
 
                 if sc > 0:
                     scores[b_orig] = scores.get(b_orig, 0) + sc
@@ -378,12 +386,18 @@ class BrandSeriesExtractor:
         return brand, series
     
     def _extract_series_after_brand(self, raw, brand_norm):
-        idx = _normalize(raw).find(brand_norm)
+        logger.debug(f"[AFTER] start brand_norm='{brand_norm}' raw='{raw}'")
+        idx = _normalize(raw).find(brand_norm)        
+        logger.debug(f"[AFTER] normalized(raw)='{_normalize(raw)}', idx={idx}")
         if idx == -1:
             return None
         after = raw[idx + len(brand_norm):]
         tokens = re.findall(r"[A-Za-z0-9%+]+", after)
         valid = [t for t in tokens if not t.isdigit() and len(t) > 2]
+
+       
+        logger.debug(f"[AFTER] after='{after}', tokens={tokens}, valid={valid}")
+
         return " ".join(valid[:3]) if valid else None
     
     

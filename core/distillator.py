@@ -146,6 +146,12 @@ def _infer_bpc_from_name(text: str) -> float | None:
         cases = float(m.group("cases"))
         print(f"[BPC] matched fallback regex: '{m.group(0)}' → cases={cases}")
         return cases    
+    # 👇 новый fallback — формат с тире, например "— 6 —" или "- 12 -"
+    m = re.search(r'(?i)[—\-–]\s*(?P<cases>\d{1,2})\s*[—\-–]', s)
+    if m:
+        cases = float(m.group("cases"))
+        print(f"[BPC] matched dash-style fallback: '{m.group(0)}' → cases={cases}")
+        return cases
     
     # 🔹 fallback через FSM (лениво)
     print("[BPC] trying FSM fallback...")

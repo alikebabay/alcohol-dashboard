@@ -50,3 +50,6 @@ graph_normalizer_debug.txt
 normalizer_debug.txt
 text_extractors_debug.txt
 project_debug.txt
+access_debug.txt
+location_debug.txt
+price_debug.txt
