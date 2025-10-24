@@ -57,7 +57,7 @@ def setup_logging(global_level=logging.INFO):
         "integrations.graph_offers": logging.ERROR,
         # утилиты и извлекатели
         "utils.text_extractors": logging.ERROR,
-        "utils.text_extractors.prices": logging.ERROR,
+        "utils.text_extractors.prices": logging.DEBUG,
         "utils.text_extractors.access": logging.ERROR,
         "utils.text_extractors.location": logging.ERROR,
         "core.normalizer": logging.ERROR,

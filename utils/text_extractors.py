@@ -58,6 +58,13 @@ class PriceExtractor:
     def extract(self, text: str) -> dict:
         if not text:
             return {}
+        # сброс состояния на каждый вызов
+        logger.debug(f"[RESET] before → state={self.state}, bottle={self.price_bottle}, case={self.price_case}, bpc={self.bottles_per_case}")
+        self.state = "init"
+        self.price_bottle = None
+        self.price_case = None
+        self.bottles_per_case = None
+        logger.debug(f"[RESET] after  → state={self.state}, bottle={self.price_bottle}, case={self.price_case}, bpc={self.bottles_per_case}")
 
         s = str(text)
            
@@ -144,24 +151,31 @@ class PriceExtractor:
         return None
 
     def _extract_bpc(self, text):
+        logger.debug(f"[BPC] start (before search) bpc={self.bottles_per_case} text[:60]={text[:60]!r}")
         # стандартный паттерн: "6x75", "12×70"
         m = self.RX_BPC.search(text)
         if m:
             self.bottles_per_case = int(m.group(1))
+            logger.debug(f"[BPC] matched direct pattern → {self.bottles_per_case}")
             return
 
         # формат с тире: "— 6 —" или "- 12 -"
         m = re.search(r'[—\-–]\s*(\d{1,2})\s*[—\-–]', text)
         if m:
             self.bottles_per_case = int(m.group(1))
+            logger.debug(f"[BPC] matched dash pattern → {self.bottles_per_case}")
             return
 
         # если всё остальное не сработало — пробуем общий инфер
         try:
             from utils.text_extractors import _infer_bpc_from_name
             inferred = _infer_bpc_from_name(text)
+            logger.debug(f"[BPC] _infer_bpc_from_name returned {inferred!r}")
             if inferred:
                 self.bottles_per_case = int(inferred)
+                logger.debug(f"[BPC] final inferred → {self.bottles_per_case}")
+            else:
+                logger.debug("[BPC] no inferred value")
         except Exception as e:
             print(f"[BPC] _infer_bpc_from_name() failed: {e}")
            

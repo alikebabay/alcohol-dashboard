@@ -1,5 +1,7 @@
 import re
 
+# Аббревиатуры и их полные формы. Костыль для veuve clicquot и прочих.
+
 abbreviations = {
         "yl": "Yellow Label",
         "Moët": "Moet & Chandon",

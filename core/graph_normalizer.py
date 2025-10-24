@@ -4,6 +4,8 @@ from pathlib import Path
 import pandas as pd
 import logging
 from utils.logger import setup_logging
+from core.canonical_rules import apply_canonical_rules
+from utils.normalize import normalize as _normalize
 
 # импортируем уже сконфигурированный драйвер и MODE
 from config import driver, MODE
@@ -36,17 +38,7 @@ def load_brands(path="tests/multiword_brands.json"):
 
 BRANDS = load_brands()
 
-# ==========================================================
-# HELPERS
-# ==========================================================
-def _normalize(s: str) -> str:
-    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
-    s = s.lower().replace("&", "and")
-    # collapse apostrophes (e.g. "grant's" -> "grants")
-    s = re.sub(r"(\w)'s\b", r"\1s", s)
-    s = re.sub(r"'", "", s)
-    s = re.sub(r"[^a-z0-9 ]", " ", s)
-    return re.sub(r"\s+", " ", s).strip()
+
 
 
 
@@ -409,7 +401,8 @@ class BrandSeriesExtractor:
 # ==========================================================
 def find_canonical(tx, brand, series, raw):
     """Finds the best canonical name from Neo4j with penalty for overreach."""
-    rows = [r[0] for r in tx.run("MATCH (c:Canonical) RETURN c.name AS name").values()]
+    # ⚙️ добавлен DISTINCT для устранения дубликатов Canonical с одинаковыми именами
+    rows = [r[0] for r in tx.run("MATCH (c:Canonical) RETURN DISTINCT c.name AS name").values()]
     bnorm = _normalize(brand or "")
     snorm = _normalize(series or "")
     rnorm = _normalize(raw)
@@ -450,6 +443,17 @@ def find_canonical(tx, brand, series, raw):
         # small bonus for perfect equality
         if cn_norm == bnorm or cn_norm == rnorm:
             score += 0.3
+
+        # 🧩 применяем доменные правила (штраф за Magnum и др.)
+        try:            
+            delta = apply_canonical_rules(raw, cname)
+            if delta != 0:
+                logging.getLogger(__name__).debug(
+                    f"[CANON RULE] {cname}: delta={delta:+.2f}"
+                )
+            score += delta
+        except Exception as e:
+            logging.getLogger(__name__).warning(f"[CANON RULE] failed for {cname}: {e}")
 
         return score
 
