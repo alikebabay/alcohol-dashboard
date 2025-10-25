@@ -8,15 +8,14 @@ import pandas as pd
 #code integrations
 
 from writer import save_to_excel
-from integrations.gsheets_integration import update_master_to_gsheets, load_master_from_gsheets
 from core.organizer import attach_categories, order_by_category
 from state_machine import AlcoholStateMachine
 from integrations.input_loader import load
 from utils.verifier import verifier
 from integrations.graph_offers import push_offers_to_graph
 from integrations.graph_to_sheets import get_all_offers, make_master_sheet, upload_to_gsheets
-
-from integrations.matrix_merger import MatrixMerger  # 🧩 новый класс для объединения офферов
+from integrations.raw_to_graph import persist_raw_blob
+from config import MODE, driver
 
 from functools import wraps
 
@@ -37,6 +36,8 @@ async def dispatch_excel(update, context, supplier_choice=None):
         # 1. загружаем файл или текст через input_loader
     file_src, file_name = await load(update, context)
     
+    # 💾 Детерминированный сброс сырья в граф
+    raw_id = persist_raw_blob(driver, file_src, file_name, supplier_hint=supplier_choice)
 
     # Создаём state machine и определяем состояние
     supplier_sm = AlcoholStateMachine(file_name, supplier_choice)

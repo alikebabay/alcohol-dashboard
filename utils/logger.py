@@ -62,6 +62,7 @@ def setup_logging(global_level=logging.INFO):
         "utils.text_extractors.location": logging.ERROR,
         "core.normalizer": logging.ERROR,
         "core.text_parser": logging.ERROR,
+        "integrations.raw_to_graph": logging.DEBUG,
     }
 
     # читаем переопределения из ENV

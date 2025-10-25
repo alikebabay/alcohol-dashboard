@@ -23,7 +23,7 @@ async def handle_userdata(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if len(text) < 100 and not update.message.document:
             await update.message.reply_text(
                 "Наверное, вы отправили текст по ошибке. "
-                "Оффер поставщика обычно превышает по длине 300 символов.\n\n"
+                "Оффер поставщика обычно превышает по длине 100 символов.\n\n"
                 "Пожалуйста, отправьте Excel-файл или полный текст оффера."
             )
             logger.info(f"[handle_userdata] Игнорировано короткое сообщение ({len(text)} символов)")
@@ -44,7 +44,6 @@ async def handle_userdata(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Диалог завершён. Чтобы начать заново, нажмите /start")
 
     context.chat_data.clear()
-    context.user_data.clear()
     context.chat_data["_conv_active"] = False
     context.chat_data["_fsm"] = "END"
     return ConversationHandler.END
