@@ -3,10 +3,9 @@ import time
 print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
 import pandas as pd
-
+import asyncio
 
 #code integrations
-
 from writer import save_to_excel
 from core.organizer import attach_categories, order_by_category
 from state_machine import AlcoholStateMachine
@@ -16,6 +15,7 @@ from integrations.graph_offers import push_offers_to_graph
 from integrations.graph_to_sheets import get_all_offers, make_master_sheet, upload_to_gsheets
 from integrations.raw_to_graph import persist_raw_blob
 from config import MODE, driver
+from workers.event_bus import publish
 
 from functools import wraps
 
@@ -36,15 +36,16 @@ async def dispatch_excel(update, context, supplier_choice=None):
         # 1. загружаем файл или текст через input_loader
     file_src, file_name = await load(update, context)
     
-    # 💾 Детерминированный сброс сырья в граф
-    raw_id = persist_raw_blob(driver, file_src, file_name, supplier_hint=supplier_choice)
-
     # Создаём state machine и определяем состояние
     supplier_sm = AlcoholStateMachine(file_name, supplier_choice)
-    state = supplier_sm.decide_state(file_src)
+    state = supplier_sm.decide_state(file_src)    
 
     # FSM вызывает соответствующий метод обработки
     df_distilled = supplier_sm.handle_state(state, file_src)
+
+    # 💾 Детерминированный сброс сырья в граф
+    raw_id = persist_raw_blob(driver, file_src, file_name)
+    await publish("raw_blob_ready", {"supplier": supplier_sm.name, "raw_id": raw_id})
 
     # 3.1 Категоризация + порядок
     df_distilled = attach_categories(df_distilled, name_col="name", out_col="Тип")

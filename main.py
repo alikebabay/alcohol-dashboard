@@ -8,9 +8,12 @@ from telegram.ext import (
     Application, CommandHandler, MessageHandler, 
     filters, ContextTypes, ConversationHandler
 )
+import asyncio
+
 from config import TOKEN 
 from handler_userdata import handle_userdata
 from menu_states import SUPPLIER, INGEST
+from workers.blob_worker import init_worker
 
 
 
@@ -21,7 +24,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
+init_worker()
 
 # /start
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
