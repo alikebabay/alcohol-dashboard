@@ -42,10 +42,16 @@ def persist_raw_blob(driver, file_src, file_name: str):
     fsm = AlcoholStateMachine.get_active()
     if not fsm or not getattr(fsm, "name", None):
         raise RuntimeError("Нет активного AlcoholStateMachine — невозможно определить поставщика.")
-
     supplier = fsm.name
     logger.debug(f"[RAW] Using supplier={supplier!r}")
     logger.debug(f"[RAW-DEBUG] supplier=<{supplier}>, file_name=<{file_name}>, size={size}, hash={digest}")
+
+    # --- Формируем корректное имя файла ---
+    # если текст → supplier.txt, иначе → supplier.xlsx
+    if ftype == "text":
+        final_name = f"{supplier}.txt"
+    else:
+        final_name = f"{supplier}.xlsx"
 
 
     # --- Проверяем дубликат hash ---
@@ -60,15 +66,14 @@ def persist_raw_blob(driver, file_src, file_name: str):
         if rec:
             logger.info(f"[RAW] duplicate detected: supplier={supplier} hash={digest[:8]} file={file_name}")
             return rec["id"]
-    # определяем расширение исходного файла
-    ext = Path(file_name).suffix or ""
+    
 
     # --- Если дубля нет — создаём новую ноду ---
     cypher = """
     CREATE (r:RawBlob {
         id: randomUUID(),
         supplier: $supplier,
-        fileName: $supplier_filename,
+        fileName: $file_name,
         hash: $hash,
         size: toInteger($size),
         type: $ftype,
@@ -78,11 +83,11 @@ def persist_raw_blob(driver, file_src, file_name: str):
     RETURN r.id AS id
     """
     with driver.session() as session:
-        logger.debug(f"[RAW-DEBUG] creating new node for {supplier} hash={digest[:8]} file={file_name}")
+        logger.debug(f"[RAW-DEBUG] creating new node for {supplier} hash={digest[:8]} file={final_name}")
         rec = session.run(
             cypher,
             supplier=supplier,
-            supplier_filename=f"{supplier}{ext}",
+            file_name=final_name,
             hash=digest,
             size=int(size),
             ftype=ftype,
@@ -91,5 +96,5 @@ def persist_raw_blob(driver, file_src, file_name: str):
         ).single()
 
     rid = rec["id"]
-    logger.info(f"[RAW] stored new RawBlob id={rid} supplier={supplier} hash={digest[:8]} size={size} file={file_name} (mode={MODE})")
+    logger.info(f"[RAW] stored new RawBlob id={rid} supplier={supplier} hash={digest[:8]} size={size} file={final_name} (mode={MODE})")
     return rid
