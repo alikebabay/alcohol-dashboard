@@ -16,6 +16,8 @@ from integrations.graph_to_sheets import get_all_offers, make_master_sheet, uplo
 from integrations.raw_to_graph import persist_raw_blob
 from config import MODE, driver
 from workers.event_bus import publish
+from integrations.reference_to_graph import reference_to_graph
+
 
 from functools import wraps
 
@@ -70,6 +72,10 @@ async def dispatch_excel(update, context, supplier_choice=None):
 
     # файл для отдачи пользователю телеграм. сохраним в state machine
     supplier_sm.set_df_out(df_out)
+
+    # пуш сборника офферов в граф
+    df_id = reference_to_graph(df_out)
+    await publish("df_out_ready", {"supplier": supplier_name, "df_id": df_id})
 
     push_offers_to_graph(df_out, supplier_name)
 

@@ -63,7 +63,10 @@ def setup_logging(global_level=logging.INFO):
         "core.normalizer": logging.ERROR,
         "core.text_parser": logging.ERROR,
         "integrations.raw_to_graph": logging.DEBUG,
-        "workers.blob_worker": logging.DEBUG,
+        "workers.blob_worker": logging.ERROR,
+        "integrations.reference_to_graph": logging.INFO,
+        "workers.reference_worker": logging.DEBUG,
+        "main": logging.DEBUG,
     }
 
     # читаем переопределения из ENV

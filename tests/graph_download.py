@@ -3,11 +3,11 @@ import argparse
 
 
 # 🔹 Локальное подключение (отдельно от онлайн)
-LOCAL_URI = "bolt://localhost:7687"
-LOCAL_USER = "neo4j"
-LOCAL_PASS = "testing123"
+URI = "bolt://65.108.49.93:7687"
+USER = "neo4j"
+PASS = "testing123"
 
-local_driver = GraphDatabase.driver(LOCAL_URI, auth=(LOCAL_USER, LOCAL_PASS))
+local_driver = GraphDatabase.driver(URI, auth=(USER, PASS))
 
 def export_raw_blob(record_id: str):
     """Скачивает RawBlob из Neo4j и сохраняет как текст или бинарный файл."""

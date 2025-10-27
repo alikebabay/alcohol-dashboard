@@ -2,6 +2,7 @@ from datetime import datetime
 from io import BytesIO
 import logging
 from pathlib import Path
+import hashlib
 
 from config import driver, MODE
 from utils.logger import setup_logging
@@ -22,6 +23,8 @@ def persist_raw_blob(driver, file_src, file_name: str):
     Создаёт ноду (:RawBlob) если нет дубля по (supplier, fileName, size).
     Сравнение по размеру файла/текста.
     """
+    
+
     # --- Получаем байты и тип ---
     if isinstance(file_src, str):
         raw_bytes = file_src.encode("utf-8")
@@ -33,6 +36,7 @@ def persist_raw_blob(driver, file_src, file_name: str):
         raise TypeError(f"Unsupported file_src type: {type(file_src)}")
 
     size = len(raw_bytes)
+    digest = hashlib.sha256(raw_bytes).hexdigest()
     created = datetime.utcnow().isoformat()
     # 🧩 2. Получаем активного поставщика
     fsm = AlcoholStateMachine.get_active()
@@ -41,19 +45,20 @@ def persist_raw_blob(driver, file_src, file_name: str):
 
     supplier = fsm.name
     logger.debug(f"[RAW] Using supplier={supplier!r}")
+    logger.debug(f"[RAW-DEBUG] supplier=<{supplier}>, file_name=<{file_name}>, size={size}, hash={digest}")
 
 
-    # --- Проверяем дубликат ---
+    # --- Проверяем дубликат hash ---
     check = """
     MATCH (r:RawBlob)
-    WHERE r.supplier = $supplier AND r.fileName = $file_name AND r.size = $size
+    WHERE r.supplier = $supplier AND r.hash = $hash
     RETURN r.id AS id, r.receivedAt AS receivedAt
     ORDER BY r.receivedAt DESC LIMIT 1
     """
-    with driver.session() as session:
-        rec = session.run(check, supplier=fsm.name, file_name=file_name, size=size).single()
+    with driver.session() as session:        
+        rec = session.run(check, supplier=supplier, hash=digest).single()
         if rec:
-            logger.info(f"[RAW] duplicate detected: supplier={fsm.name} size={size} file={file_name}")
+            logger.info(f"[RAW] duplicate detected: supplier={supplier} hash={digest[:8]} file={file_name}")
             return rec["id"]
     # определяем расширение исходного файла
     ext = Path(file_name).suffix or ""
@@ -64,7 +69,8 @@ def persist_raw_blob(driver, file_src, file_name: str):
         id: randomUUID(),
         supplier: $supplier,
         fileName: $supplier_filename,
-        size: $size,
+        hash: $hash,
+        size: toInteger($size),
         type: $ftype,
         receivedAt: $created,
         blob: $blob
@@ -72,16 +78,18 @@ def persist_raw_blob(driver, file_src, file_name: str):
     RETURN r.id AS id
     """
     with driver.session() as session:
+        logger.debug(f"[RAW-DEBUG] creating new node for {supplier} hash={digest[:8]} file={file_name}")
         rec = session.run(
             cypher,
-            supplier=fsm.name,
-            supplier_filename=f"{fsm.name}{ext}",
-            size=size,
+            supplier=supplier,
+            supplier_filename=f"{supplier}{ext}",
+            hash=digest,
+            size=int(size),
             ftype=ftype,
             created=created,
             blob=raw_bytes,
         ).single()
 
     rid = rec["id"]
-    logger.info(f"[RAW] stored new RawBlob id={rid} supplier={fsm.name} size={size} file={file_name} (mode={MODE})")
+    logger.info(f"[RAW] stored new RawBlob id={rid} supplier={supplier} hash={digest[:8]} size={size} file={file_name} (mode={MODE})")
     return rid
