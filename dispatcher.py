@@ -38,6 +38,7 @@ async def dispatch_excel(update, context, supplier_choice=None):
         # 1. загружаем файл или текст через input_loader
     file_src, file_name = await load(update, context)
     
+    
     # Создаём state machine и определяем состояние
     supplier_sm = AlcoholStateMachine(file_name, supplier_choice)
     state = supplier_sm.decide_state(file_src)    
