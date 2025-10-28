@@ -51,10 +51,11 @@ def setup_logging(global_level=logging.INFO):
     # === Уровни для конкретных модулей ===
     modules = {
         # инфраструктура
-        "integrations.matrix_merger": logging.INFO,
-        "core.graph_normalizer": logging.ERROR,
-        "integrations.rules_typing": logging.INFO,
+        "integrations.matrix_merger": logging.ERROR,
+        "core.graph_normalizer": logging.DEBUG,
+        "integrations.rules_typing": logging.ERROR,
         "integrations.graph_offers": logging.ERROR,
+        "integrations.graph_to_sheets": logging.ERROR,
         # утилиты и извлекатели
         "utils.text_extractors": logging.ERROR,
         "utils.text_extractors.prices": logging.ERROR,
@@ -62,11 +63,14 @@ def setup_logging(global_level=logging.INFO):
         "utils.text_extractors.location": logging.ERROR,
         "core.normalizer": logging.ERROR,
         "core.text_parser": logging.ERROR,
-        "integrations.raw_to_graph": logging.DEBUG,
+        "integrations.raw_to_graph": logging.ERROR,
         "workers.blob_worker": logging.ERROR,
-        "integrations.reference_to_graph": logging.INFO,
-        "workers.reference_worker": logging.DEBUG,
-        "main": logging.DEBUG,
+        "integrations.reference_to_graph": logging.ERROR,
+        "workers.reference_worker": logging.ERROR,
+        "main": logging.ERROR,
+        "integrations.fingerprint_utils": logging.ERROR,
+        "core.distillator": logging.ERROR
+
     }
 
     # читаем переопределения из ENV

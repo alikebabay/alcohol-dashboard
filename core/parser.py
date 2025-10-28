@@ -2,6 +2,7 @@
 import time
 print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
+
 # parser.py
 from io import BytesIO
 import pandas as pd
@@ -37,5 +38,4 @@ def parse_excel(src: BytesIO):
         df_all = pd.concat(frames, ignore_index=True)
     else:
         df_all = pd.DataFrame()
-
     return df_all, mappings

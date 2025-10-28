@@ -9,6 +9,10 @@ LOCAL_PASS = "testing123"
 
 local_driver = GraphDatabase.driver(LOCAL_URI, auth=(LOCAL_USER, LOCAL_PASS))
 
+# 📂 Папка, куда всё будет сохраняться
+PROCESSED_DIR = os.path.join(os.getcwd(), "processed")
+os.makedirs(PROCESSED_DIR, exist_ok=True)
+
 def export_node(record_id: str):
     """
     Универсальный экспортер: автоматически определяет тип ноды (RawBlob или DfOut)
@@ -36,20 +40,22 @@ def export_node(record_id: str):
     ext = rec.get("ext") or ""
     fmt = rec.get("format")
 
-    print(f"ℹ️ Обнаружена нода с метками: {labels}")
+    out_path = os.path.join(PROCESSED_DIR, file_name)
+    if ext and not out_path.endswith(ext):
+        out_path += ext
 
     # 🟢 RawBlob (текст или бинарь)
     if "RawBlob" in labels:
         if ftype == "text":
             text = blob.decode("utf-8", errors="ignore")
-            out_path = f"{file_name}"
+            out_path = os.path.join(PROCESSED_DIR, file_name)
             with open(out_path, "w", encoding="utf-8") as f:
                 f.write(text)
             print(f"✅ Текст сохранён: {out_path}")
         else:
             if not file_name.endswith(ext):
                 file_name = f"{file_name}{ext}"
-            out_path = os.path.abspath(file_name)
+            out_path = os.path.join(PROCESSED_DIR, file_name)
             with open(out_path, "wb") as f:
                 f.write(blob)
             print(f"✅ Файл RawBlob сохранён: {out_path} ({len(blob)} байт)")
@@ -59,14 +65,14 @@ def export_node(record_id: str):
         ext = ext or ".xlsx"
         if not file_name.endswith(ext):
             file_name = f"{file_name}{ext}"
-        out_path = os.path.abspath(file_name)
+        out_path = os.path.join(PROCESSED_DIR, file_name)
         with open(out_path, "wb") as f:
             f.write(blob)
         print(f"✅ DfOut сохранён: {out_path} ({len(blob)} байт, формат={fmt or 'excel'})")
 
     else:
         print(f"⚠️ Неизвестный тип ноды: {labels}")
-        out_path = os.path.abspath(f"{file_name}.bin")
+        out_path = os.path.join(PROCESSED_DIR, f"{file_name}.bin")
         with open(out_path, "wb") as f:
             f.write(blob)
         print(f"💾 Содержимое сохранено в {out_path} (сырой бинарь)")

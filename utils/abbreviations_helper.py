@@ -1,20 +1,36 @@
 import re
 
-# Аббревиатуры и их полные формы. Костыль для veuve clicquot и прочих.
+# 🧩 Карта сокращений и их нормализованных форм
+ABBREVIATIONS = {
+    "yl": "Yellow Label",
+    "moët": "Moet & Chandon",
+    "moet": "Moet & Chandon",
+    "imperial brut": "Brut Imperial",
+    "xo": "X.O",
+    "yo": "Year Old",
+    "teachers": "Teacher's",
+    "Grey Goose Blue": "Grey Goose",
+    
 
-abbreviations = {
-        "yl": "Yellow Label",
-        "Moët": "Moet & Chandon",
-        "imperial brut": "Brut Imperial",
-        "XO": "X.O",
-        "YO": "Year Old",
-        "yo": "Year Old",
-    }
+}
 
-def convert_abbreviation(text) -> str:
-    "Отделяет yo из чисел, чтобы не сливалось, например 12yo -> 12 yo"
-    text = re.sub(r'(?<=\d)(?=yo\b|YO\b)', ' ', text)
-    """Convert brand abbreviations to their full forms."""
-    for abbrev, full_form in abbreviations.items():
-            text = re.sub(r'\b' + re.escape(abbrev) + r'\b', full_form, text, flags=re.IGNORECASE)
+def convert_abbreviation(text: str) -> str:
+    """
+    Преобразует сокращения брендов и типичные паттерны в нормализованный вид.
+    Например:
+      12yo → 12 yo
+      YL → Yellow Label
+      Moët → Moet & Chandon
+    """
+    if not isinstance(text, str):
+        return text
+
+    # 🧠 1️⃣ Отделяем "yo" от чисел (например 12yo → 12 yo)
+    text = re.sub(r"(?<=\d)(?=yo\b|YO\b)", " ", text)
+
+    # 🧩 2️⃣ Проходим по всем известным сокращениям
+    for abbrev, full_form in ABBREVIATIONS.items():
+        # \b — границы слова; re.IGNORECASE — чувствительность к регистру
+        text = re.sub(rf"\b{re.escape(abbrev)}\b", full_form, text, flags=re.IGNORECASE)
+
     return text

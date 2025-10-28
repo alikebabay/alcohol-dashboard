@@ -6,9 +6,13 @@ import re
 import pandas as pd
 from typing import Optional
 import importlib
+import logging
 
 from utils.regular_expressions import RX_VOLUME, _RX_CASEVOL, _RX_CASEVOL_ABV, RX_PACK_CASES_FLEX, RX_PACK_PCS, RX_ABV, RX_AGE, RX_VINTAGE
+from utils.logger import setup_logging
 
+setup_logging()
+logger = logging.getLogger(__name__)
 
 
 CATEGORY_LEX = {
@@ -132,29 +136,29 @@ def _infer_bpc_from_name(text: str) -> float | None:
     if not text:
         return None
     s = _normalize_token(text)
-    print(f"[BPC] raw='{text}' | normalized='{s}'")
+    logger.debug(f"[BPC] raw='{text}' | normalized='{s}'")
 
     m = RX_PACK_CASES_FLEX.search(s) or RX_PACK_PCS.search(s)
     if m:
         cases = float(m.group("cases"))   
-        print(f"[BPC] matched primary regex: '{m.group(0)}' → cases={cases}")     
+        logger.debug(f"[BPC] matched primary regex: '{m.group(0)}' → cases={cases}")     
         return cases
 
     # fallback — ищем просто N x число
     m = re.search(r'(?i)\b(?P<cases>\d{1,2})\s*[x×]\s*\d+', s)
     if m:
         cases = float(m.group("cases"))
-        print(f"[BPC] matched fallback regex: '{m.group(0)}' → cases={cases}")
+        logger.debug(f"[BPC] matched fallback regex: '{m.group(0)}' → cases={cases}")
         return cases    
     # 👇 новый fallback — формат с тире, например "— 6 —" или "- 12 -"
     m = re.search(r'(?i)[—\-–]\s*(?P<cases>\d{1,2})\s*[—\-–]', s)
     if m:
         cases = float(m.group("cases"))
-        print(f"[BPC] matched dash-style fallback: '{m.group(0)}' → cases={cases}")
+        logger.debug(f"[BPC] matched dash-style fallback: '{m.group(0)}' → cases={cases}")
         return cases
     
     # 🔹 fallback через FSM (лениво)
-    print("[BPC] trying FSM fallback...")
+    logger.debug("[BPC] trying FSM fallback...")
 
     try:
         import importlib
@@ -162,28 +166,28 @@ def _infer_bpc_from_name(text: str) -> float | None:
         fsm_cls = getattr(fsm_module, "AlcoholStateMachine", None)
         fsm = fsm_cls.get_active() if fsm_cls else None
     except Exception as e:
-        print(f"[BPC] FSM import failed: {e}")
+        logger.debug(f"[BPC] FSM import failed: {e}")
         fsm = None
 
     if not fsm:
-        print("[BPC] FSM not active → skip fallback")
+        logger.debug("[BPC] FSM not active → skip fallback")
         return None
 
     if getattr(fsm, "df_raw", None) is None:
-        print("[BPC] FSM has no df_raw → skip fallback")
+        logger.debug("[BPC] FSM has no df_raw → skip fallback")
         return None
 
-    print(f"[BPC] FSM active, scanning df_raw ({len(fsm.df_raw)} rows)...")
+    logger.debug(f"[BPC] FSM active, scanning df_raw ({len(fsm.df_raw)} rows)...")
 
     for _, row in fsm.df_raw.iterrows():
         row_str = " ".join(map(str, row.values))
         m2 = RX_PACK_CASES_FLEX.search(row_str) or RX_PACK_PCS.search(row_str)
         if m2:
             cases = float(m2.group("cases"))
-            print(f"[BPC] extracted {cases} from df_raw row: '{row_str[:80]}...'")
+            logger.debug(f"[BPC] extracted {cases} from df_raw row: '{row_str[:80]}...'")
             return cases
 
-    print("[BPC] no pattern matched in df_raw → None")
+    logger.debug("[BPC] no pattern matched in df_raw → None")
     return None
 
 def looks_like_category(name: str, row: pd.Series | None = None) -> bool:

@@ -19,21 +19,6 @@ from workers.event_bus import publish
 from integrations.reference_to_graph import reference_to_graph
 
 
-from functools import wraps
-
-def timed(func):
-    """Декоратор для замера времени работы функции."""
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        start = time.perf_counter()
-        result = func(*args, **kwargs)
-        elapsed = time.perf_counter() - start
-        print(f"[TIMER] {func.__name__}: {elapsed:.2f} sec")
-        return result
-    return wrapper
-
-
-@timed
 async def dispatch_excel(update, context, supplier_choice=None):
         # 1. загружаем файл или текст через input_loader
     file_src, file_name = await load(update, context)

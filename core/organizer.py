@@ -28,7 +28,7 @@ BRAND_TO_CATEGORY.extend([
 
     # Whiskey – шотландцы и не только
     (re.compile(r"\b(balvenie|caol\s*ila|glen\s*scotia|glenfarclas|glenlivet|glenmorangie|loch\s*lomond|singleton|tomatin|tomintoul)\b", re.I), "Whiskey"),
-    (re.compile(r"\b(chichibu|mars\s*kasei|senju)\b", re.I), "Whiskey"),
+    (re.compile(r"\b(chichibu|cutty\s*sark|mars\s*kasei|senju)\b", re.I), "Whiskey"),
     (re.compile(r"\b(jim\s*beam|basil\s*hayden|baker'?s|1792|buchanan'?s)\b", re.I), "Whiskey"),
 
     # Champagne

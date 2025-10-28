@@ -1,17 +1,27 @@
 
 from __future__ import annotations
 import pandas as pd
+import logging
 
 from state_machine import AlcoholStateMachine
 from integrations.fingerprint_utils import add_offer_metadata
+from utils.logger import setup_logging
+
+# активируем общий логгер (matrix_debug.txt)
+setup_logging()
+logger = logging.getLogger(__name__)
+
 
 def detect_currency(df_raw: pd.DataFrame) -> str:
-    """Простейшее определение валюты по df_raw"""
     if df_raw is None or df_raw.empty:
         return ""
-    
-    # проверяем текст всех ячеек
-    text = " ".join(df_raw.astype(str).fillna("").values.ravel()).lower()
+
+    # объединяем текст и заголовки
+    text = " ".join(
+        list(df_raw.columns.astype(str)) +
+        list(df_raw.astype(str).fillna("").values.ravel())
+    ).lower()
+
     for cur in ["eur", "€", "usd", "$", "₸", "kzt", "rub", "₽"]:
         if cur in text:
             if cur in ["eur", "€"]:
@@ -50,6 +60,12 @@ def save_to_excel(df: pd.DataFrame, supplier: str) -> pd.DataFrame:
     for raw_col, target_col in column_map.items():
         if raw_col in df.columns:
             df_out[target_col] = df[raw_col]
+    
+    # 💡 Добавляем колонку "Винтаж" сразу после "Наименование", если есть
+    if "vintage" in df.columns:
+        insert_pos = df_out.columns.get_loc("Наименование") + 1
+        df_out.insert(insert_pos, "Винтаж", df["vintage"])
+        logger.debug("[save_to_excel] добавлен столбец 'Винтаж' после 'Наименование'")
 
     # 2) поставщик-специфичные колонки
     col_price_bottle = f"цена за бутылку {supplier}"

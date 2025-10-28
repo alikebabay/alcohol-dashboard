@@ -59,19 +59,15 @@ def _cases_from_size_text(x) -> Optional[float]:
             logger.debug(f"_cases_from_size_text: не удалось извлечь число из {x!r}")
             return None
     return _to_number(x)
-    
-    
-        
-
-
-
-
 
 # --- ядро нормализации -----------------------------------------------------
 
 NAME_PATS = [
     r"^name", r"^наимен", r"^descr", r"описан", r"товар", r"product", r"бренд|марка", r"item"
 ]
+
+# паттерн для винтажей
+VINTAGE_PATS = [r"vintage", r"\bгод\b", r"\byear\b"]
 
 BOTTLES_PER_CASE_PATS = [
     r"bottles_per_case",
@@ -224,6 +220,7 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
 
     # --- поиск колонок ---
     name_cols  = _find_cols(df, NAME_PATS)
+    vintage_cols = _find_cols(df, VINTAGE_PATS)
     price_cols = _find_cols(df, PRICE_CASE_PATS)
     bpc_cols   = [c for c in _find_cols(df, BOTTLES_PER_CASE_PATS) if c not in price_cols]
     avail_cols = _find_cols(df, AVAILABILITY_PATS)
@@ -237,7 +234,14 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
         "price_per_case": price_cols,
         "price_per_bottle": price_bottle_cols or "calculated",
     }
-
+    # --- 🔗 Склеиваем Vintage с Name, если оба найдены ---
+    if name_cols and vintage_cols:
+        ncol, vcol = name_cols[0], vintage_cols[0]
+        logger.debug(f"[normalize_alcohol_df] объединяем {ncol!r} и {vcol!r} → одно поле name")
+        df[ncol] = (
+            df[ncol].astype(str).str.strip() + " " +
+            df[vcol].astype(str).fillna("").str.strip()
+        ).str.replace(r"\bNV\b", "", regex=True).str.replace(r"\s+", " ", regex=True).str.strip()
 
     logger.debug(f"normalize_alcohol_df: mapping → {mapping}")
     out = pd.DataFrame()
@@ -249,6 +253,14 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     else:
         out["name"] = None
         logger.warning("normalize_alcohol_df: не найдены колонки с именами товаров")
+
+    # --- Винтаж ---
+    if vintage_cols:        
+        tmp = df[vintage_cols].bfill(axis=1)
+        out["vintage"] = tmp.iloc[:, 0].astype(str).str.strip()
+    else:
+        out["vintage"] = None
+        logger.warning("normalize_alcohol_df: не найдены колонки с винтажом")
 
     # --- Кол-во бутылок в кейсе ---
     if bpc_cols:

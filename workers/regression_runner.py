@@ -66,7 +66,7 @@ async def run_pipeline_for_raw(supplier: str, raw_path: str, raw_type: str):
 
         class DummyBot:
            async def get_file(self, file_id):
-                logger.debug(f"[TG SIM bot.get_file] called with file_id={file_id}")
+                #logger.debug(f"[TG SIM bot.get_file] called with file_id={file_id}")
 
                 class DummyFile:
                     async def download_to_drive(self, path):
@@ -83,12 +83,12 @@ async def run_pipeline_for_raw(supplier: str, raw_path: str, raw_type: str):
                             logger.error(f"[TG SIM] download_to_drive failed for {file_id}: {e}")
 
                     async def download_as_bytearray(self):
-                        logger.debug(f"[TG SIM download_as_bytearray] reading local file for {file_id}")
+                        #logger.debug(f"[TG SIM download_as_bytearray] reading local file for {file_id}")
                         local_name = file_id.replace("local_", "")
                         if os.path.exists(local_name):
                             with open(local_name, "rb") as f:
                                 return bytearray(f.read())
-                        logger.warning(f"[TG SIM] local file {local_name} not found")
+                        #logger.warning(f"[TG SIM] local file {local_name} not found")
                         return bytearray()
 
                 return DummyFile()
@@ -101,23 +101,23 @@ async def run_pipeline_for_raw(supplier: str, raw_path: str, raw_type: str):
             with open(raw_path, "r", encoding="utf-8", errors="ignore") as f:
                 text = f.read()
             message = DummyMessage(text=text)
-            logger.debug(f"[REG] Loaded text offer ({len(text)} chars)")
+           # logger.debug(f"[REG] Loaded text offer ({len(text)} chars)")
         except Exception as e:
-            logger.error(f"[REG] Failed to read {raw_path}: {e}")
+            #logger.error(f"[REG] Failed to read {raw_path}: {e}")
             message = DummyMessage(text=None)
     else:
         # Excel-файл (.xlsx, .xls и т.п.)
         message = DummyMessage(document=DummyDocument(os.path.basename(raw_path)))
-        logger.debug(f"[REG] Loaded Excel offer {raw_path}")
+        #logger.debug(f"[REG] Loaded Excel offer {raw_path}")
 
     update, context = DummyUpdate(message), DummyContext()
 
-    logger.info(f"[REG] ▶ Прогоняем {supplier}, файл {raw_path}")
+    #logger.info(f"[REG] ▶ Прогоняем {supplier}, файл {raw_path}")
     df_out = await dispatch_excel(update, context, supplier_choice=supplier)
 
-    out_path = f"./{supplier}_out.xlsx"
+    out_path = f"processed/{supplier}_out.xlsx"
     df_out.to_excel(out_path, index=False)
-    logger.info(f"[REG] ✅ Сохранено: {out_path}")
+    #logger.info(f"[REG] ✅ Сохранено: {out_path}")
     return out_path
 
 
@@ -128,10 +128,10 @@ async def run_regression():
         raws = session.run(Q_GET_RAW_WITH_CANON).data()
 
     if not raws:
-        logger.warning("[REG] Не найдено RawBlob с каноничными DfOut")
+        #logger.warning("[REG] Не найдено RawBlob с каноничными DfOut")
         return
 
-    logger.info(f"[REG] Найдено {len(raws)} RawBlob для регрессии")
+    #logger.info(f"[REG] Найдено {len(raws)} RawBlob для регрессии")
 
     for rec in raws:
         supplier = rec["supplier"]
@@ -140,12 +140,45 @@ async def run_regression():
         raw_type = rec.get("raw_type") or ""
         try:
             # Этап 1️⃣ — скачиваем RawBlob с графа
-            logger.info(f"[REG] 📥 Скачиваем RawBlob {raw_id} ({supplier})")
+            #logger.info(f"[REG] 📥 Скачиваем RawBlob {raw_id} ({supplier}) → processed/")
             export_node(raw_id)
-            raw_path = os.path.abspath(file_name)
+            raw_path = os.path.join("processed", file_name)
 
             # Этап 2️⃣ — прогоняем пайплайн
-            await run_pipeline_for_raw(supplier, raw_path, raw_type)
+            out_path = await run_pipeline_for_raw(supplier, raw_path, raw_type)
+
+            # Этап 3️⃣ — сверяем с каноническим DfOut
+            logger.info(f"[REG] ⚖️ Сверяем результат с каноном {rec['canon_id']}")
+            try:
+                # скачиваем канон
+                export_node(rec["canon_id"])
+                canon_file = rec.get("canon_file") or f"{supplier}_canon.xlsx"
+                canon_path = os.path.join("processed", canon_file)
+
+                import pandas as pd
+                df_new = pd.read_excel(out_path)
+                df_canon = pd.read_excel(canon_path)
+
+                if "b64" not in df_new.columns or "b64" not in df_canon.columns:
+                    logger.warning("[REG] В одном из файлов нет колонки b64 — сравнение невозможно")
+                    continue
+
+                set_new = set(df_new["b64"].dropna())
+                set_canon = set(df_canon["b64"].dropna())
+                added = set_new - set_canon
+                removed = set_canon - set_new
+
+                if not added and not removed:
+                    logger.info(f"[REG] ✅ {supplier}: совпадает ({len(set_new)} строк)")
+                else:
+                    logger.warning(f"[REG] ❌ {supplier}: различия найдены (+{len(added)} / -{len(removed)})")
+                    if added:
+                        logger.debug(f"[REG][ADDED]\n" + "\n".join(list(added)[:5]))
+                    if removed:
+                        logger.debug(f"[REG][REMOVED]\n" + "\n".join(list(removed)[:5]))
+
+            except Exception as e:
+                logger.error(f"[REG] Ошибка при сравнении с каноном: {e}")
 
         except Exception as e:
             logger.error(f"[REG] Ошибка при прогоне {supplier}: {e}")
