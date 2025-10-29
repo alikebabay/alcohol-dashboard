@@ -178,7 +178,10 @@ class BrandSeriesExtractor:
             # определяем категорию из метаданных
             meta = self.brands_meta.get(brand, {})
             category = meta.get("category", "").lower()
-            self.context_type = "beer" if category == "beer" else "common"
+            if category in ("beer", "wine"):
+                self.context_type = "beer"  # используем ту же ветку
+            else:
+                self.context_type = "common"
 
             self.state = "BRAND"
             logger.debug(f"[STATE] INIT → BRAND ({brand}) context={self.context_type}")

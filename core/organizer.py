@@ -28,14 +28,15 @@ BRAND_TO_CATEGORY.extend([
 
     # Whiskey – шотландцы и не только
     (re.compile(r"\b(balvenie|caol\s*ila|glen\s*scotia|glenfarclas|glenlivet|glenmorangie|loch\s*lomond|singleton|tomatin|tomintoul)\b", re.I), "Whiskey"),
-    (re.compile(r"\b(chichibu|cutty\s*sark|mars\s*kasei|senju)\b", re.I), "Whiskey"),
+    (re.compile(r"\b(chichibu|cutty\s*sark|teacher'?s\s*highland\s*cream|mars\s*kasei|senju)\b", re.I), "Whiskey"),
     (re.compile(r"\b(jim\s*beam|basil\s*hayden|baker'?s|1792|buchanan'?s)\b", re.I), "Whiskey"),
 
     # Champagne
-    (re.compile(r"\b(dom\s*perignon|moe?t|ruinart|krug|jacquesson|veuve\s*cliquot?|barons?\s*de\s*rothschild)\b", re.I), "Champagne"),
+    (re.compile(r"\b(dom\s*perignon|veuve\s*clicquot|moe?t|ruinart|krug|jacquesson|veuve\s*cliquot?|barons?\s*de\s*rothschild)\b", re.I), "Champagne"),
 
     # Wine
-    (re.compile(r"\b(aalto|barista|braida|cloudy\s*bay|lafite|egon\s*muller|los\s*vascos|luce|penfolds|quintarelli|rioja\s*alta|sassicaia|tenuta\s*san\s*guido|ornellaia|opus\s*one)\b", re.I), "Wine"),
+    (re.compile(r"\b(aalto|barista|braida|cloudy\s*bay|lafite|egon\s*muller|los\s*vascos|luce|penfolds|quintarelli|rioja\s*alta|sassicaia|tenuta\s*san\s*guido|ornellaia|Minuty|opus\s*one)\b", re.I), "Wine"),
+    (re.compile(r"\b(the\s*chocolate\s*block|Tenuta\s*di\s*biserno|domaines|dal\s*forno)\b", re.I), "Wine"),
 
     # Liqueur / Vermouth
     (re.compile(r"\b(martini|bols|disaronno|passoa|tia\s*maria|vecchia\s*romagna|villa\s*massa|malibu|molinari|meukow)\b", re.I), "Liqueur"),

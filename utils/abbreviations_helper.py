@@ -10,7 +10,7 @@ ABBREVIATIONS = {
     "yo": "Year Old",
     "teachers": "Teacher's",
     "Grey Goose Blue": "Grey Goose",
-    
+    "PS": "Pagos Seleccionados"    
 
 }
 
