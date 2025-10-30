@@ -45,6 +45,7 @@ processed/*
 
 
 # Neo4j data and logs
+neo4j_data/
 data/
 logs/
 import/
