@@ -73,4 +73,4 @@ def upload_json_to_graph_local(path):
 
 
 if __name__ == "__main__":
-    upload_json_to_graph_local(r"tests\\canonical_mapping_master.json")
+    upload_json_to_graph_local(r"tests/canonical_mapping_master.json")

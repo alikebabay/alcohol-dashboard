@@ -1,3 +1,5 @@
+#Модуль переводит сокращения в расширенную форму для улучшения парсинга. 
+# Также исправляет грамматические ошибки поставщиков
 import re
 
 # 🧩 Карта сокращений и их нормализованных форм
@@ -10,7 +12,8 @@ ABBREVIATIONS = {
     "yo": "Year Old",
     "teachers": "Teacher's",
     "Grey Goose Blue": "Grey Goose",
-    "PS": "Pagos Seleccionados"    
+    "PS": "Pagos Seleccionados",
+    "Guidlaberto": "Guidalberto" 
 
 }
 

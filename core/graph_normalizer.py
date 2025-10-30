@@ -1,11 +1,13 @@
 # core/graph_normalizer.py
 import re, json, unicodedata
-from pathlib import Path
+
 import pandas as pd
 import logging
 from utils.logger import setup_logging
 from core.canonical_rules import apply_canonical_rules
 from utils.normalize import normalize as _normalize
+from utils.wine_guard import looks_like_new_wine
+
 
 # импортируем уже сконфигурированный драйвер и MODE
 from config import driver, MODE
@@ -172,7 +174,8 @@ class BrandSeriesExtractor:
     # INIT → ищем новый бренд
     # ==========================================================
     def _handle_init(self, raw, raw_norm):
-        brand, series = self._extract_brand_series(raw)
+        brand, series = self._extract_brand_series(raw)  
+        
         if brand:
             self.last_brand = brand
             # определяем категорию из метаданных
@@ -233,7 +236,7 @@ class BrandSeriesExtractor:
     def _handle_common(self, raw, raw_norm):
         brand = self.last_brand
         brand_norm = _normalize(brand)
-
+        # 1 проверяем наличие контекстного бренда в строке
         if brand_norm in raw_norm:
             series = self._extract_series_after_brand(raw, brand_norm)
             if series:
@@ -243,13 +246,18 @@ class BrandSeriesExtractor:
             
             logger.debug(f"[COMMON] brand present, no series; keep context")
             return brand, None
-        # 2️⃣ если бренд не встречается — пробуем искать серии этого бренда в строке 
-        # # (например, "Rose Imperial" для "Moet & Chandon") 
-        series = self._extract_series_for_brand_via_graph(raw, brand) 
-        if series: 
-            logger.debug(f"[STATE] BRAND (series via graph; keep {brand})") 
-            return brand, series 
-        # 3️⃣ если серии текущего бренда не нашли — ищем новый бренд 
+        
+        # 2️⃣ если контекстный бренд не встречается — пробуем искать серии контекстного бренда в строке
+        #    но сначала проверим костыль: не выглядит ли это как самостоятельное вино
+        if looks_like_new_wine(raw_norm):
+            logger.debug(f"[WINE GUARD] skip series via graph for {brand}: looks like independent wine ({raw})")
+        else:
+            series = self._extract_series_for_brand_via_graph(raw, brand)
+            if series:
+                logger.debug(f"[STATE] BRAND (series via graph; keep {brand})")
+                return brand, series
+
+        # 3️⃣ если серии контекстного бренда не нашли — ищем новый бренд 
         new_brand, new_series = self._extract_brand_series(raw) 
         if new_brand:
             logger.debug(f"[STATE] BRAND → BRAND ({brand} → {new_brand})")
