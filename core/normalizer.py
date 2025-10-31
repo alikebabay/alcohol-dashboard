@@ -108,6 +108,9 @@ class AccessLocationClassifier:
         self.df = df
         self.avail_cols = avail_cols
         self.loc_cols = loc_cols
+        # Отдельный логгер для AccessLocationClassifier
+        self.log = logging.getLogger("core.normalizer.access_location")
+        self.log.debug(f"[INIT] AccessLocationClassifier started with {len(avail_cols)} avail_cols, {len(loc_cols)} loc_cols")
 
         with open("aliases/city_aliases.json", encoding="utf-8") as f:
             self.city_aliases = json.load(f)["aliases"]
@@ -126,11 +129,14 @@ class AccessLocationClassifier:
         joined = " ".join(s[:50])
         has_access = bool(self.rx_access.search(joined))
         has_location = bool(self.rx_location.search(joined))
+        self.log.debug(f"[SCAN_DOWN] {col}: has_access={has_access}, has_location={has_location}")
         return has_access, has_location
 
     def _check_header_for_location(self, col):
         h = str(col).lower()
-        return any(k.lower() in h for k in list(self.city_aliases.keys()) + list(self.incoterms_aliases.keys()))
+        found = any(k.lower() in h for k in list(self.city_aliases.keys()) + list(self.incoterms_aliases.keys()))
+        self.log.debug(f"[HDR_CHECK] {col!r}: found={found}")
+        return found
 
     def _normalize_location_cell(self, text: str, col_header: Optional[str] = None) -> Optional[str]:
         """Ищет алиасы в тексте ячейки или названии колонки и возвращает нормализованный токен."""
@@ -139,6 +145,7 @@ class AccessLocationClassifier:
             txt = text.strip().lower()
             for k, v in {**self.city_aliases, **self.incoterms_aliases}.items():
                 if k.lower() in txt:
+                    self.log.debug(f"[LOC_CELL] match '{k}'→'{v}' in cell={text!r}")
                     return v
 
         # 2️⃣ fallback — проверяем заголовок колонки
@@ -147,6 +154,7 @@ class AccessLocationClassifier:
             aliases = {k.lower(): v for k, v in {**self.city_aliases, **self.incoterms_aliases}.items()}
             for k, v in aliases.items():
                 if k in hdr:
+                    self.log.debug(f"[LOC_HDR] match '{k}'→'{v}' in header={hdr!r}")
                     return v
 
         return None
@@ -188,7 +196,7 @@ class AccessLocationClassifier:
 
             # access по содержимому + локация по header
             elif has_access and not has_location and self._check_header_for_location(col):
-                logger.debug(f"AccessLocationClassifier: {col} → добавлена колонка location (по header)")
+                self.log.debug(f"[RESOLVE] {col}: добавлена колонка location (по header)")
                 self.df[f"{col}_location"] = self.df[col].map(
                     lambda x: self._normalize_location_cell(x, col)
                 )
@@ -198,9 +206,27 @@ class AccessLocationClassifier:
             elif has_location and not has_access:
                 has_ready = any(re.search(self.rx_access, str(v)) for v in self.df[col].head(50))
                 if has_ready:
-                    logger.debug(f"AccessLocationClassifier: {col} → добавлена колонка access (по содержимому)")
+                    self.log.debug(f"[RESOLVE] {col}: добавлена колонка access (по содержимому)")
                     self.df[f"{col}_access"] = self.df[col].map(self._normalize_access_cell)
                     new_access_cols.append(f"{col}_access")
+
+            # location по header, нет access, location в содержимом
+            elif not has_access and not has_location and self._check_header_for_location(col):
+                self.log.debug(f"[RESOLVE] {col}: header-only location detected → создаём единую 'Место загрузки'")
+
+                # 💡 Удаляем старые колонки с location (если были)
+                to_drop = [c for c in self.df.columns if any(k in c.lower() for k in ("location", "место загрузки"))]
+                for c in to_drop:
+                    self.log.debug(f"[CLEANUP] drop old location col: {c}")
+                    self.df.drop(columns=c, inplace=True)
+
+                # 🆕 Создаём одну колонку "Место загрузки" — одинаковое значение на все строки
+                normalized = self._normalize_location_cell("", col) or ""
+                self.df["Место загрузки"] = [normalized] * len(self.df)
+
+                # 🔄 Обновляем список локаций
+                new_loc_cols = ["Место загрузки"]
+                self.log.debug(f"[RESOLVE] создана единственная колонка 'Место загрузки' по header={col!r}")
 
         return new_access_cols, new_loc_cols
 

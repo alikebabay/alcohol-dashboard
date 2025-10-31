@@ -7,6 +7,7 @@ from utils.logger import setup_logging
 from core.canonical_rules import apply_canonical_rules
 from utils.normalize import normalize as _normalize
 from utils.wine_guard import looks_like_new_wine
+from core.patterns import valid_numerical
 
 
 # импортируем уже сконфигурированный драйвер и MODE
@@ -380,8 +381,15 @@ class BrandSeriesExtractor:
         if idx != -1:
             after = raw[idx + len(brand):].strip()
             if after:
-                after_tokens = re.findall(r"[A-Za-z0-9%+]+", after)
-                valid = [t for t in after_tokens if not t.isdigit() and len(t) > 2]
+                after_tokens = re.findall(r"[A-Za-z0-9%+]+", after)                
+                valid = []
+                for t in after_tokens:
+                    # разрешаем цифры для whitelisted серий вроде "Bin 707" или "Macallan 18"
+                    joined = f"{brand} {t}".strip()
+                    if t.isdigit() and not any(t in s for s in valid_numerical["series"]):
+                        continue
+                    if len(t) > 2 or any(joined in s for s in valid_numerical["series"]):
+                        valid.append(t)
                 if valid:
                     series = " ".join(valid[:3])
 
@@ -396,9 +404,14 @@ class BrandSeriesExtractor:
             return None
         after = raw[idx + len(brand_norm):]
         tokens = re.findall(r"[A-Za-z0-9%+]+", after)
-        valid = [t for t in tokens if not t.isdigit() and len(t) > 2]
+        valid = []
+        for t in tokens:
+            joined = f"{self.last_brand or ''} {t}".strip()
+            if t.isdigit() and not any(t in s for s in valid_numerical["series"]):
+                continue
+            if len(t) > 2 or any(joined in s for s in valid_numerical["series"]):
+                valid.append(t)
 
-       
         logger.debug(f"[AFTER] after='{after}', tokens={tokens}, valid={valid}")
 
         return " ".join(valid[:3]) if valid else None
