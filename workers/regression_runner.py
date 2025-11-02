@@ -7,6 +7,7 @@ from dispatcher import dispatch_excel
 from integrations import input_loader
 from tests.graph_download_local import export_node  # ← используем готовую функцию
 
+
 # ───────────────────────────────────────────────
 # 🧩 Заглушка publish, чтобы dispatcher не падал при регрессионном запуске
 # ───────────────────────────────────────────────
@@ -65,34 +66,40 @@ async def run_pipeline_for_raw(supplier: str, raw_path: str, raw_type: str):
         file_src = raw_path
 
         class DummyBot:
-           async def get_file(self, file_id):
-                #logger.debug(f"[TG SIM bot.get_file] called with file_id={file_id}")
+            async def get_file(self, file_id):                
 
                 class DummyFile:
                     async def download_to_drive(self, path):
-                        logger.debug(f"[TG SIM download_to_drive] copying local file for {file_id} → {path}")
+                        local_name = os.path.join("processed", file_id.replace("local_", ""))
+
+
                         try:
-                            local_name = file_id.replace("local_", "")
-                            if os.path.exists(local_name):
-                                with open(local_name, "rb") as src, open(path, "wb") as dst:
-                                    dst.write(src.read())
-                                logger.debug(f"[TG SIM] copied {local_name} → {path}")
-                            else:
-                                logger.warning(f"[TG SIM] local file {local_name} not found")
+                            with open(local_name, "rb") as src, open(path, "wb") as dst:
+                                data = src.read()
+                                dst.write(data)
+
+                            dest_size = os.path.getsize(path)
+                            
+
                         except Exception as e:
-                            logger.error(f"[TG SIM] download_to_drive failed for {file_id}: {e}")
+                            logger.exception(f"[TG SIM download_to_drive] COPY FAILED: {e}")
 
                     async def download_as_bytearray(self):
-                        #logger.debug(f"[TG SIM download_as_bytearray] reading local file for {file_id}")
-                        local_name = file_id.replace("local_", "")
-                        if os.path.exists(local_name):
+                        local_name = os.path.join("processed", file_id.replace("local_", ""))
+
+                        logger.debug(f"[TG SIM download_as_bytearray] reading '{local_name}'")
+
+                        try:
                             with open(local_name, "rb") as f:
-                                return bytearray(f.read())
-                        #logger.warning(f"[TG SIM] local file {local_name} not found")
-                        return bytearray()
-
+                                content = bytearray(f.read())
+                            logger.debug(
+                                f"[TG SIM download_as_bytearray] returning {len(content)} bytes"
+                            )
+                            return content
+                        except Exception as e:
+                            logger.exception(f"[TG SIM download_as_bytearray] READ FAILED: {e}")
+                            return bytearray()
                 return DummyFile()
-
         bot = DummyBot()
 
     # 🧩 Определяем тип входных данных по расширению файла
@@ -148,7 +155,7 @@ async def run_regression():
             out_path = await run_pipeline_for_raw(supplier, raw_path, raw_type)
 
             # Этап 3️⃣ — сверяем с каноническим DfOut
-            logger.info(f"[REG] ⚖️ Сверяем результат с каноном {rec['canon_id']}")
+            logger.debug(f"[REG] ⚖️ Сверяем результат с каноном {rec['canon_id']}")
             try:
                 # скачиваем канон
                 export_node(rec["canon_id"])

@@ -2,8 +2,7 @@
 import time
 print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
-import pandas as pd
-import asyncio
+import logging
 
 #code integrations
 from writer import save_to_excel
@@ -17,6 +16,10 @@ from integrations.raw_to_graph import persist_raw_blob
 from config import MODE, driver
 from workers.event_bus import publish
 from integrations.reference_to_graph import reference_to_graph
+from utils.logger import setup_logging
+
+setup_logging()
+logger = logging.getLogger(__name__)
 
 
 async def dispatch_excel(update, context, supplier_choice=None):
@@ -70,9 +73,9 @@ async def dispatch_excel(update, context, supplier_choice=None):
         df_all = get_all_offers()
         master_view = make_master_sheet(df_all, max_pairs=12)
         upload_to_gsheets(master_view)
-        print(f"[OK dispatcher] Pivot обновлён: {len(master_view)} строк загружено в Google Sheets")
+        logger.debug(f"[OK dispatcher] Pivot обновлён: {len(master_view)} строк загружено в Google Sheets")
     except Exception as e:
-        print(f"[ERROR dispatcher] Не удалось обновить Pivot из графа: {e}")
+        logger.error(f"[ERROR dispatcher] Не удалось обновить Pivot из графа: {e}")
 
     
 

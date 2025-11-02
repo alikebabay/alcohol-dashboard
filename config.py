@@ -3,6 +3,9 @@ import json
 from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
+import logging
+
+logger = logging.getLogger(__name__)
 
 load_dotenv("neo4j.env")
 
@@ -60,7 +63,7 @@ def get_gsheets_credentials(scopes=None):
     try:
         creds_json = get_from_vault("app", "GOOGLE_CREDENTIALS_JSON")
     except Exception as e:
-        print(f"[WARN] не удалось получить GOOGLE_CREDENTIALS_JSON из Vault: {e}")
+        logging.debug(f"[WARN] не удалось получить GOOGLE_CREDENTIALS_JSON из Vault: {e}")
         creds_json = None
 
     # 2. если удалось — используем его
@@ -69,11 +72,11 @@ def get_gsheets_credentials(scopes=None):
             creds_dict = json.loads(creds_json)
             return Credentials.from_service_account_info(creds_dict, scopes=scopes)
         except Exception as e:
-            print(f"[WARN] не удалось распарсить GOOGLE_CREDENTIALS_JSON: {e}")
+            logging.error(f"[WARN] не удалось распарсить GOOGLE_CREDENTIALS_JSON: {e}")
 
     # 3. fallback — локальный файл service_account.json
     if os.path.exists("alcohol-service-agent.json"):
-        print("[INFO] Используем локальный alcohol-service-agent.json")
+        logging.info("[INFO] Используем локальный alcohol-service-agent.json")
         return Credentials.from_service_account_file("alcohol-service-agent.json", scopes=scopes)
 
     # 4. если ничего не нашли

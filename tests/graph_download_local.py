@@ -1,6 +1,9 @@
 from neo4j import GraphDatabase
 import argparse
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 # 🔹 Локальное подключение (отдельно от онлайн)
 LOCAL_URI = "bolt://localhost:7687"
@@ -30,7 +33,7 @@ def export_node(record_id: str):
         """, id=record_id).single()
 
     if not rec:
-        print("❌ Нода не найдена")
+        logger.error("❌ Нода не найдена")
         return
 
     labels = rec["labels"]
@@ -51,14 +54,14 @@ def export_node(record_id: str):
             out_path = os.path.join(PROCESSED_DIR, file_name)
             with open(out_path, "w", encoding="utf-8") as f:
                 f.write(text)
-            print(f"✅ Текст сохранён: {out_path}")
+            logger.debug(f"✅ Текст сохранён: {out_path}")
         else:
             if not file_name.endswith(ext):
                 file_name = f"{file_name}{ext}"
             out_path = os.path.join(PROCESSED_DIR, file_name)
             with open(out_path, "wb") as f:
                 f.write(blob)
-            print(f"✅ Файл RawBlob сохранён: {out_path} ({len(blob)} байт)")
+            logger.debug(f"✅ Файл RawBlob сохранён: {out_path} ({len(blob)} байт)")
 
     # 🟣 DfOut (обычно Excel)
     elif "DfOut" in labels:
@@ -68,14 +71,14 @@ def export_node(record_id: str):
         out_path = os.path.join(PROCESSED_DIR, file_name)
         with open(out_path, "wb") as f:
             f.write(blob)
-        print(f"✅ DfOut сохранён: {out_path} ({len(blob)} байт, формат={fmt or 'excel'})")
+        logger.debug(f"✅ DfOut сохранён: {out_path} ({len(blob)} байт, формат={fmt or 'excel'})")
 
     else:
-        print(f"⚠️ Неизвестный тип ноды: {labels}")
+        logger.error(f"⚠️ Неизвестный тип ноды: {labels}")
         out_path = os.path.join(PROCESSED_DIR, f"{file_name}.bin")
         with open(out_path, "wb") as f:
             f.write(blob)
-        print(f"💾 Содержимое сохранено в {out_path} (сырой бинарь)")
+        logger.debug(f"💾 Содержимое сохранено в {out_path} (сырой бинарь)")
 
 
 if __name__ == "__main__":
@@ -86,4 +89,4 @@ if __name__ == "__main__":
     try:
         export_node(args.id)
     except Exception as e:
-        print(f"❌ Ошибка: {e}")
+        logger.error(f"❌ Ошибка: {e}")

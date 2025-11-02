@@ -5,8 +5,24 @@ import uuid
 
 from integrations.rules_typing import enforce_base_types
 from core.graph_normalizer import normalize_dataframe
-from utils.abbreviations_helper import convert_abbreviation
+
 logger = logging.getLogger(__name__)
+VERBOSE_STATE_LOG = False
+# ───────────────────────────────────────────────
+# 💬 Класс буфера сообщений с управляемым verbose
+# ───────────────────────────────────────────────
+class MessageBuffer(list):
+    """Список сообщений, которые добавляются только если включён verbose."""
+    def __init__(self, verbose: bool):
+        super().__init__()
+        self.verbose = verbose
+
+    def append(self, msg):
+        if self.verbose:
+            super().append(msg)
+
+    def always(self, msg):
+        super().append(msg)
 
 class Verifier:
     def __init__(self):
@@ -17,7 +33,7 @@ class Verifier:
             "typing": [],
             
         }
-        self.messages = []
+        self.messages = MessageBuffer(verbose=VERBOSE_STATE_LOG)
         self.state = "logic"  # состояние по умолчанию
         self._graph_runs = 0  # сколько раз отработало состояние graph за текущий пайплайн
         self._graph_executed = False  # ✅ флаг: уже отработал ли граф

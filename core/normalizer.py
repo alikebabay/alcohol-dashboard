@@ -233,7 +233,7 @@ class AccessLocationClassifier:
     
 def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, Optional[str]]]:
 
-    logger.info(f"🚀 normalize_alcohol_df: старт, shape={df_in.shape}")
+    logger.debug(f"🚀 normalize_alcohol_df: старт, shape={df_in.shape}")
     """
     Нормализует DataFrame с произвольными заголовками.
     Возвращает:
@@ -355,5 +355,5 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
         out = out[~out["name"].fillna("").str.strip().eq("")].reset_index(drop=True)
     
     logger.debug(f"normalize_alcohol_df: удалено пустых строк {before - len(out)}")
-    logger.info(f"✅ normalize_alcohol_df: завершено, итог shape={out.shape}")
+    logger.debug(f"✅ normalize_alcohol_df: завершено, итог shape={out.shape}")
     return out, mapping
