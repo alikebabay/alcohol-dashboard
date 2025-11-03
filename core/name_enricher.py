@@ -69,7 +69,19 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
         for val in removed[col_name].dropna().unique():
             print(f"   - {val!r}")
 
-    df = df[~mask_cat].reset_index(drop=True)
+    # --- 🔧 синхронное удаление категорий ---
+    removed_idx = df[mask_cat].index
+    if not removed_idx.empty:
+        logger.warning(f"[SYNC DROP] removing {len(removed_idx)} category rows from both df and df_raw")
+        df = df.drop(removed_idx, errors="ignore")
+        if df_raw is not None:
+            df_raw = df_raw.drop(removed_idx, errors="ignore")
+
+    # теперь индексы снова полностью совпадают
+    df = df.reset_index(drop=True)
+    if df_raw is not None:
+        df_raw = df_raw.reset_index(drop=True)
+        logger.debug(f"[SYNC CHECK] df={len(df)}, df_raw={len(df_raw)} (aligned indices)")
 
     # вытащим cl (объем) в отдельную колонку, поиск по нейме и другим колонкам
     

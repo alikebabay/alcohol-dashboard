@@ -56,7 +56,8 @@ def setup_logging(global_level=logging.INFO):
         "integrations.rules_typing": logging.ERROR,
         "integrations.graph_offers": logging.ERROR,
         "integrations.graph_to_sheets": logging.ERROR,
-        "core.parser": logging.ERROR,
+        "core.parser": logging.DEBUG,
+        "core.name_enricher": logging.DEBUG,
         # утилиты и извлекатели
         "utils.text_extractors": logging.ERROR,
         "utils.text_extractors.prices": logging.ERROR,
@@ -98,6 +99,7 @@ def setup_logging(global_level=logging.INFO):
         "core.normalizer.access_location": "access_location_debug.txt",
         "core.parser": "parser_debug.txt",
         "core.distillator": "distillator_debug.txt",
+        "core.name_enricher": "name_enricher_debug.txt"
     }
 
     # --- Silence noisy external libraries ---
