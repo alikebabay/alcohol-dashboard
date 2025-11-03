@@ -56,11 +56,12 @@ def setup_logging(global_level=logging.INFO):
         "integrations.rules_typing": logging.ERROR,
         "integrations.graph_offers": logging.ERROR,
         "integrations.graph_to_sheets": logging.ERROR,
+        "core.parser": logging.ERROR,
         # утилиты и извлекатели
         "utils.text_extractors": logging.ERROR,
         "utils.text_extractors.prices": logging.ERROR,
         "utils.text_extractors.access": logging.ERROR,
-        "utils.text_extractors.location": logging.DEBUG,
+        "utils.text_extractors.location": logging.ERROR,
         "core.normalizer": logging.DEBUG,
         "core.text_parser": logging.ERROR,
         "integrations.raw_to_graph": logging.ERROR,
@@ -69,8 +70,8 @@ def setup_logging(global_level=logging.INFO):
         "workers.reference_worker": logging.ERROR,
         "main": logging.ERROR,
         "integrations.fingerprint_utils": logging.ERROR,
-        "core.distillator": logging.ERROR,
-        "core.normalizer.access_location": logging.DEBUG
+        "core.distillator": logging.DEBUG,
+        "core.normalizer.access_location": logging.ERROR
 
     }
 
@@ -95,6 +96,8 @@ def setup_logging(global_level=logging.INFO):
         "utils.text_extractors.access": "access_debug.txt",
         "utils.text_extractors.location": "location_debug.txt",
         "core.normalizer.access_location": "access_location_debug.txt",
+        "core.parser": "parser_debug.txt",
+        "core.distillator": "distillator_debug.txt",
     }
 
     # --- Silence noisy external libraries ---

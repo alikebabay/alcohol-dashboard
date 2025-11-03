@@ -9,6 +9,7 @@ driver = GraphDatabase.driver(URI, auth=(USER, PASS))
 
 
 def upload_json_to_graph(path):
+    """Загрузка JSON в локальную Neo4j базу (копия онлайн-логики)."""
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
@@ -17,13 +18,11 @@ def upload_json_to_graph(path):
 
     with driver.session(database="neo4j") as session:
         res = session.run("RETURN 1 AS ok").single()
-        print("✅ Connected to Neo4j:", res["ok"])
+        print("✅ Connected to LOCAL Neo4j:", res["ok"])
 
-        # создаём типы связей (на всякий случай)
         print("🧩 Ensuring relationship types exist...")
         for rel in ["HAS_SERIES", "HAS_VARIANT", "HAS_CANONICAL", "SAME_AS", "BELONGS_TO"]:
             session.run(f"CALL db.createRelationshipType('{rel}')")
-        print("✅ Relationship types ready.")
 
         for entry in data:
             canonical = entry.get("canonical_name")
@@ -37,43 +36,46 @@ def upload_json_to_graph(path):
 
             canonical_clean = canonical.strip()
 
-            # Canonical
-            session.run("MERGE (c:Canonical {name:$canonical})",
-                        canonical=canonical_clean)
+            variants_clean = [v.strip() for v in variants if v.strip()]
 
-            # Variants
-            for v in variants:
-                variant_clean = v.strip()
-                session.run("""
-                    MERGE (v:Variant {name:$variant})
-                    MERGE (v)-[:SAME_AS]->(c:Canonical {name:$canonical})
-                """, variant=variant_clean, canonical=canonical_clean)
-
-            # Brand
-            if brand:
-                session.run("""
+            session.run("""
+                MERGE (c:Canonical {name:$canonical})
+                WITH c
+                UNWIND $variants AS vname
+                    MERGE (v:Variant {name:vname})
+                    MERGE (v)-[:SAME_AS]->(c)
+                WITH c
+                CALL {
+                    WITH c
                     MERGE (b:Brand {name:$brand})
                     MERGE (cat:Category {name:$category})
                     MERGE (b)-[:BELONGS_TO]->(cat)
-                    SET b.category = $category
-                """, brand=brand, category=category)
+                    MERGE (b)-[:HAS_CANONICAL]->(c)
+                    FOREACH (s IN CASE WHEN $series IS NULL THEN [] ELSE [$series] END |
+                        MERGE (ser:Series {name:s})
+                        MERGE (b)-[:HAS_SERIES]->(ser)
+                        MERGE (ser)-[:HAS_CANONICAL]->(c)
+                    )
+                }
+            """, canonical=canonical_clean, variants=variants_clean,
+                 brand=brand, series=series, category=category)
 
-            # Series + Canonical
-            if series:
-                session.run("""
-                    MERGE (s:Series {name:$series})
-                    MERGE (b:Brand {name:$brand})
-                    MERGE (b)-[:HAS_SERIES]->(s)
-                    MERGE (s)-[:HAS_CANONICAL]->(c:Canonical {name:$canonical})
-                """, brand=brand, series=series, canonical=canonical_clean)
-            elif brand:
-                session.run("""
-                    MERGE (b:Brand {name:$brand})
-                    MERGE (b)-[:HAS_CANONICAL]->(c:Canonical {name:$canonical})
-                """, brand=brand, canonical=canonical_clean)
+        print(f"✅ Upserted {len(data)} canonical groups into LOCAL Neo4j")
+        # 🧹 Remove Canonicals that no longer exist in JSON
+        canonicals_in_json = [
+            entry["canonical_name"].strip()
+            for entry in data
+            if entry.get("canonical_name")
+        ]
 
-        print(f"✅ Upserted {len(data)} canonical alcohol groups into Neo4j")
+        session.run("""
+            MATCH (c:Canonical)
+            WHERE NOT c.name IN $canonicals
+            DETACH DELETE c
+        """, canonicals=canonicals_in_json)
+
+        print("🗑️  Removed Canonicals not found in JSON")
 
 
 if __name__ == "__main__":
-    upload_json_to_graph(r"tests\\canonical_mapping_master.json")
+    upload_json_to_graph(r"tests/canonical_mapping_master.json")

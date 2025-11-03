@@ -13,7 +13,7 @@ if MODE == "prod":
     SPREADSHEET_ID = "1dISLvKdfi5DCTeYlQ5JXiBcyusrIlJkmikDvkWAcg60"
     SHEET_NAME = "master"   # имя листа в таблице
 else:
-    SPREADSHEET_ID = "1GX2fb6yhpbGjeX-4HRl04ikVZ_BQE1rLU6zPXL3heCk"
+    SPREADSHEET_ID = "1Dyr2Uz3GLQ_cM4ZZVUMTV0GhHw9vbLdrq518NOVqOh4"
     SHEET_NAME = "master_test"
 
 
@@ -193,7 +193,7 @@ def upload_to_gsheets(df: pd.DataFrame):
         set_with_dataframe(ws, df, include_index=False)
         logger.info(f"✅ Данные успешно загружены в Google Sheets → {SHEET_NAME}")
     except Exception as e:
-        logger.error(f"❌ Ошибка при загрузке в Google Sheets: {e}")
+        logger.error(f"❌ Ошибка при загрузке в Google Sheets: {repr(e)}")
         raise
 
 

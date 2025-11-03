@@ -39,37 +39,45 @@ def upload_json_to_graph_local(path):
 
             canonical_clean = canonical.strip()
 
-            session.run("MERGE (c:Canonical {name:$canonical})", canonical=canonical_clean)
+            variants_clean = [v.strip() for v in variants if v.strip()]
 
-            for v in variants:
-                variant_clean = v.strip()
-                session.run("""
-                    MERGE (v:Variant {name:$variant})
-                    MERGE (v)-[:SAME_AS]->(c:Canonical {name:$canonical})
-                """, variant=variant_clean, canonical=canonical_clean)
-
-            if brand:
-                session.run("""
+            session.run("""
+                MERGE (c:Canonical {name:$canonical})
+                WITH c
+                UNWIND $variants AS vname
+                    MERGE (v:Variant {name:vname})
+                    MERGE (v)-[:SAME_AS]->(c)
+                WITH c
+                CALL {
+                    WITH c
                     MERGE (b:Brand {name:$brand})
                     MERGE (cat:Category {name:$category})
                     MERGE (b)-[:BELONGS_TO]->(cat)
-                    SET b.category = $category
-                """, brand=brand, category=category)
-
-            if series:
-                session.run("""
-                    MERGE (s:Series {name:$series})
-                    MERGE (b:Brand {name:$brand})
-                    MERGE (b)-[:HAS_SERIES]->(s)
-                    MERGE (s)-[:HAS_CANONICAL]->(c:Canonical {name:$canonical})
-                """, brand=brand, series=series, canonical=canonical_clean)
-            elif brand:
-                session.run("""
-                    MERGE (b:Brand {name:$brand})
-                    MERGE (b)-[:HAS_CANONICAL]->(c:Canonical {name:$canonical})
-                """, brand=brand, canonical=canonical_clean)
+                    MERGE (b)-[:HAS_CANONICAL]->(c)
+                    FOREACH (s IN CASE WHEN $series IS NULL THEN [] ELSE [$series] END |
+                        MERGE (ser:Series {name:s})
+                        MERGE (b)-[:HAS_SERIES]->(ser)
+                        MERGE (ser)-[:HAS_CANONICAL]->(c)
+                    )
+                }
+            """, canonical=canonical_clean, variants=variants_clean,
+                 brand=brand, series=series, category=category)
 
         print(f"✅ Upserted {len(data)} canonical groups into LOCAL Neo4j")
+        # 🧹 Remove Canonicals that no longer exist in JSON
+        canonicals_in_json = [
+            entry["canonical_name"].strip()
+            for entry in data
+            if entry.get("canonical_name")
+        ]
+
+        session.run("""
+            MATCH (c:Canonical)
+            WHERE NOT c.name IN $canonicals
+            DETACH DELETE c
+        """, canonicals=canonicals_in_json)
+
+        print("🗑️  Removed Canonicals not found in JSON")
 
 
 if __name__ == "__main__":

@@ -84,7 +84,9 @@ PRICE_CASE_PATS = [
     r"(?:price|цена).*(?:case|cs|ctn|carton)",
     r"(?:usd|eur|\$|€)\s*(?:/|per)?\s*(?:case|cs|ctn|carton)",
     r"usd.?/?cs", r"eur.?/?cs",
-    r"\b\$\s*/?\s*cs\b", r"\b€\s*/?\s*cs\b"
+    r"\b\$\s*/?\s*cs\b", r"\b€\s*/?\s*cs\b",
+    # 👇 поддержка Price(USD)/Box и подобных вариантов
+    r"price\s*\(?(?:usd|eur|euro|€|gbp)?\)?\s*/\s*(?:box|case|carton|ctn)\b",
 ]
 
 AVAILABILITY_PATS = [

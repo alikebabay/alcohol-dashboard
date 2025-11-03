@@ -67,3 +67,9 @@ access_debug.txt
 location_debug.txt
 prices_debug.txt
 access_location_debug.txt
+parser_debug.txt
+distillator_debug.txt
+
+
+#Excel files
+*.xlsx

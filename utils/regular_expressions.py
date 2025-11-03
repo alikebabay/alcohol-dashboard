@@ -24,6 +24,8 @@ RX_CASE = [
     # 👇 короткие варианты вроде "— $131.95" или "€307.34"
     re.compile(r'[$€]\s*([0-9]+(?:[.,][0-9]+)?)\b', re.I),
     re.compile(r'[$€]\s*([0-9]{1,3}(?:[,.\s][0-9]{3})*(?:[.,][0-9]+)?)\b', re.I),
+    # 👇 Price(USD)/Box или Price(EUR)/Case
+    re.compile(r'price\s*\(?(usd|eur|euro|€|gbp)?\)?\s*/\s*(?:box|case)\b', re.I),
 ]
 
 # Bottles-per-case (6x75, 12×70 и т.п.)

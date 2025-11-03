@@ -13,7 +13,8 @@ ABBREVIATIONS = {
     "teachers": "Teacher's",
     "Grey Goose Blue": "Grey Goose",
     "PS": "Pagos Seleccionados",
-    "Guidlaberto": "Guidalberto" 
+    "Guidlaberto": "Guidalberto",
+    "vsop": "V.S.O.P"
 
 }
 

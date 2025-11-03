@@ -21,6 +21,8 @@ async def dummy_publish(event_name, payload=None):
 dispatcher.publish = dummy_publish
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
+
 
 Q_GET_RAW_WITH_CANON = """
 MATCH (s:Supplier)-[:HAS_BLOB]->(r:RawBlob)-[:HAS_DFOUT]->(d:DfOut)
@@ -178,11 +180,27 @@ async def run_regression():
                 if not added and not removed:
                     logger.info(f"[REG] ✅ {supplier}: совпадает ({len(set_new)} строк)")
                 else:
-                    logger.warning(f"[REG] ❌ {supplier}: различия найдены (+{len(added)} / -{len(removed)})")
-                    if added:
-                        logger.debug(f"[REG][ADDED]\n" + "\n".join(list(added)[:5]))
-                    if removed:
-                        logger.debug(f"[REG][REMOVED]\n" + "\n".join(list(removed)[:5]))
+                    if added or removed:
+                        logger.warning(f"[REG] ❌ {supplier}: различия найдены (+{len(added)} / -{len(removed)})")
+                        import base64
+                        if added:
+                            logger.warning("[REG][ADDED decoded]")
+                            for b in list(added)[:10]:
+                                try:
+                                    decoded = base64.b64decode(b).decode("utf-8", errors="ignore")
+                                    logger.warning(f"  + {decoded}")
+                                except Exception as e:
+                                    logger.warning(f"  + [decode error] {b[:40]}... ({e})")
+    
+                        if removed:
+                            logger.warning("[REG][REMOVED decoded]")
+                            for b in list(removed)[:10]:
+                                try:
+                                    decoded = base64.b64decode(b).decode("utf-8", errors="ignore")
+                                    logger.warning(f"  - {decoded}")
+                                except Exception as e:
+                                    logger.warning(f"  - [decode error] {b[:40]}... ({e})")
+
 
             except Exception as e:
                 logger.error(f"[REG] Ошибка при сравнении с каноном: {e}")
