@@ -3,6 +3,8 @@ import logging
 from utils import text_extractors as te
 from utils.text_extractors import PriceExtractor
 from core.location_assistant import LocationAssistant
+from core.access_assistant import AccessAssistant
+
 from utils.logger import setup_logging
 
 # --- Initialize logging once ---
@@ -47,10 +49,16 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
 
     # ← добавили: заранее посчитать финальные локации
     merged_text = "\n".join(merged_lines)
-    assistant = LocationAssistant(te.extract_location)
-    assistant.prepare(merged_text)
-    all_lines = assistant.lines()
-    final_locations = assistant.resolve_locations()
+    loc_assistant = LocationAssistant(te.extract_location)
+    acc_assistant = AccessAssistant(te.extract_access)
+
+    loc_assistant.prepare(merged_text)
+    acc_assistant.prepare(merged_text)
+
+    all_lines = loc_assistant.lines()
+    final_locations = loc_assistant.resolve_locations()
+    final_access = acc_assistant.resolve_access()
+
 
     log.debug("Lines detected: %d", len(all_lines))
     log.debug("Resolved locations: %s", final_locations)
@@ -75,7 +83,7 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
             "bottles_per_case": result.get("bottles_per_case"),
             "price_per_bottle": result.get("price_bottle"),
             "price_per_case": result.get("price_case"),
-            "access": te.extract_access(line),          # access не трогаем
+            "access": final_access[idx],          # ← готовое решение помощника
             "location": final_locations[idx],           # ← готовое решение помощника
             "raw": line
         })

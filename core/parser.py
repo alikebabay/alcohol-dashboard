@@ -13,24 +13,24 @@ logger = logging.getLogger("core.parser")
 
 
 def parse_excel(src: BytesIO):
-    logger.info("=== Чтение всех листов ===")
+    logger.debug("=== Чтение всех листов ===")
     # читаем все листы сразу
     sheets = pd.read_excel(src, sheet_name=None, header=None, engine="openpyxl")
-    logger.info(f"Найдено листов: {len(sheets)} -> {list(sheets.keys())}")
+    logger.debug(f"Найдено листов: {len(sheets)} -> {list(sheets.keys())}")
 
     frames = []
     mappings = {}
 
     for sheet_name, raw in sheets.items():
         # ищем строку-шапку (там где >=6 непустых значений)
-        logger.info(f"--- Обработка листа: {sheet_name} ---")
+        logger.debug(f"--- Обработка листа: {sheet_name} ---")
         logger.debug(f"Размер листа: {raw.shape[0]} строк × {raw.shape[1]} столбцов")
         header_row = None
         for i, row in raw.iterrows():
             non_empty = row.dropna().shape[0]
             if non_empty >= 4:   # можно менять на 7
                 header_row = i
-                logger.info(f"{sheet_name}: заголовок найден на строке {i} (непустых ячеек: {non_empty})")
+                logger.debug(f"{sheet_name}: заголовок найден на строке {i} (непустых ячеек: {non_empty})")
                 break
 
         if header_row is None:
@@ -47,8 +47,8 @@ def parse_excel(src: BytesIO):
         
     if frames:
         df_all = pd.concat(frames, ignore_index=True)
-        logger.info(f"=== Итоговая таблица ===")
-        logger.info(f"Всего строк: {df_all.shape[0]}, столбцов: {df_all.shape[1]}")
+        logger.debug(f"=== Итоговая таблица ===")
+        logger.debug(f"Всего строк: {df_all.shape[0]}, столбцов: {df_all.shape[1]}")
     else:
         logger.warning("Не найдено ни одного листа с данными")
         df_all = pd.DataFrame()

@@ -4,6 +4,7 @@ from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
 import logging
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -95,3 +96,7 @@ else:
     PASS = os.getenv("NEO4J_PASS")
 
 driver = GraphDatabase.driver(URI, auth=(USER, PASS))
+
+
+#Silence pandas warning about column types
+pd.set_option('future.no_silent_downcasting', True)

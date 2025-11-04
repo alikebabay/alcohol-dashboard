@@ -209,7 +209,7 @@ def extract_access(text: str):
     Returns combined string like 'T2, 2 weeks'.
     """
     if not text:
-        price_logger.debug("extract_access: пустой ввод")
+        access_logger.debug("extract_access: пустой ввод")
         return None
     s = str(text).strip()
 
@@ -218,7 +218,7 @@ def extract_access(text: str):
         re.compile(r'\b(T[12]|TBO)\b', re.I),
         re.compile(r'\b(on\s*(?:stock|floor)|in\s*stock|available|ready)\b', re.I),
         re.compile(r'\blead\s*time\s*\d+\s*(?:days?|weeks?)\b', re.I),
-        re.compile(r'\b\d+\s*(?:-\s*\d+)?\s*(?:days?|weeks?)\b(?:\s*after\s*deposit(?:\s*\w+)?)?', re.I),
+        re.compile(r'\b\d+(?:[/-]\d+)?\s*(?:days?|weeks?)\b(?:\s*after\s*deposit(?:\s*\w+)?)?', re.I),
     ]
     for rx in patterns:
         m = rx.search(s)

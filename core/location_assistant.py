@@ -1,7 +1,6 @@
 # core/location_assistant.py
 import re
 from typing import Callable, Optional, List
-from utils.text_extractors import RX_BOTTLE, RX_CASE, RX_BPC
 import utils.text_extractors as te
 from utils.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC  # ← общий источник
 
@@ -103,18 +102,16 @@ class LocationAssistant:
                     # Возможный FOOTER сразу после блока (через пустую строку)
                     if last_block is not None:
                         start, end_incl = last_block
-                        # допускаем маленький «зазор» из пустых строк между блоком и footer
-                        gap_is_blank = all(is_blank(k) for k in range(end_incl + 1, i))
-                        if gap_is_blank:
-                            # применяем footer к последнему блоку
-                            apply_footer_back(start, end_incl + 1, loc_ctx)
-                            # если письмо одно — растягиваем footer на все предыдущие товарные строки
-                            if self._single_message:
-                                apply_footer_back(0, end_incl + 1, loc_ctx)
-                            # применили как footer, не записываем в header_hint
-                            last_block = None
-                            print(f"[DEBUG location] 🔙 Footer после блока {start}–{end_incl}: {loc_ctx}")
-                            continue
+                        
+                        # применяем footer к последнему блоку
+                        apply_footer_back(start, end_incl + 1, loc_ctx)
+                        # если письмо одно — растягиваем footer на все предыдущие товарные строки
+                        if self._single_message:
+                            apply_footer_back(0, end_incl + 1, loc_ctx)
+                        # применили как footer, не записываем в header_hint
+                        last_block = None
+                        print(f"[DEBUG location] 🔙 Footer после блока {start}–{end_incl}: {loc_ctx}")
+                        continue
                     # иначе это реальный HEADER → вперёд
                     header_hint = loc_ctx
                    

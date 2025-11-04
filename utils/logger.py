@@ -52,7 +52,7 @@ def setup_logging(global_level=logging.INFO):
     modules = {
         # инфраструктура
         "integrations.matrix_merger": logging.ERROR,
-        "core.graph_normalizer": logging.ERROR,
+        "core.graph_normalizer": logging.DEBUG,
         "integrations.rules_typing": logging.ERROR,
         "integrations.graph_offers": logging.ERROR,
         "integrations.graph_to_sheets": logging.ERROR,
@@ -61,8 +61,9 @@ def setup_logging(global_level=logging.INFO):
         # утилиты и извлекатели
         "utils.text_extractors": logging.ERROR,
         "utils.text_extractors.prices": logging.ERROR,
-        "utils.text_extractors.access": logging.ERROR,
+        "utils.text_extractors.access": logging.DEBUG,
         "utils.text_extractors.location": logging.ERROR,
+        "core.access_assistant": logging.DEBUG,
         "core.normalizer": logging.DEBUG,
         "core.text_parser": logging.ERROR,
         "integrations.raw_to_graph": logging.ERROR,
@@ -99,7 +100,8 @@ def setup_logging(global_level=logging.INFO):
         "core.normalizer.access_location": "access_location_debug.txt",
         "core.parser": "parser_debug.txt",
         "core.distillator": "distillator_debug.txt",
-        "core.name_enricher": "name_enricher_debug.txt"
+        "core.name_enricher": "name_enricher_debug.txt",
+        "core.access_assistant": "access_assistant_debug.txt"
     }
 
     # --- Silence noisy external libraries ---

@@ -129,6 +129,7 @@ def build_series_resolver(driver):
                 MATCH (b:Brand)-[:HAS_SERIES|HAS_VARIANT]->(s:Series)
                 WHERE toLower(replace(b.name,'&','and')) CONTAINS $bn
                 RETURN DISTINCT s.name AS name
+                ORDER BY s.name ASC
             """, bn=bnorm).values()
         if not rows:
             logger.debug(f"[GRAPH] no series found for brand: {brand}")
