@@ -58,12 +58,15 @@ def setup_logging(global_level=logging.INFO):
         "integrations.graph_to_sheets": logging.ERROR,
         "core.parser": logging.DEBUG,
         "core.name_enricher": logging.DEBUG,
+        "state_macihe": logging.DEBUG,
+        "text_state": logging.DEBUG,
         # утилиты и извлекатели
         "utils.text_extractors": logging.ERROR,
         "utils.text_extractors.prices": logging.ERROR,
-        "utils.text_extractors.access": logging.DEBUG,
+        "utils.text_extractors.access": logging.ERROR,
         "utils.text_extractors.location": logging.ERROR,
-        "core.access_assistant": logging.DEBUG,
+        "core.access_assistant": logging.ERROR,
+        "core.location_assistant": logging.ERROR,
         "core.normalizer": logging.DEBUG,
         "core.text_parser": logging.ERROR,
         "integrations.raw_to_graph": logging.ERROR,
@@ -73,7 +76,8 @@ def setup_logging(global_level=logging.INFO):
         "main": logging.ERROR,
         "integrations.fingerprint_utils": logging.ERROR,
         "core.distillator": logging.DEBUG,
-        "core.normalizer.access_location": logging.ERROR
+        "core.normalizer.access_location": logging.ERROR,
+        "utils.verifier": logging.INFO
 
     }
 
@@ -101,7 +105,11 @@ def setup_logging(global_level=logging.INFO):
         "core.parser": "parser_debug.txt",
         "core.distillator": "distillator_debug.txt",
         "core.name_enricher": "name_enricher_debug.txt",
-        "core.access_assistant": "access_assistant_debug.txt"
+        "core.access_assistant": "access_assistant_debug.txt",
+        "state_macihe": "state_machine_debug.txt",
+        "utils.verifier": "verifier_debug.txt",
+        "text_state": "text_state_debug.txt",
+        "core.location_assistant": "location_assistant_debug.txt",
     }
 
     # --- Silence noisy external libraries ---

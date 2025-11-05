@@ -1,8 +1,14 @@
 import pandas as pd
+import logging
+
 from core.text_parser import parse_text
 from core.name_enricher import filter_and_enrich
 from core.normalizer import normalize_alcohol_df
 from utils.verifier import verifier
+from utils.logger import setup_logging
+
+setup_logging()
+logger = logging.getLogger(__name__)
 
 
 class TextState:
@@ -26,7 +32,7 @@ class TextState:
        
 
         verifier.reset()  # сброс состояния дл логики
-        print("[TextState] verifier.reset() после enrich — пайплайн завершён")
+        logger.debug("[TextState] verifier.reset() после enrich — пайплайн завершён")
         
         return self.df_distilled
 

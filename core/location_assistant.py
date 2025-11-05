@@ -1,8 +1,15 @@
 # core/location_assistant.py
 import re
 from typing import Callable, Optional, List
+import logging
+
 import utils.text_extractors as te
 from utils.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC  # ← общий источник
+from utils.logger import setup_logging
+
+# инициализация общего логгера
+setup_logging()
+logger = logging.getLogger(__name__)
 
 class LocationAssistant:
     """
@@ -97,7 +104,7 @@ class LocationAssistant:
                 if in_block:
                     # FOOTER внутри текущего блока
                     apply_footer_back(block_start, i, loc_ctx)
-                    print(f"[DEBUG location] 🔻 Footer внутри блока {block_start}–{i}: {loc_ctx}")
+                    logger.debug(f"[DEBUG location] 🔻 Footer внутри блока {block_start}–{i}: {loc_ctx}")
                 else:
                     # Возможный FOOTER сразу после блока (через пустую строку)
                     if last_block is not None:
@@ -110,7 +117,7 @@ class LocationAssistant:
                             apply_footer_back(0, end_incl + 1, loc_ctx)
                         # применили как footer, не записываем в header_hint
                         last_block = None
-                        print(f"[DEBUG location] 🔙 Footer после блока {start}–{end_incl}: {loc_ctx}")
+                        logger.debug(f"[DEBUG location] 🔙 Footer после блока {start}–{end_incl}: {loc_ctx}")
                         continue
                     # иначе это реальный HEADER → вперёд
                     header_hint = loc_ctx

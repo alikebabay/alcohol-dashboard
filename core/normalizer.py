@@ -288,7 +288,7 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
         out["vintage"] = tmp.iloc[:, 0].astype(str).str.strip()
     else:
         out["vintage"] = None
-        logger.warning("normalize_alcohol_df: не найдены колонки с винтажом")
+        logger.debug("normalize_alcohol_df: не найдены колонки с винтажом")
 
     # --- Кол-во бутылок в кейсе ---
     if bpc_cols:

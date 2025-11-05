@@ -71,6 +71,10 @@ parser_debug.txt
 distillator_debug.txt
 name_enricher_debug.txt
 access_assistant_debug.txt
+state_machine_debug.txt
+verifier_debug.txt
+text_state_debug.txt
+location_assistant_debug.txt
 
 #Excel files
 *.xlsx

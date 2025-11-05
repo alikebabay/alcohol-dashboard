@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from neo4j import GraphDatabase
 import logging
 import pandas as pd
+import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -100,3 +101,10 @@ driver = GraphDatabase.driver(URI, auth=(USER, PASS))
 
 #Silence pandas warning about column types
 pd.set_option('future.no_silent_downcasting', True)
+
+#silence xml in xlsx warning
+warnings.filterwarnings(
+    "ignore",
+    message="Unknown extension is not supported and will be removed",
+    module="openpyxl.worksheet._reader"
+)

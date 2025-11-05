@@ -3,15 +3,18 @@ from __future__ import annotations
 #проверка свежести кода
 import time
 print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
-
 from io import BytesIO
-
+import logging
 
 from utils.resolve_supplier_name import resolve_supplier_name
 from text_state import TextState
 from core.parser import parse_excel
 from core.normalizer import normalize_alcohol_df
 from core.name_enricher import filter_and_enrich
+from utils.logger import setup_logging
+
+setup_logging()
+logger = logging.getLogger(__name__)
 
 class AlcoholStateMachine:
     _active_instance: "AlcoholStateMachine" | None = None
@@ -41,7 +44,7 @@ class AlcoholStateMachine:
         # (4)
         if ts.df_raw is not None:
             self.df_raw = ts.df_raw.copy()
-            print(f"[FSM] Saved df_raw from TextState, shape={self.df_raw.shape}")
+            logger.debug(f"[FSM] Saved df_raw from TextState, shape={self.df_raw.shape}")
 
         return df_out  # (5)
     
@@ -75,7 +78,7 @@ class AlcoholStateMachine:
     
     def reset(self):
         """Полный сброс состояния после завершения обработки"""
-        print(f"[FSM] Сбрасываю состояние для поставщика: {self.name}")
+        logger.debug(f"[FSM] Сбрасываю состояние для поставщика: {self.name}")
         self.state = "INIT"
         self.df_raw = None
         self.df_out = None
@@ -84,7 +87,7 @@ class AlcoholStateMachine:
     # 👇 Регистрируем активную FSM
     def activate(self):
         AlcoholStateMachine._active_instance = self
-        print(f"[FSM] Activated instance for supplier: {self.name}")
+        logger.debug(f"[FSM] Activated instance for supplier: {self.name}")
     
     # 👇 Получаем текущую FSM откуда угодно
     @staticmethod

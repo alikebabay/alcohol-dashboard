@@ -1,3 +1,4 @@
+import re
 # core/valid_numerical.py
 valid_numerical = {
     "brands": [
@@ -21,3 +22,21 @@ valid_numerical = {
         "The Yamazaki 18", "Hakushu 12", "Hakushu 18"
     ]
 }
+
+#availability
+ACCESS_PATS = [
+        re.compile(r'\b(T[12]|TBO)\b', re.I),
+        re.compile(r'\b(on\s*(?:stock|floor)|in\s*stock|available|ready)\b', re.I),
+        re.compile(r'\blead\s*time\s*\d+\s*(?:d|day|days|w|wk|wks|week|weeks)\b', re.I),
+        re.compile(r'\b\d+(?:[/-]\d+)?\s*(?:d|day|days|w|wk|wks|week|weeks)\b(?:\s*after\s*deposit(?:\s*\w+)?)?', re.I),
+        # Availability ETA phrases (verb) [optional helper] (time indicator)
+        # like "Stock arriving end Oct", "delivery mid Nov", "ETA week 42"
+        re.compile(
+            r'\b(?:arriving|expected|delivery|shipping|ready|landing|ETA)\b'
+            r'(?:\s+(?:in|on|at|around|about|towards|by))?\s*'
+            r'(?:end|mid|early)?\s*'
+            r'(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|'
+            r'Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?|week\s*\d{1,2})',
+            re.I,
+        ),
+    ]

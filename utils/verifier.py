@@ -5,8 +5,11 @@ import uuid
 
 from integrations.rules_typing import enforce_base_types
 from core.graph_normalizer import normalize_dataframe
+from utils.logger import setup_logging
 
+setup_logging()
 logger = logging.getLogger(__name__)
+
 VERBOSE_STATE_LOG = False
 # ───────────────────────────────────────────────
 # 💬 Класс буфера сообщений с управляемым verbose
@@ -91,7 +94,7 @@ class Verifier:
         self.state = "logic"
         self._graph_runs = 0
         self._graph_executed = False  # ✅ сброс флага
-        print("[Verifier] состояние сброшено → logic")
+        logger.debug("[Verifier] состояние сброшено → logic")
 
 
 # --- создаём верифаер ---

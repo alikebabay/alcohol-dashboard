@@ -67,12 +67,12 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
     removed = df[mask_cat]
     if not removed.empty:
         for val in removed[col_name].dropna().unique():
-            print(f"   - {val!r}")
+            logger.debug(f"   - {val!r}")
 
     # --- 🔧 синхронное удаление категорий ---
     removed_idx = df[mask_cat].index
     if not removed_idx.empty:
-        logger.warning(f"[SYNC DROP] removing {len(removed_idx)} category rows from both df and df_raw")
+        logger.debug(f"[SYNC DROP] removing {len(removed_idx)} category rows from both df and df_raw")
         df = df.drop(removed_idx, errors="ignore")
         if df_raw is not None:
             df_raw = df_raw.drop(removed_idx, errors="ignore")
@@ -119,6 +119,6 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
         mask_invalid = df["price_per_case"].isna() & df["price_per_bottle"].isna()
         drop_cnt = int(mask_invalid.sum())
         if drop_cnt:
-            print(f"[DEBUG distillator] удалено без цены: {drop_cnt} (примеры: {df.loc[mask_invalid, col_name].head(5).tolist()})")
+            logger.debug(f"[DEBUG distillator] удалено без цены: {drop_cnt} (примеры: {df.loc[mask_invalid, col_name].head(5).tolist()})")
         df = df[~mask_invalid].reset_index(drop=True)
     return df

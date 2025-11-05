@@ -10,6 +10,7 @@ import logging
 
 from core.distillator import _extract_volume, _infer_bpc_from_name, RX_ABV
 from utils.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC
+from core.patterns import ACCESS_PATS
 
 logger = logging.getLogger(__name__)
 # отдельные логгеры для подгрупп
@@ -214,19 +215,17 @@ def extract_access(text: str):
     s = str(text).strip()
 
     parts = []
-    patterns = [
-        re.compile(r'\b(T[12]|TBO)\b', re.I),
-        re.compile(r'\b(on\s*(?:stock|floor)|in\s*stock|available|ready)\b', re.I),
-        re.compile(r'\blead\s*time\s*\d+\s*(?:days?|weeks?)\b', re.I),
-        re.compile(r'\b\d+(?:[/-]\d+)?\s*(?:days?|weeks?)\b(?:\s*after\s*deposit(?:\s*\w+)?)?', re.I),
-    ]
+    patterns = ACCESS_PATS
     for rx in patterns:
-        m = rx.search(s)
-        if m:
-            parts.append(m.group(0).strip())
+        # collect *all* matches for this regex, not just the first
+        for m in rx.finditer(s):
+            match_val = m.group(0).strip()
+            if match_val and match_val not in parts:
+                parts.append(match_val)
 
     if parts:
-        val = ", ".join(dict.fromkeys(parts))
+        # deduplicate while preserving order
+        val = ", ".join(parts)
         access_logger.debug(f"extract_access: найдено → {val!r}")
         return val
 
