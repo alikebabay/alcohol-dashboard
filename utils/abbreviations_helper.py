@@ -14,7 +14,8 @@ ABBREVIATIONS = {
     "Grey Goose Blue": "Grey Goose",
     "PS": "Pagos Seleccionados",
     "Guidlaberto": "Guidalberto",
-    "vsop": "V.S.O.P"
+    "vsop": "V.S.O.P",
+    "Jack daniels": "Jack Daniel's Old No. 7"
 
 }
 

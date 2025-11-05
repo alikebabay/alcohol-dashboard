@@ -42,27 +42,7 @@ plugins/
 
 #logs
 *.log
-graph_offers_debug.txt
-typing_debug.txt
-matrix_merger_debug.txt
-matrix_debug.txt
-text_parser_debug.txt
-graph_normalizer_debug.txt
-normalizer_debug.txt
-text_extractors_debug.txt
-project_debug.txt
-access_debug.txt
-location_debug.txt
-prices_debug.txt
-access_location_debug.txt
-parser_debug.txt
-distillator_debug.txt
-name_enricher_debug.txt
-access_assistant_debug.txt
-state_machine_debug.txt
-verifier_debug.txt
-text_state_debug.txt
-location_assistant_debug.txt
+*_debug.txt
 
 #Excel files
 *.xlsx

@@ -56,10 +56,12 @@ def setup_logging(global_level=logging.INFO):
         "integrations.rules_typing": logging.ERROR,
         "integrations.graph_offers": logging.ERROR,
         "integrations.graph_to_sheets": logging.ERROR,
-        "core.parser": logging.DEBUG,
-        "core.name_enricher": logging.DEBUG,
-        "state_macihe": logging.DEBUG,
-        "text_state": logging.DEBUG,
+        "core.parser": logging.ERROR,
+        "core.name_enricher": logging.ERROR,
+        "state_macihe": logging.ERROR,
+        "text_state": logging.ERROR,
+        "currency": logging.ERROR,
+        "save_to_excel": logging.ERROR,
         # утилиты и извлекатели
         "utils.text_extractors": logging.ERROR,
         "utils.text_extractors.prices": logging.ERROR,
@@ -67,7 +69,7 @@ def setup_logging(global_level=logging.INFO):
         "utils.text_extractors.location": logging.ERROR,
         "core.access_assistant": logging.ERROR,
         "core.location_assistant": logging.ERROR,
-        "core.normalizer": logging.DEBUG,
+        "core.normalizer": logging.ERROR,
         "core.text_parser": logging.ERROR,
         "integrations.raw_to_graph": logging.ERROR,
         "workers.blob_worker": logging.ERROR,
@@ -77,7 +79,7 @@ def setup_logging(global_level=logging.INFO):
         "integrations.fingerprint_utils": logging.ERROR,
         "core.distillator": logging.DEBUG,
         "core.normalizer.access_location": logging.ERROR,
-        "utils.verifier": logging.INFO
+        "utils.verifier": logging.ERROR
 
     }
 
@@ -110,6 +112,8 @@ def setup_logging(global_level=logging.INFO):
         "utils.verifier": "verifier_debug.txt",
         "text_state": "text_state_debug.txt",
         "core.location_assistant": "location_assistant_debug.txt",
+        "currency": "currency_debug.txt",
+        "save_to_excel": "save_to_excel_debug.txt",
     }
 
     # --- Silence noisy external libraries ---
