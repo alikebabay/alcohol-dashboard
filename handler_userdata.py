@@ -34,9 +34,10 @@ async def handle_userdata(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     df_out = await dispatch_excel(update, context, supplier_choice)
 
-    # общее: результат обратно в Excel
+    # запись результата обратно в Excel
     bio_out = BytesIO()
-    df_out.to_excel(bio_out, index=False)
+    with pd.ExcelWriter(bio_out, engine="xlsxwriter") as writer:
+        df_out.to_excel(writer, index=False)
     bio_out.seek(0)
 
     out_name = f"Цены поставщика {supplier_choice}.xlsx"

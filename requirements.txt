@@ -5,4 +5,5 @@ gspread==6.2.1
 gspread-dataframe
 google-auth==2.40.3
 python-dotenv==1.1.1
-neo4j==5.8.0
+neo4j==5.8.
+xlsxwriter==3.2.9

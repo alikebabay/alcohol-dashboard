@@ -14,8 +14,9 @@ logger = logging.getLogger("core.parser")
 
 def parse_excel(src: BytesIO):
     logger.debug("=== Чтение всех листов ===")
-    # читаем все листы сразу
-    sheets = pd.read_excel(src, sheet_name=None, header=None, engine="openpyxl")
+    # ⚡ Читаем все листы ОДИН раз (без повторных обращений к файлу)
+    # dtype=str ускоряет парсинг и устраняет дорогое приведение типов
+    sheets = pd.read_excel(src, sheet_name=None, header=None, engine="openpyxl", dtype=str)     
     logger.debug(f"Найдено листов: {len(sheets)} -> {list(sheets.keys())}")
 
     frames = []
@@ -27,7 +28,8 @@ def parse_excel(src: BytesIO):
         logger.debug(f"Размер листа: {raw.shape[0]} строк × {raw.shape[1]} столбцов")
         header_row = None
         for i, row in raw.iterrows():
-            non_empty = row.dropna().shape[0]
+            # raw уже str; пустые ячейки — это NaN/None/"" после чтения
+            non_empty = row.notna().sum()
             if non_empty >= 4:   # можно менять на 7
                 header_row = i
                 logger.debug(f"{sheet_name}: заголовок найден на строке {i} (непустых ячеек: {non_empty})")
@@ -37,8 +39,18 @@ def parse_excel(src: BytesIO):
             logger.warning(f"{sheet_name}: не удалось найти строку с заголовками, пропускаю")
             continue
 
-        # формируем нормальный DataFrame
-        df = pd.read_excel(src, sheet_name=sheet_name, header=header_row, engine="openpyxl")
+        # ⚡ Формируем нормальный DataFrame БЕЗ повторного чтения файла
+        # 1) строка заголовков
+        headers = raw.iloc[header_row].astype(str).tolist()
+        # 2) сами данные — все строки после заголовка
+        df = raw.iloc[header_row + 1:].copy()
+        df.columns = headers
+        # 3) чистка полностью пустых строк/столбцов (опционально)
+        df.dropna(how="all", inplace=True)
+        df = df.loc[:, df.notna().any(axis=0)]
+        # 4) сброс индекса для аккуратности
+        df.reset_index(drop=True, inplace=True)
+
         logger.debug(f"{sheet_name}: колонки установлены -> {list(df.columns)}")
         logger.debug(f"{sheet_name}: кол-во строк данных -> {df.shape[0]}")
 
