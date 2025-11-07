@@ -14,9 +14,11 @@ ABBREVIATIONS = {
     "Grey Goose Blue": "Grey Goose",
     "PS": "Pagos Seleccionados",
     "Guidlaberto": "Guidalberto",
-    "vsop": "V.S.O.P",
-    "Jack daniels": "Jack Daniel's Old No. 7"
-
+    "Jack daniels": "Jack Daniel's Old No. 7", #иначе сработает серия Fire
+    "Raspberri": "Raspberry",
+    "Grants": "Grant's",
+    "Hendricks": "Hendrick's",
+    "vs":"V.S"
 }
 
 def convert_abbreviation(text: str) -> str:

@@ -23,6 +23,8 @@ valid_numerical = {
     ]
 }
 
+short_series_whitelist = {"vs", "vsop", "xo", "x.o", "v.s", "v.s.o.p"}
+
 #availability
 ACCESS_PATS = [
         re.compile(r'\b(T[12]|TBO)\b', re.I),

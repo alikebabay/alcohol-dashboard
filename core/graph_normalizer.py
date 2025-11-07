@@ -7,7 +7,7 @@ from utils.logger import setup_logging
 from core.canonical_rules import apply_canonical_rules
 from utils.normalize import normalize as _normalize
 from utils.wine_guard import looks_like_new_wine
-from core.patterns import valid_numerical
+from core.patterns import valid_numerical, short_series_whitelist
 
 
 # импортируем уже сконфигурированный драйвер и MODE
@@ -22,6 +22,27 @@ logger = logging.getLogger(__name__)
 # ==========================================================
 logger.info(f"[Neo4j] Using shared driver (mode={MODE})")
 
+
+# ==========================================================
+# TOKENIZER
+# ==========================================================
+def tokenize(raw: str) -> list[str]:
+    """
+    Splits raw strings into tokens while preserving:
+      • apostrophes inside words (L'Orange)
+      • dots inside abbreviations (V.S.O.P → VSOP)
+    and still filters out most punctuation noise.
+    """
+    # Merge French-style prefixes like L' or D' (before capital letter)
+    raw = re.sub(r"\b([A-Za-z])['’]\s*(?=[A-Z])", r"\1’", raw)
+
+    # Merge dotted abbreviations: V.S.O.P → VSOP, X.O. → XO
+    raw = re.sub(r"\b([A-Z])(?:\.([A-Z]))+(?:\.)?", lambda m: m.group(0).replace(".", ""), raw)
+
+    # Extract tokens, keeping apostrophes and dots inside
+    return re.findall(r"[A-Za-z0-9.'&%+]+", raw)
+
+
 # ==========================================================
 # BRAND LIST
 # ==========================================================
@@ -32,10 +53,8 @@ def load_brands(path="tests/multiword_brands.json"):
     brands = []
     for k in ["one_word", "two_word", "three_word", "more"]:
         brands += data.get(k, [])
-    normalized = {
-        re.sub(r"[^a-z0-9 ]", "", b.lower().replace("&", "and")).strip(): b
-        for b in brands
-    }
+    # key = просто нижний регистр без удаления символов
+    normalized = {b.lower().strip(): b for b in brands}
     logger.info(f"[INIT] Loaded {len(normalized)} brands")
     return normalized
 
@@ -127,7 +146,7 @@ def build_series_resolver(driver):
             rows = s.run("""
                 // ⚙️ исправлено: убран депрекейтнутый синтаксис ':HAS_SERIES|:HAS_VARIANT'
                 MATCH (b:Brand)-[:HAS_SERIES|HAS_VARIANT]->(s:Series)
-                WHERE toLower(replace(b.name,'&','and')) CONTAINS $bn
+                WHERE toLower(b.name) CONTAINS $bn
                 RETURN DISTINCT s.name AS name
                 ORDER BY s.name ASC
             """, bn=bnorm).values()
@@ -322,7 +341,7 @@ class BrandSeriesExtractor:
     
     def _extract_brand_series(self, raw: str):
         """Оригинальная версия без FSM-ограничений (мягкий скоринг, полное сканирование)."""
-        tokens = [t for t in re.findall(r"[A-Za-z0-9&%+]+", raw)]
+        tokens = [t for t in tokenize(raw)]
         logger.debug(f"[TOKENS] {tokens}")
         scores = {}
         logger.debug(f"[SCORES] {scores}")
@@ -382,13 +401,28 @@ class BrandSeriesExtractor:
         if idx != -1:
             after = raw[idx + len(brand):].strip()
             if after:
-                after_tokens = re.findall(r"[A-Za-z0-9%+]+", after)                
+                after_tokens = tokenize(after)                
                 valid = []
                 for t in after_tokens:
                     # разрешаем цифры для whitelisted серий вроде "Bin 707" или "Macallan 18"
                     joined = f"{brand} {t}".strip()
-                    if t.isdigit() and not any(t in s for s in valid_numerical["series"]):
+
+                    # 🚫 1️⃣ игнорируем все десятичные числа
+                    if re.match(r"^\d+\.\d+$", t):
+                        logger.debug(f"[FILTER] skip decimal numeric token '{t}'")
                         continue
+
+                    # 🚫 2️⃣ игнорируем чисто цифровые токены, если не входят в допустимые серии
+                    if t.isdigit() and not any(t in s for s in valid_numerical["series"]):
+                        logger.debug(f"[FILTER] skip pure numeric token '{t}' (not in valid_numerical)")
+                        continue
+
+                    # ✅ 3️⃣ добавляем короткие токены, если они в whitelist (VS, XO, VSOP и т.п.)
+                    if t_norm in short_series_whitelist:
+                        valid.append(t)
+                        continue
+
+                    # ✅ 4 добавляем текст длиной > 2 или допустимые серии
                     if len(t) > 2 or any(joined in s for s in valid_numerical["series"]):
                         valid.append(t)
                 if valid:
@@ -404,12 +438,26 @@ class BrandSeriesExtractor:
         if idx == -1:
             return None
         after = raw[idx + len(brand_norm):]
-        tokens = re.findall(r"[A-Za-z0-9%+]+", after)
+        tokens = tokenize(after)
         valid = []
         for t in tokens:
             joined = f"{self.last_brand or ''} {t}".strip()
+            t_norm = _normalize(t)
+            
+            # 🚫 1️⃣ Игнорируем все десятичные числа (цены, проценты, объёмы)
+            if re.match(r"^\d+\.\d+$", t):
+                logger.debug(f"[FILTER] skip decimal numeric token '{t}'")
+                continue
+            # 🚫 2️⃣ Игнорируем целые числа, если они не входят в известные серии
             if t.isdigit() and not any(t in s for s in valid_numerical["series"]):
                 continue
+
+            # ✅ 3️⃣ добавляем короткие токены, если они в whitelist (VS, XO, VSOP и т.п.)
+            if t_norm in short_series_whitelist:
+                valid.append(t)
+                continue
+
+            # ✅ 4 Добавляем только текст длиной > 2 или допустимые серии
             if len(t) > 2 or any(joined in s for s in valid_numerical["series"]):
                 valid.append(t)
 
