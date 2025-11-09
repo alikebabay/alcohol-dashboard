@@ -17,6 +17,9 @@ from config import driver, MODE
 setup_logging()
 logger = logging.getLogger(__name__)
 
+#separate logging for canonical lookups
+canon_logger = logging.getLogger("core.graph_normalizer.canonical")
+
 # ==========================================================
 # 🕸 Neo4j driver (из config)
 # ==========================================================
@@ -60,6 +63,42 @@ def load_brands(path="tests/multiword_brands.json"):
 
 BRANDS = load_brands()
 
+# ==========================================================
+# Глобальный справочник (все бренды + серии)
+# ==========================================================
+def load_all_brand_series(driver):
+    """
+    Загружаем все пары (brand, series) и default_series один раз — для быстрой валидации.
+    Возвращает кортеж:
+      • all_series (set[str]) — нормализованные серии всех брендов;
+      • default_series_map (dict[str, str]) — brand_norm → default_series_norm
+    """
+    all_series = set()
+    default_series_map = {}
+    with driver.session() as s:
+        rows = s.run("""
+            MATCH (b:Brand)
+            OPTIONAL MATCH (b)-[:HAS_SERIES|HAS_VARIANT]->(s:Series)
+            RETURN DISTINCT b.name AS brand, s.name AS series, b.default_series AS default
+        """).values()
+
+    for brand, series, default in rows:
+        if not brand:
+            continue
+        if series:
+            all_series.add(_normalize(series))
+        if default:
+            default_series_map[_normalize(brand)] = _normalize(default)
+            # добавим дефолт в общий список, чтобы он тоже проходил валидацию
+            all_series.add(_normalize(default))
+
+    logger.info(
+        f"[INIT] Global series dict loaded: {len(all_series)} items, defaults: {len(default_series_map)}"
+    )
+    return all_series, default_series_map
+
+
+ALL_SERIES_SET, DEFAULT_SERIES_MAP = load_all_brand_series(driver)
 
 
 
@@ -265,7 +304,21 @@ class BrandSeriesExtractor:
                 logger.debug(f"[COMMON] brand present, found series ({series})")
                 return brand, series
             
-            logger.debug(f"[COMMON] brand present, no series; keep context")
+            # 🔁 нет серии — пробуем дефолт сначала из глобального кэша DEFAULT_SERIES_MAP
+            bnorm = _normalize(brand)
+            default_series = DEFAULT_SERIES_MAP.get(bnorm)
+            if default_series:
+                logger.debug(f"[FALLBACK→DEFAULT] brand={brand} → default_series='{default_series}'")
+                return brand, default_series
+
+            # затем, если что, смотрим локальные метаданные бренда (на случай ручных переопределений)
+            meta = self.brands_meta.get(brand, {})
+            meta_default = meta.get("default_series")
+            if meta_default:
+                logger.debug(f"[FALLBACK] using meta.default_series '{meta_default}' for brand={brand}")
+                return brand, meta_default
+
+            logger.debug(f"[COMMON] brand present, no series and no default; keep context")
             return brand, None
         
         # 2️⃣ если контекстный бренд не встречается — пробуем искать серии контекстного бренда в строке
@@ -354,7 +407,10 @@ class BrandSeriesExtractor:
                 sc = score_brand_series(raw, b_norm)
                 b_tokens = b_norm.split()
 
-                
+                # ✅ quick boost if brand literally appears in normalized raw
+                if b_norm in _normalize(raw):
+                    sc += 1.0
+
 
                 # прямые совпадения
                 if t_norm in b_tokens or t_norm == b_norm:
@@ -401,33 +457,43 @@ class BrandSeriesExtractor:
         if idx != -1:
             after = raw[idx + len(brand):].strip()
             if after:
-                after_tokens = tokenize(after)                
-                valid = []
-                for t in after_tokens:
-                    # разрешаем цифры для whitelisted серий вроде "Bin 707" или "Macallan 18"
-                    joined = f"{brand} {t}".strip()
+                bkey = _normalize(brand)
+                brand_series = [s for s, _ in self._series_cache.get(bkey, [])]
+                after_norm = _normalize(after)
 
-                    # 🚫 1️⃣ игнорируем все десятичные числа
-                    if re.match(r"^\d+\.\d+$", t):
-                        logger.debug(f"[FILTER] skip decimal numeric token '{t}'")
-                        continue
+                # 1️⃣ ищем совпадение серии бренда в "after"
+                match = None
+                for s in brand_series:
+                    s_norm = _normalize(s)
+                    if f" {s_norm} " in f" {after_norm} ":
+                        match = s
+                        break
 
-                    # 🚫 2️⃣ игнорируем чисто цифровые токены, если не входят в допустимые серии
-                    if t.isdigit() and not any(t in s for s in valid_numerical["series"]):
-                        logger.debug(f"[FILTER] skip pure numeric token '{t}' (not in valid_numerical)")
-                        continue
+                # 2️⃣ если нет совпадения, разрешаем только whitelisted короткие серии
+                if not match:
+                    after_tokens = tokenize(after)
+                    for t in after_tokens:
+                        t_norm = _normalize(t)
+                        if t_norm in short_series_whitelist:
+                            match = t
+                            break
+                        # 🚫 проверяем строгое совпадение числа в серии, а не подстроку
+                        if t.isdigit():
+                            for s in valid_numerical["series"]:
+                                s_tokens = _normalize(s).split()
+                                # серия может содержать число как отдельное слово, например "Macallan 18"
+                                if t in s_tokens:
+                                    match = t
+                                    break
+                            if match:
+                                break
 
-                    # ✅ 3️⃣ добавляем короткие токены, если они в whitelist (VS, XO, VSOP и т.п.)
-                    if t_norm in short_series_whitelist:
-                        valid.append(t)
-                        continue
-
-                    # ✅ 4 добавляем текст длиной > 2 или допустимые серии
-                    if len(t) > 2 or any(joined in s for s in valid_numerical["series"]):
-                        valid.append(t)
-                if valid:
-                    series = " ".join(valid[:3])
-
+                series = match
+                if series:
+                    logger.debug(f"[SERIES FOUND STRICT] {series}")
+                else:
+                    logger.debug(f"[STRICT] no series match found for brand '{brand}' → fallback to default later")              
+               
         logger.debug(f"[RETURN DEBUG] returning brand={brand!r}, series={series!r} for raw='{raw}'")
         return brand, series
     
@@ -527,7 +593,8 @@ def find_canonical(tx, brand, series, raw):
             score += delta
         except Exception as e:
             logging.getLogger(__name__).warning(f"[CANON RULE] failed for {cname}: {e}")
-
+        
+        canon_logger.debug(f"[CANON SCORE] {cname!r} → {score:.2f}")
         return score
 
     # compute scores for all candidates
@@ -535,19 +602,41 @@ def find_canonical(tx, brand, series, raw):
     scored = [x for x in scored if x[1] > 0]
 
     if not scored:
+        canon_logger.debug("[CANON RESULT] no valid canonical candidates found")
         return None
 
     best = sorted(scored, key=lambda x: (-x[1], len(x[0])))[0][0]
-    
+    best_score = max(scored, key=lambda x: x[1])[1]
+
+    # ⚙️ если несколько равных — выбираем дефолтную серию бренда (если есть)
+    tied = [c for c, s in scored if abs(s - best_score) < 1e-9]
+    if len(tied) > 1:
+        from core.graph_normalizer import load_brands_meta_from_graph
+        meta = load_brands_meta_from_graph().get(brand, {})
+        default_series = (meta.get("default_series") or "").lower()
+        for candidate in tied:
+            if default_series and default_series in candidate.lower():
+                canon_logger.debug(f"[CANON TIE-BREAK] picked default_series '{default_series}' → {candidate!r}")
+                return candidate
+
+    canon_logger.debug(f"[CANON RESULT] best={best!r} score={best_score:.2f}")
     return best
 
 def load_brands_meta_from_graph():
     with driver.session() as s:
         rows = s.run("""
             MATCH (b:Brand)-[:BELONGS_TO]->(c:Category)
-            RETURN b.name AS brand, c.name AS category
+            RETURN b.name AS brand,
+                   c.name AS category,
+                   b.default_series AS default_series
         """).data()
-    return {r["brand"]: {"category": r["category"]} for r in rows}
+    return {
+        r["brand"]: {
+            "category": r["category"],
+            "default_series": r.get("default_series")
+        }
+        for r in rows
+    }
 
 # ==========================================================
 # MAIN NORMALIZER

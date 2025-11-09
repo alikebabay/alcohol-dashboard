@@ -19,7 +19,7 @@ valid_numerical = {
         "The Macallan 12", "The Macallan 18", "Glenfiddich 12",
         "Glenfiddich 15", "Glenfiddich 18", "Lagavulin 16", "Lagavulin 12",
         "Aberlour 12", "Aberlour 16", "Aberlour 18", "The Yamazaki 12",
-        "The Yamazaki 18", "Hakushu 12", "Hakushu 18"
+        "The Yamazaki 18", "Hakushu 12", "Hakushu 18", 
     ]
 }
 
@@ -29,7 +29,11 @@ short_series_whitelist = {"vs", "vsop", "xo", "x.o", "v.s", "v.s.o.p"}
 ACCESS_PATS = [
         re.compile(r'\b(T[12]|TBO)\b', re.I),
         re.compile(r'\b(on\s*(?:stock|floor)|in\s*stock|available|ready)\b', re.I),
-        re.compile(r'\blead\s*time\s*\d+\s*(?:d|day|days|w|wk|wks|week|weeks)\b', re.I),
+        re.compile(
+            r'\b\d+(?:[\/\-–]\d+)?\s*(?:d|day|days|w|wk|wks|week|weeks)\b'
+            r'(?:\s*after\s*deposit(?:\s*\w+)?)?(?=\b|[.,;]|$)',
+            re.I,
+        ),
         re.compile(r'\b\d+(?:[/-]\d+)?\s*(?:d|day|days|w|wk|wks|week|weeks)\b(?:\s*after\s*deposit(?:\s*\w+)?)?', re.I),
         # Availability ETA phrases (verb) [optional helper] (time indicator)
         # like "Stock arriving end Oct", "delivery mid Nov", "ETA week 42"

@@ -7,6 +7,7 @@ ABBREVIATIONS = {
     "yl": "Yellow Label",
     "moët": "Moet & Chandon",
     "moet": "Moet & Chandon",
+    "Moët": "Moet",
     "imperial brut": "Brut Imperial",
     "xo": "X.O",
     "yo": "Year Old",
@@ -14,11 +15,13 @@ ABBREVIATIONS = {
     "Grey Goose Blue": "Grey Goose",
     "PS": "Pagos Seleccionados",
     "Guidlaberto": "Guidalberto",
+    "JD": "Jack Daniel's Old No. 7",
     "Jack daniels": "Jack Daniel's Old No. 7", #иначе сработает серия Fire
     "Raspberri": "Raspberry",
     "Grants": "Grant's",
     "Hendricks": "Hendrick's",
-    "vs":"V.S"
+    "vs":"V.S",
+    "VS":"V.S",
 }
 
 def convert_abbreviation(text: str) -> str:

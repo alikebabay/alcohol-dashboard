@@ -9,7 +9,7 @@ import json
 import logging
 
 from core.distillator import _extract_volume, _infer_bpc_from_name, RX_ABV
-from utils.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC
+from utils.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC, RX_BPC_STAR
 from core.patterns import ACCESS_PATS
 
 logger = logging.getLogger(__name__)
@@ -138,13 +138,24 @@ class PriceExtractor:
     # --- helpers ---
     def _match_any(self, text, patterns):
         for rx in patterns:
-            m = rx.search(text)
+            m = rx.search(text)            
             if m:
                 raw_val = m.group(1)
-                price_logger.debug(f"[REGEX] {rx.pattern} → match={raw_val!r}")
+                # ✅ Added explicit debug line to trace raw and parsed values
+                price_logger.debug(
+                    f"[REGEX] pattern={rx.pattern} → full={m.group(0)!r}, group1={raw_val!r}"
+                )
                 try:
-                    val = float(raw_val.replace(",", "").replace(" ", ""))
-                    price_logger.debug(f"[REGEX] parsed float={val}")
+                    sanitized = raw_val.strip()
+                    # if comma is decimal separator (European format), convert it to dot
+                    if re.search(r"\d,\d{1,2}$", sanitized):
+                        sanitized = sanitized.replace(",", ".")
+                    # if comma is thousands separator, remove it
+                    elif "," in sanitized and "." not in sanitized:
+                        sanitized = sanitized.replace(",", "")
+                    sanitized = sanitized.replace(" ", "")
+                    val = float(sanitized)
+                    price_logger.debug(f"[REGEX] parsed float={val} from {sanitized!r}")
                     return val
                 except Exception as e:
                     price_logger.warning(f"[REGEX] parse fail {raw_val!r} ({e})")
@@ -159,7 +170,14 @@ class PriceExtractor:
             self.bottles_per_case = int(m.group(1))
             logger.debug(f"[BPC] matched direct pattern → {self.bottles_per_case}")
             return
-
+        
+        # star-style (cs*6 btl, *12 btl)
+        m = RX_BPC_STAR.search(text)
+        if m:
+            self.bottles_per_case = int(m.group("cases"))
+            logger.debug(f"[BPC] matched star+btl pattern → {self.bottles_per_case}")
+            return
+        
         # формат с тире: "— 6 —" или "- 12 -"
         m = re.search(r'[—\-–]\s*(\d{1,2})\s*[—\-–]', text)
         if m:
@@ -224,8 +242,17 @@ def extract_access(text: str):
                 parts.append(match_val)
 
     if parts:
+        # фильтруем перекрытия: убираем более короткие, если входят в длинные
+        filtered = []
+        for p in parts:
+            if not any((p != q and p in q) for q in parts):
+                filtered.append(p)
+
         # deduplicate while preserving order
-        val = ", ".join(parts)
+        seen = set()
+        unique = [p for p in filtered if not (p in seen or seen.add(p))]
+
+        val = ", ".join(unique)
         access_logger.debug(f"extract_access: найдено → {val!r}")
         return val
 

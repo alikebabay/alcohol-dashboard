@@ -31,7 +31,7 @@ def setup_logging(global_level=logging.INFO):
         "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%H:%M:%S",
     )
-
+    
     # === Корневой логгер ===
     root_logger.setLevel(global_level)
 
@@ -53,6 +53,7 @@ def setup_logging(global_level=logging.INFO):
         # инфраструктура
         "integrations.matrix_merger": logging.ERROR,
         "core.graph_normalizer": logging.DEBUG,
+        "core.graph_normalizer.canonical": logging.ERROR,
         "integrations.rules_typing": logging.ERROR,
         "integrations.graph_offers": logging.ERROR,
         "integrations.graph_to_sheets": logging.ERROR,
@@ -66,9 +67,9 @@ def setup_logging(global_level=logging.INFO):
         "utils.text_extractors": logging.ERROR,
         "utils.text_extractors.prices": logging.ERROR,
         "utils.text_extractors.access": logging.ERROR,
-        "utils.text_extractors.location": logging.ERROR,
+        "utils.text_extractors.location": logging.DEBUG,
         "core.access_assistant": logging.ERROR,
-        "core.location_assistant": logging.ERROR,
+        "core.location_assistant": logging.DEBUG,
         "core.normalizer": logging.ERROR,
         "core.text_parser": logging.ERROR,
         "integrations.raw_to_graph": logging.ERROR,
@@ -77,7 +78,7 @@ def setup_logging(global_level=logging.INFO):
         "workers.reference_worker": logging.ERROR,
         "main": logging.ERROR,
         "integrations.fingerprint_utils": logging.ERROR,
-        "core.distillator": logging.DEBUG,
+        "core.distillator": logging.ERROR,
         "core.normalizer.access_location": logging.ERROR,
         "utils.verifier": logging.ERROR
 
@@ -100,6 +101,7 @@ def setup_logging(global_level=logging.INFO):
         "core.normalizer": "normalizer_debug.txt",
         "core.text_parser": "text_parser_debug.txt",
         "core.graph_normalizer": "graph_normalizer_debug.txt",
+        "core.graph_normalizer.canonical": "project_canonical_debug.txt",
         "utils.text_extractors.prices": "prices_debug.txt",
         "utils.text_extractors.access": "access_debug.txt",
         "utils.text_extractors.location": "location_debug.txt",
@@ -116,6 +118,7 @@ def setup_logging(global_level=logging.INFO):
         "save_to_excel": "save_to_excel_debug.txt",
     }
 
+    
     # --- Silence noisy external libraries ---
     for noisy in [
         "neo4j",

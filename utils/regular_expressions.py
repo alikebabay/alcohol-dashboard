@@ -3,20 +3,20 @@ import re
 
 # Цена за бутылку
 RX_BOTTLE = [
-    re.compile(r'(?:eur|euro|€|usd|gbp)\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:per\s*bottle|btl)\b', re.I),
-    re.compile(r'([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\s*(?:per\s*bottle|btl)\b', re.I),
     re.compile(r'price\s+per\s*bottle\s+([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
     # 👇 новый универсальный вариант, чтобы ловить 'at 37.15 USD'
     re.compile(r'at\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
-    # Handles '@ €121.94/btl' or 'at €121.94/btl'
+    # Handles '@ €121.94/btl' or 'at €121.94/btl' | €26.50 /btl | 26,50€ /btl | 26.50 eur/btl | 
     re.compile(
-    r'[@\s]*(?:at\s*)?(?:€|eur|euro|usd|gbp)\s*([0-9]+(?:[.,][0-9]+)?)\s*/?\s*(?:btl|bottle)(?:\b|[.,])?',
-        re.I,),
+    r'[@\s-]*(?:at\s*)?(?:€|eur|euro|usd|gbp)?\s*-?\s*([0-9]+(?:[.,][0-9]+)?)\s*'
+    r'(?:€|eur|euro|usd|gbp)?\s*(?:/|per\s+)(?:btl|bottle)\b',
+    re.I,),
+
 ]
 
 # Цена за кейс
 RX_CASE = [
-    re.compile(r'(?:eur|euro|€|usd|gbp)\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:per\s*case|case|cs)\b', re.I),
+        re.compile(r'(?:eur|euro|€|usd|gbp)\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:per\s*case|case|cs)\b', re.I),
     re.compile(r'([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\s*(?:per\s*case|case|cs)\b', re.I),
     re.compile(r'price\s+per\s*case\s+([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
     # 👇 новый универсальный вариант, чтобы ловить 'at 37.15 USD'
@@ -26,13 +26,16 @@ RX_CASE = [
     re.compile(r'[$€]\s*([0-9]{1,3}(?:[,.\s][0-9]{3})*(?:[.,][0-9]+)?)\b', re.I),
     # 👇 Price(USD)/Box или Price(EUR)/Case
     re.compile(r'price\s*\(?(usd|eur|euro|€|gbp)?\)?\s*/\s*(?:box|case)\b', re.I),
+
+
 ]
 
 # Bottles-per-case (6x75, 12×70 и т.п.)
 RX_BPC = re.compile(r'(\d{1,2})\s*[x×]\s*\d{1,3}', re.I)
-
-
-
+# Star-style variant:  cs*6 btl, *12 btl, cs * 6 bottles
+RX_BPC_STAR = re.compile(
+    r'(?i)(?:\bcs\s*\*|\*)\s*(?P<cases>\d{1,2})\s*(?:btl|btls|bottle)s?\b'
+)
 
 # --- регексы для признаков продукта ---
 # Объём вида 50ml, 75cl, 1L, 37.5cl

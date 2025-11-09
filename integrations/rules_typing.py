@@ -6,10 +6,10 @@ from utils.logger import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
+
 def enforce_base_types(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    logger.debug(f"[INIT] enforce_base_types start: shape={df.shape}, cols={list(df.columns)}")
-
+    
     base_types = {
         "Тип": "string",
         "Наименование": "string",
@@ -22,8 +22,19 @@ def enforce_base_types(df: pd.DataFrame) -> pd.DataFrame:
         "crc32_hash": "string",
         "b64": "string",
     }
+    logger.debug(f"[COLUMNS] incoming columns: {list(df.columns)}")
+    logger.debug(f"[CHECK] df.head(2):\n{df.head(2).to_string(index=False)}")
 
-    float_cols = [c for c in df.columns if c.startswith("цена за бутылку") or c.startswith("цена за кейс")]
+
+    # 👇 ADD THIS LINE HERE
+    logger.debug(f"[FLOAT TEST] columns starting with 'price_': {[c for c in df.columns if c.startswith('price_')]}")
+
+    float_cols = [
+        c for c in df.columns
+        if c.startswith(("цена за бутылку", "цена за кейс", "price_per_bottle", "price_per_case"))
+    ]
+    logger.debug(f"[FLOAT] candidate float_cols={float_cols}")    
+
     str_cols   = [c for c in df.columns if c.startswith("Доступ") or c.startswith("Место загрузки")]
     currency_cols = [c for c in df.columns if c.startswith("currency ")]
 
@@ -53,16 +64,27 @@ def enforce_base_types(df: pd.DataFrame) -> pd.DataFrame:
         except Exception as e:
             logger.warning(f"[WARN] {col}: cannot convert to {dtype} ({e})")
 
+    logger.debug(f"[FLOAT] candidate float_cols={float_cols}")
+    logger.debug(f"[FLOAT] proceeding with columns={float_cols or 'none found'} for df shape={df.shape}")
+    logger.debug(f"[DTYPE CHECK] current dtypes:\n{df.dtypes}")
+
+
     # ---------------- FLOAT КОЛОНКИ ----------------
     for col in float_cols:
         try:
+            logger.debug(f"[FLOAT] starting {col}, dtype={df[col].dtype}, sample={list(df[col].head(5))}")        
             before = df[col].copy()
+            # 👇 normalize locale commas/spaces before parsing
             df[col] = (
                 df[col]
-                .replace(["", " ", "-"], pd.NA)
+                .astype("string")
+                .str.replace(",", ".", regex=False)
+                .str.replace(" ", "", regex=False)
+                .replace(["", "-", "None"], pd.NA)
                 .pipe(pd.to_numeric, errors="coerce")
                 .astype("float64")
             )
+            logger.debug(f"[FLOAT] {col}: after to_numeric sample={list(df[col].dropna().head(5))}")
             inf_mask = np.isinf(df[col])
             if inf_mask.any():
                 logger.warning(f"[INF] {col}: contains {inf_mask.sum()} inf values → replaced with NaN")
