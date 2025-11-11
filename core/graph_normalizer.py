@@ -3,6 +3,7 @@ import re, json, unicodedata
 
 import pandas as pd
 import logging
+
 from utils.logger import setup_logging
 from core.canonical_rules import apply_canonical_rules
 from utils.normalize import normalize as _normalize
@@ -216,6 +217,15 @@ class BrandSeriesExtractor:
         # callback: series_resolver(brand:str) -> list[str] (из графа)
         self.series_resolver = series_resolver
         self._series_cache = {}  # cache: norm_brand -> list[str]
+        # 🔁 pre-warm cache so known brand series (Apple, Honey, etc.) are available
+        if self.series_resolver:
+            for b in self.brands.values():
+                try:
+                    s_list = self.series_resolver(b) or []
+                    if s_list:
+                        self._series_cache[_normalize(b)] = [(s, _normalize(s)) for s in s_list]
+                except Exception:
+                    continue
 
     # ==========================================================
     # Публичный метод
@@ -406,19 +416,16 @@ class BrandSeriesExtractor:
             for b_norm, b_orig in self.brands.items():
                 sc = score_brand_series(raw, b_norm)
                 b_tokens = b_norm.split()
-
                 # ✅ quick boost if brand literally appears in normalized raw
                 if b_norm in _normalize(raw):
                     sc += 1.0
-
 
                 # прямые совпадения
                 if t_norm in b_tokens or t_norm == b_norm:
                     sc += 1
                     
                 elif len(t_norm) >= 4 and any(t_norm in bt for bt in b_tokens):
-                    sc += 0.25
-                    
+                    sc += 0.25                    
 
                 # ✅ исправленный plural-fix
                 for bt in b_tokens:
@@ -429,12 +436,10 @@ class BrandSeriesExtractor:
                         sc += 0.5
                         
                     elif t_norm.endswith("ies") and bt.endswith("y") and t_norm[:-3] + "y" == bt:
-                        sc += 0.5
-                        
+                        sc += 0.5                        
 
                 if sc > 0:
                     scores[b_orig] = scores.get(b_orig, 0) + sc
-
 
         if not scores:
             logger.debug(f"[DETECT] no brand candidates found in: {raw}")
@@ -445,8 +450,7 @@ class BrandSeriesExtractor:
         logger.debug(f"[DEBUG SCORES] top={top}, all={list(scores.keys())[:10]}")
         #debug
 
-        brand = top[0]
-            
+        brand = top[0]            
 
         # выбираем лучший по скору, при равенстве — по длине
         brand = sorted(scores.items(), key=lambda x: (-x[1], -len(x[0])))[0][0]
@@ -498,42 +502,46 @@ class BrandSeriesExtractor:
         return brand, series
     
     def _extract_series_after_brand(self, raw, brand_norm):
+        """
+        Извлекает серию, оставляя только слова, которые встречаются в известных сериях из графа.
+        """
         logger.debug(f"[AFTER] start brand_norm='{brand_norm}' raw='{raw}'")
-        idx = _normalize(raw).find(brand_norm)        
-        logger.debug(f"[AFTER] normalized(raw)='{_normalize(raw)}', idx={idx}")
+        idx = _normalize(raw).find(brand_norm)
         if idx == -1:
             return None
-        after = raw[idx + len(brand_norm):]
+
+        after = raw[idx + len(brand_norm):].strip()
+        if not after:
+            return None
+
+        after_norm = _normalize(after)
         tokens = tokenize(after)
-        valid = []
+        logger.debug(f"[AFTER] normalized(after)='{after_norm}', tokens={tokens}")
+
+        # 🧠 собираем все нормализованные серии, где бренд совпадает или не важен
+        possible_series = list(ALL_SERIES_SET)
+
+        # фильтруем токены — оставляем только те, которые реально входят в серии
+        series_tokens = []
         for t in tokens:
-            joined = f"{self.last_brand or ''} {t}".strip()
             t_norm = _normalize(t)
-            
-            # 🚫 1️⃣ Игнорируем все десятичные числа (цены, проценты, объёмы)
-            if re.match(r"^\d+\.\d+$", t):
-                logger.debug(f"[FILTER] skip decimal numeric token '{t}'")
-                continue
-            # 🚫 2️⃣ Игнорируем целые числа, если они не входят в известные серии
-            if t.isdigit() and not any(t in s for s in valid_numerical["series"]):
-                continue
+            if any(t_norm in s for s in possible_series):
+                series_tokens.append(t)
 
-            # ✅ 3️⃣ добавляем короткие токены, если они в whitelist (VS, XO, VSOP и т.п.)
-            if t_norm in short_series_whitelist:
-                valid.append(t)
-                continue
+        if not series_tokens:
+            logger.debug(f"[AFTER] no series tokens matched for raw='{raw}'")
+            return None
 
-            # ✅ 4 Добавляем только текст длиной > 2 или допустимые серии
-            if len(t) > 2 or any(joined in s for s in valid_numerical["series"]):
-                valid.append(t)
+        candidate = " ".join(series_tokens)
+        # ищем точное совпадение с одной из серий
+        match = None
+        for s in possible_series:
+            if _normalize(s) in _normalize(candidate):
+                match = s
+                break
 
-        logger.debug(f"[AFTER] after='{after}', tokens={tokens}, valid={valid}")
-
-        return " ".join(valid[:3]) if valid else None
-    
-    
-
-
+        logger.debug(f"[AFTER] candidate='{candidate}', matched={match}")
+        return match or candidate
 
 # ==========================================================
 # NEO4J LOOKUPS
@@ -542,6 +550,9 @@ def find_canonical(tx, brand, series, raw):
     """Finds the best canonical name from Neo4j with penalty for overreach."""
     # ⚙️ добавлен DISTINCT для устранения дубликатов Canonical с одинаковыми именами
     rows = [r[0] for r in tx.run("MATCH (c:Canonical) RETURN DISTINCT c.name AS name").values()]
+    canon_logger.debug(f"[CANON CANDIDATES] total={len(rows)} for brand={brand!r}, series={series!r}")
+    if len(rows) > 10:
+        canon_logger.debug(f"[CANON CANDIDATES SAMPLE] {rows[:10]}")
     bnorm = _normalize(brand or "")
     snorm = _normalize(series or "")
     rnorm = _normalize(raw)
@@ -556,28 +567,64 @@ def find_canonical(tx, brand, series, raw):
         else:
             return -1.0  # skip if brand not found
 
-        # reward if series appears and is present in both
-        if snorm and snorm in cn_norm and snorm in rnorm:
-            score += 0.6
+        # reward if series appears and is present in both (series-aware equivalence)
+        def _series_key(s: str) -> str:
+            # общий ключ серии: убираем только лишние пробелы, оставляем точки для отличия V.S vs V.S.O.P
+            return re.sub(r"\s+", "", s)
+
+        if snorm:
+            sn_clean = _series_key(snorm)
+            cn_clean = _series_key(cn_norm)
+            rn_clean = _series_key(rnorm)
+            if sn_clean and sn_clean in cn_clean and sn_clean in rn_clean:
+                score += 0.6
+            
+        canon_logger.debug(
+            f"[CANON DEBUG DEFAULT] bnorm={bnorm!r}, snorm={snorm!r}, def_series={DEFAULT_SERIES_MAP.get(bnorm)!r}"
+        )
+
+        # ✅ NEW: if no explicit series detected, gently prefer the brand's default
+        # using the already loaded DEFAULT_SERIES_MAP (bnorm is normalized brand)
+        if not snorm and bnorm:
+            def_series = DEFAULT_SERIES_MAP.get(bnorm)
+            if def_series and def_series in cn_norm:
+                score += 0.5
         # --- NEW: token-overlap bonus (brand-agnostic), helps when series is None
         # compare only non-brand tokens
         c_tokens = cn_norm.split()
         b_tokens = set(bnorm.split()) if bnorm else set()
-        nb_tokens = [t for t in c_tokens if t not in b_tokens]  # non-brand tokens of candidate
-        raw_tokens = set(rnorm.split())
+        nb_tokens = [t for t in c_tokens if t not in b_tokens]
+        raw_tokens = set(t for t in rnorm.split() if len(t) > 2)
         overlap_cnt = sum(1 for t in nb_tokens if t in raw_tokens)
         if overlap_cnt > 0:
-            # small bonus per matching non-brand token
-            score += 0.25 * overlap_cnt
+            # only boost if canonical token (e.g. "fire") really appears in raw text
+            score += 0.15 * overlap_cnt
+        else:
+            score -= 0.2  # slight penalty when no overlap at all
+        
+        # 🧮 NEW: numeric year-aware adjustment (penalize wrong ages, boost exact)
+        def _extract_year(s: str):
+            m = re.search(r"(\d{1,2})\s*(?:yo|year|years?)", s.lower())
+            return int(m.group(1)) if m else None
 
-        # penalty if canonical contains tokens not present in raw
-        extra_tokens = [t for t in cn_norm.split() if t not in rnorm.split()]
-        if extra_tokens:
-            score -= len(extra_tokens) * 0.15
+        y_raw = _extract_year(rnorm)
+        y_can = _extract_year(cn_norm)
+        if y_raw and y_can:
+            diff = abs(y_raw - y_can)
+            if diff == 0:
+                score += 0.3
+            elif diff == 1:
+                score -= 0.1
+            elif diff >= 2:
+                score -= 0.3
+            canon_logger.debug(f"[CANON YEAR DEBUG] {cname!r}: y_raw={y_raw}, y_can={y_can}, diff={diff}, adj→{score:.2f}")
 
-        # penalty if canonical longer but series absent
-        if not snorm and len(cn_norm.split()) > len(bnorm.split()):
-            score -= 0.5
+        # 🔍 substring containment bonus for series name
+        if snorm and snorm in cn_norm:
+            score += 0.2
+        elif snorm and cn_norm in snorm:
+            score += 0.1
+        
 
         # small bonus for perfect equality
         if cn_norm == bnorm or cn_norm == rnorm:
@@ -605,8 +652,17 @@ def find_canonical(tx, brand, series, raw):
         canon_logger.debug("[CANON RESULT] no valid canonical candidates found")
         return None
 
-    best = sorted(scored, key=lambda x: (-x[1], len(x[0])))[0][0]
+    sorted_scored = sorted(scored, key=lambda x: (-x[1], len(x[0])))
+    canon_logger.debug(
+        "[CANON SCORES] top10=" +
+        ", ".join(f"{c!r}:{s:.2f}" for c, s in sorted_scored[:10])
+    )
+
+    sorted_scored = sorted(scored, key=lambda x: (-x[1], len(x[0])))
+    canon_logger.debug("[CANON SCORES] top10=" + ", ".join(f"{c!r}:{s:.2f}" for c, s in sorted_scored[:10]))
+    best = sorted_scored[0][0]
     best_score = max(scored, key=lambda x: x[1])[1]
+    canon_logger.debug(f"[CANON PICKED] best={best!r} score={best_score:.2f}")
 
     # ⚙️ если несколько равных — выбираем дефолтную серию бренда (если есть)
     tied = [c for c, s in scored if abs(s - best_score) < 1e-9]
@@ -619,7 +675,7 @@ def find_canonical(tx, brand, series, raw):
                 canon_logger.debug(f"[CANON TIE-BREAK] picked default_series '{default_series}' → {candidate!r}")
                 return candidate
 
-    canon_logger.debug(f"[CANON RESULT] best={best!r} score={best_score:.2f}")
+    
     return best
 
 def load_brands_meta_from_graph():
@@ -659,8 +715,11 @@ def normalize_dataframe(df: pd.DataFrame, col_name: str = "Наименован�
 
             if not brand:
                 continue
-
+            canon_logger.debug(
+                f"[LOOKUP START] raw={raw!r} → brand={brand!r}, series={series!r}"
+            )
             found = s.execute_read(find_canonical, brand, series, raw)
+            canon_logger.debug(f"[LOOKUP END] raw={raw!r} → canonical={found!r}")
             if found:
                 df.at[i, col_name] = found
                 logger.debug(f"[CANON] → {found}")

@@ -6,7 +6,8 @@ WINE_KEYWORDS = [
     "sauvignon blanc",
     "anejo",
     "vsop",
-    "silver"
+    "silver",
+    "Single Barrel"
 ]
 
 # подготавливаем нормализованные формы
