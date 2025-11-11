@@ -9,6 +9,7 @@ from core.canonical_rules import apply_canonical_rules
 from utils.normalize import normalize as _normalize
 from utils.wine_guard import looks_like_new_wine
 from core.patterns import valid_numerical, short_series_whitelist
+from utils.series_number_extractor import _extract_label_number
 
 
 # импортируем уже сконфигурированный драйвер и MODE
@@ -130,8 +131,10 @@ def score_brand(raw, brand_norm):
     if brand_norm in joined:
         score += 1.5
 
-    # 3️⃣ numeric brand bonus
-    if re.search(r"\b\d{3,4}\b", raw) and re.search(r"\d", brand_norm):
+    # 3️⃣ numeric brand bonus (match only if the same number appears)
+    raw_nums = re.findall(r"\d{2,4}", raw)
+    brand_nums = re.findall(r"\d{2,4}", brand_norm)
+    if any(bn in raw_nums for bn in brand_nums):
         score += 1.0
 
     # 4️⃣ position bonus
@@ -410,8 +413,13 @@ class BrandSeriesExtractor:
         logger.debug(f"[SCORES] {scores}")
         for token in tokens[:6]:  # ограничиваем первые токены
             t_norm = _normalize(token)
-            if len(t_norm) < 3 or t_norm.isdigit():
+            
+            # ✅ allow numeric brands (e.g. 1792, 1800, 19 Crimes, 7 Deadly Zins)
+            if len(t_norm) < 3:
                 continue
+            if t_norm.isdigit():
+                if not any(t_norm in _normalize(b) for b in valid_numerical["brands"]):
+                    continue
 
             for b_norm, b_orig in self.brands.items():
                 sc = score_brand_series(raw, b_norm)
@@ -473,23 +481,35 @@ class BrandSeriesExtractor:
                         match = s
                         break
 
-                # 2️⃣ если нет совпадения, разрешаем только whitelisted короткие серии
+                # 2️⃣ если нет совпадения, пробуем извлечь числовую серию, связанную с брендом
                 if not match:
+                    
                     after_tokens = tokenize(after)
-                    for t in after_tokens:
+                    # Построим карту (label3 → {numbers}) из серий этого бренда
+                    label_to_numbers = {}
+                    series_lookup = {}
+                    for s in brand_series:
+                        lbl, num = _extract_label_number(s)
+                        if lbl and num:
+                            k = lbl[:3]
+                            label_to_numbers.setdefault(k, set()).add(num)
+                            series_lookup[(k, num)] = s
+
+                    for i, t in enumerate(after_tokens):
                         t_norm = _normalize(t)
                         if t_norm in short_series_whitelist:
                             match = t
                             break
-                        # 🚫 проверяем строгое совпадение числа в серии, а не подстроку
-                        if t.isdigit():
-                            for s in valid_numerical["series"]:
-                                s_tokens = _normalize(s).split()
-                                # серия может содержать число как отдельное слово, например "Macallan 18"
-                                if t in s_tokens:
-                                    match = t
-                                    break
-                            if match:
+                        if t.isdigit() and i > 0:
+                            prev = after_tokens[i - 1]
+                            lbl = _normalize(prev)[:3]
+                            try:
+                                t_num = int(t)
+                            except ValueError:
+                                continue
+                            if lbl in label_to_numbers and t_num in label_to_numbers[lbl]:
+                                match = series_lookup[(lbl, t_num)]
+                                logger.debug(f"[STRICT BRAND NUMERIC] label={lbl} num={t_num} → '{match}'")
                                 break
 
                 series = match
@@ -535,8 +555,17 @@ class BrandSeriesExtractor:
         candidate = " ".join(series_tokens)
         # ищем точное совпадение с одной из серий
         match = None
+        cand_norm = _normalize(candidate)
         for s in possible_series:
-            if _normalize(s) in _normalize(candidate):
+            s_norm = _normalize(s)
+            # exact word or numeric-aware match
+            if f" {s_norm} " in f" {cand_norm} ":
+                match = s
+                break
+            # numeric safety: match "Bin 28" but not "Bin 2"
+            lbl_s, num_s = _extract_label_number(s)
+            lbl_c, num_c = _extract_label_number(candidate)
+            if lbl_s and num_s and lbl_c == lbl_s and num_c == num_s:
                 match = s
                 break
 

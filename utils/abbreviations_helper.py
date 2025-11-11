@@ -25,7 +25,9 @@ ABBREVIATIONS = {
     "Ballantines": "Ballantine's",
     "Grants": "Grant's",
     "Makers Mark": "Maker's Mark",
-    "VSOP": "V.S.O.P"
+    "VSOP": "V.S.O.P",
+    "Gentleman Jack": "Jack Daniel's Gentleman Jack",
+    "Blantons": "Blanton's"
 }
 
 def convert_abbreviation(text: str) -> str:

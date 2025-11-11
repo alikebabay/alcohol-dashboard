@@ -177,7 +177,7 @@ def make_master_sheet(df: pd.DataFrame, max_pairs: int = 12) -> pd.DataFrame:
 
 
 def upload_to_gsheets(df: pd.DataFrame):
-    """Заливает результат в Google Sheets."""
+    """Безопасная загрузка в Google Sheets: очищает диапазон данных, не ломая таблицу (оптимизировано для 10k+ строк)."""
     if df.empty:
         logger.warning("⚠️ DataFrame пуст, загрузка в Sheets пропущена.")
         return
@@ -186,15 +186,40 @@ def upload_to_gsheets(df: pd.DataFrame):
         sh = gc.open_by_key(SPREADSHEET_ID)
         try:
             ws = sh.worksheet(SHEET_NAME)
-            ws.clear()
         except gspread.WorksheetNotFound:
             ws = sh.add_worksheet(title=SHEET_NAME, rows="2000", cols="50")
 
-        set_with_dataframe(ws, df, include_index=False)
-        logger.info(f"✅ Данные успешно загружены в Google Sheets → {SHEET_NAME}")
+        # ───────────────────────────────────────────────
+        # 1️⃣ Безопасная очистка только диапазона данных
+        # ───────────────────────────────────────────────
+        try:
+            ws.batch_clear(["A2:ZZ"])  # не трогаем заголовки
+            logger.info("[Google Sheets] Data range cleared (A2:ZZ).")
+        except Exception as e:
+            logger.warning(f"[WARN] batch_clear failed: {e}")
+
+        # ───────────────────────────────────────────────
+        # 2️⃣ Автоматически расширяем лист под объём df
+        # ───────────────────────────────────────────────
+        n_rows, n_cols = df.shape
+        target_rows = n_rows + 10     # небольшой буфер
+        target_cols = n_cols + 2      # и справа немного места
+        try:
+            ws.resize(rows=target_rows, cols=target_cols)
+            logger.info(f"[Google Sheets] Resized to {target_rows} rows × {target_cols} cols.")
+        except Exception as e:
+            logger.warning(f"[WARN] resize failed: {e}")
+
+        # ───────────────────────────────────────────────
+        # 3️⃣ Основная загрузка
+        # ───────────────────────────────────────────────
+        set_with_dataframe(ws, df, include_index=False, resize=False)
+        logger.info(f"✅ Данные успешно загружены в Google Sheets → {SHEET_NAME} ({n_rows} строк).")
+
     except Exception as e:
         logger.error(f"❌ Ошибка при загрузке в Google Sheets: {repr(e)}")
         raise
+
 
 
 # ─────────────────────────────
