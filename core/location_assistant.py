@@ -4,7 +4,7 @@ from typing import Callable, Optional, List
 import logging
 
 import utils.text_extractors as te
-from utils.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC  # ← общий источник
+from libraries.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC  # ← общий источник
 from utils.logger import setup_logging
 
 # инициализация общего логгера

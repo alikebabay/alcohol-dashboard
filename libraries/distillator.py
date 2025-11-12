@@ -8,7 +8,7 @@ from typing import Optional
 import importlib
 import logging
 
-from utils.regular_expressions import RX_VOLUME, _RX_CASEVOL, _RX_CASEVOL_ABV, RX_PACK_CASES_FLEX, RX_PACK_PCS, RX_ABV, RX_AGE, RX_VINTAGE
+from libraries.regular_expressions import RX_VOLUME, _RX_CASEVOL, _RX_CASEVOL_ABV, RX_PACK_CASES_FLEX, RX_PACK_PCS, RX_ABV, RX_AGE, RX_VINTAGE
 from utils.logger import setup_logging
 
 setup_logging()

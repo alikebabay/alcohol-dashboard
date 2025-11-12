@@ -68,3 +68,43 @@ RX_PACK_CASES_FLEX = re.compile(
 )
 # извлечение количества бутылок из паттернов вида 6 pcs, 12шт
 RX_PACK_PCS = re.compile(r'(?i)\(?\b(?P<cases>\d{1,3})\s*(?:pcs|шт)\b\)?')
+
+# --- Gift box / gift pack detection ---
+# Matches any positive indicator of boxed/gift packaging
+RX_GBX_MARKER = re.compile(
+    r"""(?ix)
+    (?<![a-z])
+    (?:
+        gbx? |
+        g\.?b\.?x?\.? |
+        g\s*/\s*b |                     # G/B variant
+        gbox |
+        gift\s*(?:box(?:ed)?|pack)\b |  # Gift Box / Gift Pack
+        giftbox(?=\s*$) |               # Giftbox only if it's at end of string
+        gpack|gpac |
+        \+glass(?:es)? |
+        \+hip\s*flask |
+        twin\s*pack |
+        boxed\s*(?:set|gift)\b          # Boxed Set / Boxed Gift
+    )
+    (?![a-z])
+    """,
+    re.IGNORECASE,
+)
+
+
+
+
+# Negative markers — explicitly "no gift box", "without box", etc.
+RX_GBX_NEGATIVE = re.compile(
+    r"""(?ix)
+    (?<![a-z])
+    (?:no\s*(gbx?|box|gift)|
+       non[-\s\.]*gbx?|
+       n\.?\s*gbx?|
+       without\s*box)
+    (?![a-z])
+    """,
+    re.IGNORECASE,
+)
+

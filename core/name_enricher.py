@@ -3,9 +3,10 @@ import pandas as pd
 import logging
 import re
 
-from core.distillator import looks_like_category, _remove_volume_tokens, extract_volume_smart, _infer_bpc_from_name
+from libraries.distillator import looks_like_category, _remove_volume_tokens, extract_volume_smart, _infer_bpc_from_name
 from utils.verifier import verifier
 from utils.abbreviations_helper import convert_abbreviation
+from libraries.regular_expressions import RX_GBX_MARKER, RX_GBX_NEGATIVE
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,6 @@ def _clean_name_extras(s: str) -> str:
     # чистим дублирующиеся запятые и пробелы
     s = re.sub(r'[,\s]+', ' ', s).strip()
     s = re.sub(r'\s{2,}', ' ', s)
-
     
 
     return s
@@ -53,14 +53,10 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
     - аппендит volume к name (например: 'Macallan 12' -> 'Macallan 12 (700ml)')
     """
     
-
-
     if col_name not in df.columns:
         return df
 
-    df = df.copy()
-
-    
+    df = df.copy()    
 
     # убираем категории
     mask_cat = df.apply(lambda r: looks_like_category(r[col_name], r), axis=1)
@@ -83,12 +79,34 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
         df_raw = df_raw.reset_index(drop=True)
         logger.debug(f"[SYNC CHECK] df={len(df)}, df_raw={len(df_raw)} (aligned indices)")
 
-    # вытащим cl (объем) в отдельную колонку, поиск по нейме и другим колонкам
-    
+    # вытащим cl (объем) в отдельную колонку, поиск по нейме и другим колонкам    
     df["cl"] = df.apply(lambda r: extract_volume_smart(r, df_raw=df_raw), axis=1)
-
    # удаляем cl-часть из названия (все токены)
     df[col_name] = df[col_name].map(_remove_volume_tokens)
+
+    # --- detect GB/GBX markers directly in the name column ---
+    df["gb_flag"] = False
+    df["gb_type"] = None
+
+    def _detect_gb_marker_from_name(name: str):
+        if not isinstance(name, str):
+            return None
+        s = name.lower()
+        # normalize separators so "GBX," / "GBX." / "GBX-" etc. are all matched
+        s = re.sub(r"[,.;:/\\|+]", " ", s)
+        # skip explicit negatives like "NoGBX", "Non GBX", "Without box"
+        if RX_GBX_NEGATIVE.search(s):
+            return None
+
+        # detect any GB/GBX/gift packaging indicator
+        if RX_GBX_MARKER.search(s):
+            return "GBX"
+        return None
+
+    df["gb_type"] = df[col_name].map(_detect_gb_marker_from_name)
+    df["gb_flag"] = df["gb_type"].notna()
+
+
     # дополнительно чистим от лишних слов и хвостов
     df[col_name] = df[col_name].map(_clean_name_extras)
 
@@ -98,6 +116,15 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
     verifier.set_state("graph")
     df = verifier.run(df)
     print(verifier.report())
+
+    #reattach GB/GBX to names after graph
+    mask_gb = df["gb_flag"]
+    if mask_gb.any():
+        logger.debug(f"[GBX] reattaching GB/GBX suffix to {mask_gb.sum()} items")
+        df.loc[mask_gb, col_name] = df.loc[mask_gb].apply(
+            lambda r: f"{r[col_name]} {r['gb_type']}",
+            axis=1
+        )
 
     # ---- ДОзаполнение и чистка числовых полей ----
     if "bottles_per_case" in df.columns:

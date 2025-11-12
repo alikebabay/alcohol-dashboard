@@ -3,7 +3,7 @@ import re
 from typing import Callable, Optional, List
 import logging
 
-from utils.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC 
+from libraries.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC 
 import utils.text_extractors as te
 from utils.logger import setup_logging
 

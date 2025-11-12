@@ -11,7 +11,37 @@ from utils.abbreviations_helper import convert_abbreviation
 # 🧾 Just paste your text here — no need for quotes or commas
 text = """
 
-
+Ballantines Finest 12x75cl 40%
+Ballantines Finest 12x1L 40% NRF
+Ballantines 17yo 6x75cl 40% GB
+Ballantines 21yo 6x70cl 40% GB
+Ballantines 30yo 6x70cl 40% GB
+Chivas Regal 12yo minis 120x5cl 40% glass
+Chivas Regal 12yo 24x20cl 40%
+Chivas Regal 12yo 12x37.5cl 40% 
+Chivas Regal 12yo 12x75cl 40% NRF GB
+Chivas Regal 12yo 12x1L 40%
+Chivas Regal 12yo 12x1L 40% NRF
+Chivas Regal 18yo minis 120x5cl 40% glass
+Chivas Regal 18yo 6x75cl 40% GB
+Chivas Regal 18yo 6x1L 40% GB
+Chivas Royal Salute 21yo 6x70cl 40% GB
+Grants 1x4.5L 40%
+J&B Rare 12x1L 40% NRF
+Johnnie Walker Red 12x1L 40% NRF
+Johnnie Walker Black 12x70cl 40% NRF
+Johnnie Walker Black 12x75cl 40% NRF
+Johnnie Walker Island Green 6x1L 43% GB *
+Old Parr 12yo 12x1L 40% NRF 
+Johnnie Walker Gold Reserve 6x1L 40% GB
+Johnnie Walker Red minis 192x5cl 40% pet
+Johnnie Walker Red 12x75cl 40% NRF
+Johnnie Walker Blue 6x75cl 40% GB
+Johnnie Walker Blue 6x1L 40% GB
+Old Parr 18yo 12x75cl 40% NRF GB
+Buchanan's 18yo 6x75cl 40% NRF GB
+Grants Triple Wood 12x1L 40% NRF GB
+Johnnie Walker Red 24x20cl 40% 
 Famous Grouse 12x1L 40% NRF
 
 Malt Whisky 
@@ -168,8 +198,6 @@ Wines
 Cheval de los Andes Blanc 6x75cl 14.5% 2009 wooden case
 Robert Mondavi Private Selection Cab. Sauv. 2023 12x75cl 12.5%
 Terrazas Reserva Syrah 6x75cl 14.5% 2014
-
-
 
 """
 

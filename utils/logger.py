@@ -52,13 +52,13 @@ def setup_logging(global_level=logging.INFO):
     modules = {
         # инфраструктура
         "integrations.matrix_merger": logging.ERROR,
-        "core.graph_normalizer": logging.DEBUG,
-        "core.graph_normalizer.canonical": logging.DEBUG,
+        "core.graph_normalizer": logging.ERROR,
+        "core.graph_normalizer.canonical": logging.ERROR,
         "integrations.rules_typing": logging.ERROR,
         "integrations.graph_offers": logging.ERROR,
         "integrations.graph_to_sheets": logging.ERROR,
         "core.parser": logging.ERROR,
-        "core.name_enricher": logging.ERROR,
+        "core.name_enricher": logging.DEBUG,
         "state_macihe": logging.ERROR,
         "text_state": logging.ERROR,
         "currency": logging.ERROR,
