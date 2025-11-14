@@ -18,8 +18,6 @@ text = """2200 cs Moët & Chandon Brut Imp. (no GBX) 6x75cl 12.5% T1 @ €150.00
 2200 cs*6 btl Moët & Chandon Brut без ПУ - 25,80 eur/btl DAP Riga
 2200 cs*6 btl Veuve Clicquot без ПУ - 30.90 eur/btl DAP Riga
 3125 cs*6 btl Tullamore Dew (Round Bottle) 70 cl - 5.33 eur/btl DAP Riga, lead time 1-2 weeks
-Kind regards,
-John Doe
 """
 
 print("[TEST] LocationAssistant demo run\n")
