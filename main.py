@@ -44,7 +44,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     await update.message.reply_text(
-        "Добрый день! Сначала выберите поставщика кнопкой или введите его название.\n"
+        "Добрый день! Выберите имя поставщика кнопкой или введите клавиатурой.\n"
         "Затем отправьте прайс (Excel/CSV) или вставьте прайс текстом.",
         reply_markup=reply_markup
     )
