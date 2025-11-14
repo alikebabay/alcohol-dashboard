@@ -4,315 +4,354 @@ from pathlib import Path
 
 # === вставляешь сюда сырой список (до нормализации) ===
 raw_text = """
-Dom Perignon 75cl GBX
-Dom Perignon 75cl
-Moet & Chandon Brut 75cl 
-Moet & Chandon Rosé 75cl
-Moet & Chandon Ice 75cl
-Veuve Cliquot Brut Yellow Label 75cl GBX
-Veuve Cliquot Brut Yellow Label 75cl 
-Ruinart blanc de blanc 75cl
-Krug Grand Cuvee 75cl Edition 172 GBX
-Jacquesson Cuvee No. 742 75cl
-Jacquesson Cuvee No. 743 75cl
-Jacquesson Cuvee No. 748 75cl
-Jacquesson Avize Champ Cain 75cl
-Jacquesson Dizy Corne Bautray 75cl
-Jacquesson Dizy Terres Rouges 75cl
-Jacquesson Dizy Terres Rouges 75cl
-Cava Freixenet Cordon Negro Brut 75cl
-Minuty M de Minuty Rosé 150cl
-Domaines Ott Chateau Romassan Rosé 75cl
-DBR Lafite Les Legendes R Bordeaux Red 75cl
-DBR Lafite R Saga Rouge 75cl
-Rioja Alta Gran Reserva 890 75cl
-Rioja Alta Gran Reserva 904 75cl
-Rioja Alta Viña Ardanza 75cl
-Aalto 75cl
-Aalto blanco 75cl
-Aalto blanco 75cl
-Aalto 150cl
-Aalto 150cl
-Aalto 300cl
-Aalto 500cl
-Aalto PS 75cl
-Aalto PS 75cl
-Aalto PS 150cl Wooden Case
-Aalto PS 150cl Wooden Case
-Aalto PS 150cl Wooden Case
-Aalto PS 150cl Wooden Case
-Aalto PS 3L Wooden Case
-Luce Brunello di Montalcino 75cl
-Luce della Vite Luce 75cl
-Luce Lucente 75cl
-Dal Forno Romano Amarone della Valpolicella 75cl (historical box)
-Dal Forno Romano della Valpolicella 75cl
-Quintarelli Giuseppe Amarone Classico 75cl
-Quintarelli Giuseppe Valpolicella Classico 75cl
-Sassicaia Tenuta San Guido 75cl
-Sassicaia Tenuta San Guido 75cl
-Tenuta San Guido Guidalberto 75cl
-Tenuta San Guido Guidlaberto 75cl
-Tenuta San Guido Guidlaberto 75cl
-Tenuta San Guido Le Difese
-Tenuta dell'Ornellaia Ornellaia 75cl
-Tenuta dell'Ornellaia Le Serre Nuove 75cl
-Tenuta dell'Ornellaia Le Volte 75cl
-Braida Bricco Dell’Uccelone 75cl
-Tenuta di Biserno Biserno 75cl
-Tenuta di Biserno Il Pino 75cl
-Tenuta di Biserno Il Pino 75cl
-Tenuta di Biserno Il Pino 150cl
-Tenuta di Biserno Insoglio 150cl
-Egon Muller Scharzhof Riesling 75cl
-Egon Muller Scharzhofberger Riesling Spätlese 75cl
-Egon Muller Scharzhofberger Riesling Auslese 75cl
-Egon Muller Scharzhof Riesling 75cl
-Egon Muller Scharzhofberger Riesling Kabinett 75cl
-Egon Muller Scharzhofberger Riesling Spätlese 75cl
-Egon Muller Scharzhofberger Riesling Auslese 75cl
-Egon Muller Scharzhofberger Riesling Beerenauslese 75cl
-Chocolate Block 75cl
-Barista Pinotage 75cl
-Opus One 75cl
-Opus One 75cl
-Los Vascos Sauvignon Blanc 75cl
-Los Vascos Cabernet Sauvignon 75cl
-Los Vascos Cromas Grand Reserva Carmenere 75cl
-Los Vascos Cromas Grand Reserva Carmenere 75cl
-Los Vascos Le Dix 75cl
-Cloudy Bay Sauvignon Blanc 75cl
-Penfolds Koonunga Hill Shiraz Cabernet 75cl
-Penfolds Grange 75cl
-Penfolds RWT 75cl
-Penfolds St. Henri 75cl
-Penfolds Bin 707 75cl
-Penfolds Bin 407 75cl
-Penfolds Bin 389 75cl
-Penfolds Bin 128 75cl
-Penfolds Bin 28 75cl
-Penfolds Bin 2 75cl
-Penfolds Bin 8 75cl 
-Aultmore 18YO 70cl 46% GBX NRF
-Aultmore 21YO 70cl 46% GBX NRF
-Aultmore 25YO 70cl 46% GBX NRF
-Dalmore 12YO 70cl
-Dalmore 15YO 70cl
-Dalmore King Alexander III Malt 70cl
-Bowmore 10YO dark and intense Single Malt 70cl 40%
-The Yamazaki Single Malt 12yo  48%
-Monkey Shoulder Whisky 1L 40%
-Laphroaig 10YO 1L 40%
-Macallan Enigma Box 70cl GBX
-Macallan Night on earth 70cl GBX
-Macallan The Harmony Edition 3 Amber Meadow 70cl GBX
-Macallan Rare Cask Black 70cl GBX
-Ballantine's Finest 100cl NRF 40%
-Chivas Regal 18YO 75cl NRF 40%
-Glenfarclas 35YO 70cl GBX
-Glenmorangie The Accord 12Y 1L GBX 43%
-Glenmorangie The Elementa 14Y 1L GBX 43%
-Glenfiddich 12YO 70cl 40%
-Glenfiddich 15YO 70cl 40%
-J&B 1L 40% NRF
-Teachers highland cream 1L 40% NRF
-The Famous Grouse 1L 40% NRF
-The Famous Grouse 1L 40% NRF blanco carton
-Cutty Sark 1L 40% NRF International Label
-Johnnie Walker Black Label 1L 40% NRF
-Jim Beam Apple 1L 40%
-Jim Beam Honey 1L 40%
-Singleton Single Malt Dufftown 12YO 70cl 40%
-Kweichow Moutai Chiew 50CL 53%
-Boulard Grand Solage 70cl 40%
-Roku Select Edition Gin 1L 43%
-Hendricks Gin 1L 41,4% REF
-Mintis originale Gin 70cl 41,8%
-Molinari Extra 1L 40%
-Passoa 70cl 17%
-Villa Massa Limoncello 70cl
-Vecchia Romagna Riserva 18y 70cl 43,8%
-Kahlua 1L 20%
-Beluga Noble 70cl 40% (Montenegro production)
-Absolut Original Vodka 20cl 40% REF
-Grey Goose Blue vodka 1L 40%
-Aperol 1L 11%
-Campari 1L 25%
-Select aperitivo 1L 17,5%
-Clase Azul Plata 70cl 40%
-Clase Azul Gold 70cl 40%
-Clase Azul Anejo 70cl 40%
-Clase Azul Ultra 70cl 40%
-Clase Azul Mezcal Durango 70cl 40%
-Clase Azul Mezcal Guerrero 70cl 40%
-Clase Azul Mezcal San Luis 70cl 40%
-Jose Cuervo 1800 Anejo 75cl 40% REF
-Tequila Rose Strawberry 70cl 15%
-Disaronno Amaretto 70cl 28%
-Disaronno Amaretto 1L 28%
-Tia Maria 70cl 20%
-Tia Maria 1L 20%
-Jagermeister 70cl 35%  REF 
-Bols Blue 70cl 21%
-Bols Peach 70cl 17%
-Bols Lychee 70cl 17%
-
+Ballantines Finest 12x75cl 40%
+Ballantines Finest 12x1L 40% NRF
+Ballantines 17yo 6x75cl 40% GB
+Ballantines 21yo 6x70cl 40% GB
+Ballantines 30yo 6x70cl 40% GB
+Chivas Regal 12yo minis 120x5cl 40% glass
+Chivas Regal 12yo 24x20cl 40%
+Chivas Regal 12yo 12x37.5cl 40% 
+Chivas Regal 12yo 12x75cl 40% NRF GB
+Chivas Regal 12yo 12x1L 40%
+Chivas Regal 12yo 12x1L 40% NRF
+Chivas Regal 18yo minis 120x5cl 40% glass
+Chivas Regal 18yo 6x75cl 40% GB
+Chivas Regal 18yo 6x1L 40% GB
+Chivas Royal Salute 21yo 6x70cl 40% GB
+Grants 1x4.5L 40%
+J&B Rare 12x1L 40% NRF
+Johnnie Walker Red 12x1L 40% NRF
+Johnnie Walker Black 12x70cl 40% NRF
+Johnnie Walker Black 12x75cl 40% NRF
+Johnnie Walker Island Green 6x1L 43% GB *
+Old Parr 12yo 12x1L 40% NRF 
+Johnnie Walker Gold Reserve 6x1L 40% GB
+Johnnie Walker Red minis 192x5cl 40% pet
+Johnnie Walker Red 12x75cl 40% NRF
+Johnnie Walker Blue 6x75cl 40% GB
+Johnnie Walker Blue 6x1L 40% GB
+Old Parr 18yo 12x75cl 40% NRF GB
+Buchanan's 18yo 6x75cl 40% NRF GB
+Grants Triple Wood 12x1L 40% NRF GB
+Johnnie Walker Red 24x20cl 40% 
+Famous Grouse 12x1L 40% NRF
+Malt Whisky 
+Aultmore 18yo 6x70cl 46% GB
+Glen Grant Cask Heaven 6x1L 46% GB
+Dalmore Quartet 6x1L 41.5% GB
+Glenfiddich 12yo 12x70cl 40% GB
+Glenfiddich 18yo 12x70cl 40% GB
+Macallan 18yo Double Cask 6x70cl 43% GB
+Macallan 18yo Sherry Oak 6x70cl 43% GB
+Monkey Shoulder minis 96x5cl 40% glass
+Monkey Shoulder 6x70cl 40%
+Old Pulteney 15yo 6x70cl 46% GB
+Laphroaig PX Cask 6x1L 48% GB
+Monkey Shoulder 6x1L 40%
+Glenfiddich 12yo 12x70cl 40% GB
+Bourbon - Canadian - Irish - Japanese Whisky 
+1792 Small Batch 6x75cl 46.85%
+Bakers 7yo Kentucky Straight 6x75cl 53.5%
+Basil Hayden 12x1L 40%
+Bushmills Original 12x50cl 40%
+Bushmills Black Bush 6x70cl 40%
+Bushmills 12yo 6x70cl 40% GB
+Bushmills 16yo 6x70cl 40% GB
+Canadian Club minis 120x5cl 40%
+Gentleman Jack 6x1L 40%
+Jack Daniels 24x20cl 40%
+Jack Daniels Honey 24x20cl 35%
+Jack Daniels Fire 12x1L 35%
+Jack Daniels Honey 12x1L 35%
+Jack Daniels Single Barrel 6x75cl 47%
+Jameson minis 120x5cl 40% Glass
+Jameson 12x20cl 40%
+Jameson 12x75cl 40% 
+Knob Creek 9yo 6x1L 50%
+Makers Mark 46 6x1L 47%
+Nikka Session 12x70cl 43%
+Russell's Reserve 10yo 6x75cl 45%
+Suntory Special Reserve 12x70cl 40%
+Suntory World Whisky Ao 12x70cl 43% separate GB
+Wild Turkey 81 12x75cl 40.5%
+Wild Turkey Long Branch 6x1L 43%
+Wild Turkey Single Barrel 6x1L 50.5% GB
+Woodford Reserve Distillers Select 6x1L 43.2%
+Blantons Original Single Barrel 6x75cl 40% GB
+Cognac - Brandy 
+Hennessy Pure White 6x70cl 40%
+Hennessy VS 12x35cl 40%
+Hennessy VS 12x1L 40% GB
+Hennessy XO 12x70cl 40% GB
+Remy Martin VSOP 12x1L 40%
+Martell Cordon Bleu 12x70cl 40% GB
+Martell XO 12x70cl 40% GB
+Vodka 
+Absolut Blue 12x75cl 40% 
+Absolut Blue 6x1.75L 40%
+Absolut Blue 1x4.5L 40%
+Absolut Citron 12x75cl 40%
+Absolut Citron 12x1L 40%
+Absolut Mandarin 12x75cl 40%
+Absolut Mandarin 12x1L 40%
+Absolut Mango 12x75cl 38%
+Absolut Mango 12x1L 38%
+Absolut Pears 12x75cl 38%
+Absolut Pears 12x1L 38%
+Absolut Raspberry 12x75cl 38%
+Absolut Raspberri 12x1L 38%
+Absolut Vanilla 12x75cl 40%
+Absolut Vanilla 12x1L 38%
+Ciroc Pineapple 12x1L 35%
+Ciroc Red Berry 12x1L 35%
+Grey Goose minis aluminum 144x5cl 40%
+Grey Goose minis aluminum 96x5cl 40%
+Grey Goose 6x1L 40% 
+Grey Goose L'Orange 6x1L 40%
+Grey Goose 6x1.75L 40% 
+Ketel One 12x1L 40%
+Stolichnaya minis 120x5cl 40%
+Stolichnaya 24x20cl 40%
+Beluga Gold 6x1L 40% GB
+Beluga Noble 6x1L 40%
+Gin 
+Beefeater minis 120x5cl 40%
+Beefeater 12x1L 40% NRF
+Bombay Sapphire minis 120x5cl 40%
+The Botanist 6x70cl 46%
+Ungava 6x1L 43.1%
+Hendrick's 12x1L 44%
+Rum 
+Havana Club Anejo 3yo 12x70cl 37.5% NRF
+Havana Club Anejo Especial 12x70cl 37.5% NRF
+Havana Club 7yo 12x1L 40% NRF
+Havana Club Seleccion de Maestros 6x70cl 45% GB
+Mount Gay Silver 12x1L 40%
+Pusser's Gunpowder Proof 6x70cl 54.5%
+Pusser's 15yo 6x70cl 40% GB
+Pyrat XO Reserve 6x70cl 40%
+Zacapa XO 6x75cl 40% GB
+Havana Club 7yo 12x70cl 40% NRF
+Liqueur
+Aperol 6x1L 11%
+Baileys Irish Cream 12x1L 17% [28/02/2027]
+Campari minis 200x5cl 25% glass
+Cointreau 12x70cl 40% 
+Dekuyper Amaretto Liqueur 12x1L
+Dekuyper Blackberry Brandy 12x1L 30%
+Dekuyper Creme de Cassis 12x1L 15%
+Dekuyper Watermelon 12x1L 35%
+Drambuie 6x1L 40%
+Jagermeister 6x50cl 35%
+Jagermeister 6x70cl 35% NRF
+Jagermeister 6x1L 35% NRF
+Kahlua 12x75cl 16%
+Kahlua 12x1L 16%
+Malibu 12x75cl 21%
+Patron XO Cafe 6x75cl 35% GB
+Southern Comfort 12x1L 40%
+Tequila
+1800 Reserva Coconut 12x75cl 35%
+1800 Reserva Blanco 12x75cl 40%
+1800 Reserva Reposado 12x75cl 40%
+1800 Reserva Cristalino Anejo 6x75cl 40% 
+Clase Azul Anejo 3x75cl 40% GB
+Corazon Blanco 6x75cl 40%
+Espolon Anejo 6x1L 40%
+Jose Cuervo Especial Gold minis 120x5cl 40%
+Jose Cuervo Especial Reposado 12x70cl 38%
+Jose Cuervo Especial Reposado 12x75cl 40%
+Jose Cuervo Especial Reposado 12x1L 40%
+Jose Cuervo Tradicional Cristalino 6x75cl 40% GB
+Olmeca Gold 12x1L 35%
+Patron Silver minis 60x5cl 40% GB
+Teremana Reposado 6x1L 40%
+Teremana Anejo 6x1L 40%
+Cazadores Anejo 6x1L 40%
+Don Julio 1942 6x75cl 38% GB
+Champagnes
+Barons de Rothschild Brut 6x75cl 12%
+Dom Perignon Rose 2009 3x75cl 12.5% GB
+Moet & Chandon Brut 6x75cl 12.5% 
+Veuve Clicquot Brut 6x75cl 12.5%
+Moet & Chandon Nectar 6x75cl 12% GB
+Moet & Chandon Ice 6x75cl 12.5%
+Wines
+Cheval de los Andes Blanc 6x75cl 14.5% 2009 wooden case
+Robert Mondavi Private Selection Cab. Sauv. 2023 12x75cl 12.5%
+Terrazas Reserva Syrah 6x75cl 14.5% 2014
 """.strip().splitlines()
 
 # === вставляешь сюда итоговый список (после нормализации) ===
 canon_text = """
-Aultmore 18 Year Old GB
-Aultmore 21 Year Old GBX
-Aultmore 25 Year Old GBX
+1792 Small Batch
+Aultmore 18 Year Old GBX
+Bakers 7YO Kentucky Straight
+Ballantine's 17 Year Old GBX
+Ballantine's 21 Year Old GBX
+Ballantine's 30 Year Old GBX
 Ballantine's Finest
-Bowmore 10YO Dark And Intense Single Malt
+Ballantine's Finest
+Basil Hayden
+Blanton's The Original Single Barrel Bourbon Whiskey GBX
+Buchanan's 18 Year Old GBX
+Bushmills 12 Year Old GBX
+Bushmills 16 Year Old GBX
+Bushmills Black Bush
+Bushmills Original
+Canadian Club MINIS
+Chivas Regal 12 Year Old
+Chivas Regal 12 Year Old
+Chivas Regal 12 Year Old
+Chivas Regal 12 Year Old
+Chivas Regal 12 Year Old
+Chivas Regal 12 Year Old GBX
 Chivas Regal 18 Year Old
-Cutty Sark International Label NRF
-Dalmore 12 Years Old
-Dalmore 15 Years Old
-Dalmore King Alexander III
-Glenfarclas 35 Years Old GBX
-Glenfiddich 12 Year Old
-Glenfiddich 15 Year Old
-Glenmorangie The Accord 12Y GBX
-Glenmorangie The Elementa 14Y GBX
+Chivas Regal 18 Year Old GBX
+Chivas Regal 18 Year Old GBX
+Dalmore The Quartet GB GBX
+Famous Grouse
+Glen Grant Rothes Chronicles Cask Haven GBX
+Glenfiddich 12 Year Old GBX
+Glenfiddich 12 Year Old GBX
+Glenfiddich 18 Year Old GBX
+Grant's Triple Wood
+Grant's Triple Wood GBX
 J&B Rare
-Jim Beam Apple
-Jim Beam Honey
-Johnnie Walker Black Label NRF
-Laphroaig 10 Years Old
-Macallan Enigma GBX
-Macallan Night On Earth GBX
-Macallan Rare Cask Black GBX
-Macallan The Harmony Collection Amber Meadow GBX
+Jack Daniel's Fire
+Jack Daniel's Gentleman Jack
+Jack Daniel's Honey
+Jack Daniel's Honey
+Jack Daniel's Old No. 7
+Jack Daniel's Single Barrel
+Jameson
+Jameson
+Jameson MINIS GLASS
+Johnnie Walker Black Label
+Johnnie Walker Black Label
+Johnnie Walker Blue Label GBX
+Johnnie Walker Blue Label GBX
+Johnnie Walker Gold Reserve GBX
+Johnnie Walker Island Green GBX
+Johnnie Walker Red Label
+Johnnie Walker Red Label
+Johnnie Walker Red Label
+Johnnie Walker Red Label
+Knob Creek 9 Year Old
+Laphroaig Px Cask GBX
+Macallan 18 Year Old Double Cask GBX
+Macallan 18 Year Old Sherry Oak GBX
 Monkey Shoulder
-Singleton 12 Year Old
-Teacher's Highland Cream
-The Famous Grouse NRF
-The Famous Grouse NRF
-The Yamazaki Single Malt 12YO
-Boulard Grand Solage
-Absolut Original Vodka
-Beluga Noble (montenegro Production)
+Monkey Shoulder
+Monkey Shoulder MINIS GLASS
+Nikka Session
+Old Parr 12 Year Old
+Old Parr 18 Year Old GBX
+Old Pulteney 15 Year Old GBX
+Russell's Reserve 10 Year Old
+Suntory Special Reserve
+Suntory World Whisky GBX
+Wild Turkey 81
+Wild Turkey Long Branch
+Wild Turkey Single Barrel GBX
+Woodford Reserve Distillers Select
+Hennessy Pure White
+Hennessy V.S
+Hennessy V.S GBX
+Hennessy X.O GBX
+Martell Cordon Bleu GBX
+Martell XO GBX
+Remy Martin VSOP
+Absolut Blue
+Absolut Blue
+Absolut Blue
+Absolut Citron
+Absolut Citron
+Absolut Mandarin
+Absolut Mandarin
+Absolut Mango
+Absolut Mango
+Absolut Pears
+Absolut Pears
+Absolut Raspberry
+Absolut Raspberry
+Absolut Vanilla 38%
+Absolut Vanilla 40%
+Beluga Gold GBX
+Beluga Noble
+Ciroc Pineapple
+Ciroc Red Berry
 Grey Goose
+Grey Goose
+Grey Goose L'Orange
+Grey Goose MINIS ALUMINUM
+Grey Goose MINIS ALUMINUM
+Ketel One
+Stolichnaya
+Stolichnaya MINIS
+Beefeater
+Beefeater MINIS
+Bombay Sapphire MINIS
 Hendrick's
-Mintis Gin Originale
-Roku Select Edition Gin
-Clase Azul Anejo
-Clase Azul Gold
-Clase Azul Mezcal Durango
-Clase Azul Mezcal Guerrero
-Clase Azul Mezcal San Luis
-Clase Azul Plata
-Clase Azul Ultra
-Jose Cuervo 1800 Anejo
-Tequila Rose Strawberry
+The Botanist Islay Dry Gin
+Ungava
+Havana Club 7 Year Old
+Havana Club 7 Year Old
+Havana Club Anejo 3 Anos
+Havana Club Anejo Especial
+Havana Club Seleccion De Maestros GBX
+Mount Gay Silver
+Pusser's 15 Year Old GBX
+Pusser's Gunpowder Proof
+Pyrat XO Reserve
+Zacapa XO GBX
+1800 Reserva Blanco 40%
+1800 Reserva Coconut 35%
+1800 Reserva Cristalino Anejo 40%
+1800 Reserva Reposado 40%
+Cazadores Anejo
+Clase Azul Anejo GBX
+Corazon Blanco
+Don Julio 1942 GBX
+Espolon Anejo
+Jose Cuervo Especial Gold MINIS
+Jose Cuervo Especial Reposado
+Jose Cuervo Especial Reposado
+Jose Cuervo Especial Reposado
+Jose Cuervo Tradicional Cristalino GBX
+Olmeca Gold
+Patron Silver GBX
+Patron XO Cafe GBX
+Teremana Anejo
+Teremana Reposado
 Aperol
-Bols Blue
-Bols Lychee
-Bols Peach
-Campari
-Disaronno Amaretto
-Disaronno Amaretto
+Baileys Original Irish Cream [28/02/2027]
+Campari MINIS
+Cointreau
+Dekuyper Amaretto Liqueur
+Dekuyper Blackberry Brandy 30%
+Dekuyper Creme de Cassis 15%
+Dekuyper Watermelon 35%
+Drambuie
+Jagermeister
+Jagermeister
 Jagermeister
 Kahlua
-Molinari Extra
-Passoa
-Select Aperitivo
-Tia Maria
-Tia Maria
-Vecchia Romagna Riserva 18Y
-Villa Massa Limoncello
-Dom Perignon Vintage 2015
-Dom Perignon Vintage 2015
-Freixenet Cordon Negro Brut Cava
-Jacquesson Avize Champ Cain
-Jacquesson Cuvee No. 742
-Jacquesson Cuvee No. 748
-Jacquesson Cuvée No. 743
-Jacquesson Dizy Corne Bautray 2014
-Jacquesson Dizy Terres Rouges
-Jacquesson Dizy Terres Rouges
-Krug Grand Cuvee Edition GBX
+Kahlua
+Malibu
+Southern Comfort
+Barons De Rothschild Brut
+Dom Perignon Rose GBX
 Moet & Chandon Brut Imperial
 Moet & Chandon Ice Imperial
-Moet & Chandon Rose Imperial
-Ruinart Blanc De Blancs
+Moet & Chandon Nectar Imperial GBX
 Veuve Clicquot Brut Yellow Label
-Veuve Clicquot Brut Yellow Label
-Aalto
-Aalto
-Aalto
-Aalto
-Aalto
-Aalto Blanco
-Aalto Blanco
-Aalto Pagos Seleccionados
-Aalto Pagos Seleccionados
-Aalto Pagos Seleccionados
-Aalto Pagos Seleccionados
-Aalto Pagos Seleccionados
-Aalto Pagos Seleccionados
-Aalto Pagos Seleccionados
-Barista Pinotage
-Braida Bricco Dell’Uccelone 2019
-Cloudy Bay Sauvignon Blanc
-DBR Lafite Les Legendes R Bordeaux Red
-DBR Lafite R Saga Rouge
-Dal Forno Romano Amarone Della Valpolicella
-Dal Forno Romano Della Valpolicella
-Domaines Ott Chateau Romassan Rose
-Egon Muller Scharzhof Riesling
-Egon Muller Scharzhof Riesling
-Egon Muller Scharzhofberger Riesling Auslese
-Egon Muller Scharzhofberger Riesling Auslese
-Egon Muller Scharzhofberger Riesling Beerenauslese
-Egon Muller Scharzhofberger Riesling Kabinett
-Egon Muller Scharzhofberger Riesling Spatlese
-Egon Muller Scharzhofberger Riesling Spatlese
-Los Vascos Cabernet Sauvignon
-Los Vascos Cromas Grand Reserva Carmenere
-Los Vascos Cromas Grand Reserva Carmenere
-Los Vascos Le Dix
-Los Vascos Sauvignon Blanc
-Luce Brunello Di Montalcino
-Luce Della Vite Luce
-Luce Lucente
-Minuty M De Minuty Rose
-Opus One
-Opus One
-Penfolds Bin 128
-Penfolds Bin 2
-Penfolds Bin 28
-Penfolds Bin 389
-Penfolds Bin 407
-Penfolds Bin 707
-Penfolds Bin 8
-Penfolds Grange
-Penfolds Koonunga Hill Shiraz Cabernet
-Penfolds RWT Bin 798 Shiraz
-Penfolds St. Henri
-Quintarelli Giuseppe Amarone Classico
-Quintarelli Giuseppe Valpolicella Classico
-Rioja Alta Gran Reserva 890
-Rioja Alta Gran Reserva 904
-Rioja Alta Vina Ardanza
-Tenuta Dell'ornellaia Le Serre Nuove
-Tenuta Dell'ornellaia Le Volte
-Tenuta Dell'ornellaia Ornellaia
-Tenuta Di Biserno Biserno
-Tenuta Di Biserno Il Pino
-Tenuta Di Biserno Il Pino
-Tenuta Di Biserno Il Pino
-Tenuta Di Biserno Insoglio
-Tenuta San Guido Guidalberto
-Tenuta San Guido Guidalberto
-Tenuta San Guido Guidalberto
-Tenuta San Guido Le Difese
-Tenuta San Guido Sassicaia
-Tenuta San Guido Sassicaia
-The Chocolate Block
-Kweichow Moutai Chiew
+Cheval De Los Andes Blanc
+Maker's Mark 46
+Robert Mondavi Private Selection Cab. Sauv.
+Royal Salute 21 Year Old GBX
+Terrazas Reserva Syrah
 """.strip().splitlines()
 
 

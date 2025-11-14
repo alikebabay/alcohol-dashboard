@@ -1,7 +1,7 @@
 import json
 from neo4j import GraphDatabase
 
-URI = "bolt://65.108.49.93:7687"
+URI = "bolt://46.62.240.187"
 USER = "neo4j"
 PASS = "testing123"
 

@@ -58,7 +58,7 @@ def setup_logging(global_level=logging.INFO):
         "integrations.graph_offers": logging.ERROR,
         "integrations.graph_to_sheets": logging.ERROR,
         "core.parser": logging.ERROR,
-        "core.name_enricher": logging.DEBUG,
+        "core.name_enricher": logging.ERROR,
         "state_macihe": logging.ERROR,
         "text_state": logging.ERROR,
         "currency": logging.ERROR,

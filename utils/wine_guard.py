@@ -6,6 +6,7 @@ WINE_KEYWORDS = [
     "sauvignon blanc",
     "anejo",
     "vsop",
+    "v.s.o.p",
     "silver",
     "Single Barrel",
     "Year Old"
