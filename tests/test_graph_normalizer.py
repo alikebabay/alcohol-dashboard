@@ -10,15 +10,20 @@ from utils.abbreviations_helper import convert_abbreviation
 
 # 🧾 Just paste your text here — no need for quotes or commas
 text = """
-Havana Club Seleccion de Maestros 6x70cl 45% GB
-Hendrick's 12x1L 44%
-Hennessy Pure White 6x70cl 40%
-Hennessy VS 12x1L 40% GB
-Hennessy VS 12x35cl 40%
-Remy Martin VSOP 12x1L 40%
-Hennessy XO 12x70cl 40% GB
-J&B Rare 12x1L 40% NRF
-Jack Daniels 24x20cl 40%
+Aperol 6x1L 11%
+Baileys Irish Cream 12x1L 17% [28/02/2027]
+Campari minis 200x5cl 25% glass
+Cointreau 12x70cl 40% 
+Dekuyper Amaretto Liqueur 12x1L
+Dekuyper Blackberry Brandy 12x1L 30%
+Dekuyper Creme de Cassis 12x1L 15%
+Dekuyper Watermelon 12x1L 35%
+Drambuie 6x1L 40%
+Jagermeister 6x50cl 35%
+Jagermeister 6x70cl 35% NRF
+Jagermeister 6x1L 35% NRF
+Kahlua 12x75cl 16%
+Kahlua 12x1L 16%
 
 
 """
@@ -60,10 +65,12 @@ try:
     # 4️⃣ Now show how the raw text changed after both stages
     print("\n[OUTPUT: RAW vs PROCESSED (diff view)]\n")
     for raw, norm in zip(df_raw["Наименование"], df_norm["Наименование"]):
-        if raw.strip() == norm.strip():
-            continue
-        diff = color_diff(raw, norm)
-        print(f"{raw}\n→ {diff}\n")
+        if raw.strip() != norm.strip():
+            diff = color_diff(raw, norm)
+            print(f"{raw}\n→ {diff}\n")
+        else:
+            print(f"{raw}\n→ (no change)\n")
+
 
 except Exception as e:
     print(f"[ERROR] normalize_dataframe() failed: {e}")
