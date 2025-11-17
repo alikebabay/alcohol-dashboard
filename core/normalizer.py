@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Tuple
 import logging
 import json
 
+from libraries.patterns import PATS
 
 #проверка свежести кода
 import time
@@ -47,11 +48,11 @@ def _find_cols(df: pd.DataFrame, patterns: List[str]) -> List[str]:
     return out
 
 
-_RX_CASES_FROM_SIZE = re.compile(r'(?i)\b(\d{1,3})\s*[x×]\s*\d')
+
 def _cases_from_size_text(x) -> Optional[float]:
     if pd.isna(x):
         return None
-    m = _RX_CASES_FROM_SIZE.search(str(x))
+    m = PATS.RX_CASES_FROM_SIZE.search(str(x))
     if m:
         try:
             return float(m.group(1))
@@ -60,43 +61,6 @@ def _cases_from_size_text(x) -> Optional[float]:
             return None
     return _to_number(x)
 
-# --- ядро нормализации -----------------------------------------------------
-
-NAME_PATS = [
-    r"^name", r"^наимен", r"^descr", r"описан", r"товар", r"product", r"бренд|марка", r"item"
-]
-
-# паттерн для винтажей
-VINTAGE_PATS = [r"vintage", r"\bгод\b", r"\byear\b"]
-
-BOTTLES_PER_CASE_PATS = [
-    r"bottles_per_case",
-    r"^\s*bt\s*/?\s*cs\s*$",
-    r"bt.?/?cs", r"btl.?/?case",
-    r"\bbottles?\b", r"bottl.?/case",
-    r"шт.*[/ ]*кор", r"шт.*в.*кор", r"шт.*в.*ящ",
-    r"pcs.*[/ ]*case", r"qty.*case",
-    r"size(?!.*price)",   # исключаем Price/Size
-    r"规格"
-]
-
-PRICE_CASE_PATS = [
-    r"(?:price|цена).*(?:case|cs|ctn|carton)",
-    r"(?:usd|eur|\$|€)\s*(?:/|per)?\s*(?:case|cs|ctn|carton)",
-    r"usd.?/?cs", r"eur.?/?cs",
-    r"\b\$\s*/?\s*cs\b", r"\b€\s*/?\s*cs\b",
-    # 👇 поддержка Price(USD)/Box и подобных вариантов
-    r"price\s*\(?(?:usd|eur|euro|€|gbp)?\)?\s*/\s*(?:box|case|carton|ctn)\b",
-]
-
-AVAILABILITY_PATS = [
-    r"stock", r"lead\s*time", r"availability", r"status", r"eta", 
-    r"ready", r"t1", r"t2", r"tbo", r"доступ", r"наличи", r"access",
-]
-
-LOCATION_PATS = [
-    r"wareh", r"склад", r"origin", r"отгруз", r"exw", r"dap", r"fob", r"cif", r"место\s*загруз", r"location", r"incoterm", r"ETA\s*Rdam",
-]
 
 
 class AccessLocationClassifier:
@@ -247,12 +211,12 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     df = df_in.copy()
 
     # --- поиск колонок ---
-    name_cols  = _find_cols(df, NAME_PATS)
-    vintage_cols = _find_cols(df, VINTAGE_PATS)
-    price_cols = _find_cols(df, PRICE_CASE_PATS)
-    bpc_cols   = [c for c in _find_cols(df, BOTTLES_PER_CASE_PATS) if c not in price_cols]
-    avail_cols = _find_cols(df, AVAILABILITY_PATS)
-    loc_cols   = _find_cols(df, LOCATION_PATS)
+    name_cols  = _find_cols(df, PATS.NAME)
+    vintage_cols = _find_cols(df, PATS.VINTAGE)
+    price_cols = _find_cols(df, PATS.PRICE_CASE)
+    bpc_cols   = [c for c in _find_cols(df, PATS.BOTTLES_PER_CASE) if c not in price_cols]
+    avail_cols = _find_cols(df, PATS.AVAILABILITY)
+    loc_cols   = _find_cols(df, PATS.LOCATION)
     price_bottle_cols = _find_cols(df, ["price_per_bottle", "цена за бутылку", "bottle price"])  # новый поиск
     
 

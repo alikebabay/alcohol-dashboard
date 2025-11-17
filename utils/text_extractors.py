@@ -10,7 +10,7 @@ import logging
 
 from libraries.distillator import _extract_volume, _infer_bpc_from_name, RX_ABV
 from libraries.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC, RX_BPC_STAR
-from core.patterns import ACCESS_PATS
+from libraries.patterns import PATS
 
 logger = logging.getLogger(__name__)
 # отдельные логгеры для подгрупп
@@ -233,7 +233,7 @@ def extract_access(text: str):
     s = str(text).strip()
 
     parts = []
-    patterns = ACCESS_PATS
+    patterns = PATS.ACCESS
     for rx in patterns:
         # collect *all* matches for this regex, not just the first
         for m in rx.finditer(s):

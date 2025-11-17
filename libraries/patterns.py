@@ -26,8 +26,15 @@ valid_numerical = {
 
 short_series_whitelist = {"vs", "vsop", "xo", "x.o", "v.s", "v.s.o.p"}
 
+
+class _PATS:
+    pass
+
+PATS = _PATS()
+
+
 #availability
-ACCESS_PATS = [
+PATS.ACCESS = [
         re.compile(r'\b(T[12]|TBO)\b', re.I),
         re.compile(r'\b(on\s*(?:stock|floor)|in\s*stock|available|ready)\b', re.I),
         re.compile(
@@ -47,3 +54,44 @@ ACCESS_PATS = [
             re.I,
         ),
     ]
+
+
+# --- Паттерны для excel пайплайна - поиск в названиях колонок-
+
+PATS.NAME = [
+    r"^name", r"^наимен", r"^descr", r"описан", r"товар", r"product", r"бренд|марка", r"item"
+]
+
+# паттерн для винтажей
+PATS.VINTAGE = [r"vintage", r"\bгод\b", r"\byear\b"]
+
+PATS.BOTTLES_PER_CASE = [
+    r"bottles_per_case",
+    r"^\s*bt\s*/?\s*cs\s*$",
+    r"bt.?/?cs", r"btl.?/?case",
+    r"\bbottles?\b", r"bottl.?/case",
+    r"шт.*[/ ]*кор", r"шт.*в.*кор", r"шт.*в.*ящ",
+    r"pcs.*[/ ]*case", r"qty.*case",
+    r"size(?!.*price)",   # исключаем Price/Size
+    r"规格"
+]
+
+PATS.PRICE_CASE = [
+    r"(?:price|цена).*(?:case|cs|ctn|carton)",
+    r"(?:usd|eur|\$|€)\s*(?:/|per)?\s*(?:case|cs|ctn|carton)",
+    r"usd.?/?cs", r"eur.?/?cs",
+    r"\b\$\s*/?\s*cs\b", r"\b€\s*/?\s*cs\b",
+    # 👇 поддержка Price(USD)/Box и подобных вариантов
+    r"price\s*\(?(?:usd|eur|euro|€|gbp)?\)?\s*/\s*(?:box|case|carton|ctn)\b",
+]
+
+PATS.AVAILABILITY = [
+    r"stock", r"lead\s*time", r"availability", r"status", r"eta", 
+    r"ready", r"t1", r"t2", r"tbo", r"доступ", r"наличи", r"access",
+]
+
+PATS.LOCATION = [
+    r"wareh", r"склад", r"origin", r"отгруз", r"exw", r"dap", r"fob", r"cif", r"место\s*загруз", r"location", r"incoterm", r"ETA\s*Rdam",
+]
+
+PATS.RX_CASES_FROM_SIZE = re.compile(r'(?i)\b(\d{1,3})\s*[x×]\s*\d')

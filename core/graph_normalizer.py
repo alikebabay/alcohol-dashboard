@@ -8,7 +8,7 @@ from utils.logger import setup_logging
 from core.canonical_rules import apply_canonical_rules
 from utils.normalize import normalize as _normalize
 from utils.wine_guard import looks_like_new_wine
-from core.patterns import valid_numerical, short_series_whitelist
+from libraries.patterns import valid_numerical, short_series_whitelist
 from utils.series_number_extractor import _extract_label_number
 
 
