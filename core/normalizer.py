@@ -217,7 +217,7 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     bpc_cols   = [c for c in _find_cols(df, PATS.BOTTLES_PER_CASE) if c not in price_cols]
     avail_cols = _find_cols(df, PATS.AVAILABILITY)
     loc_cols   = _find_cols(df, PATS.LOCATION)
-    price_bottle_cols = _find_cols(df, ["price_per_bottle", "цена за бутылку", "bottle price"])  # новый поиск
+    price_bottle_cols = _find_cols(df, ["price_per_bottle", "цена за бутылку", "bottle price"])
     
 
     mapping = {

@@ -10,20 +10,46 @@ from utils.abbreviations_helper import convert_abbreviation
 
 # 🧾 Just paste your text here — no need for quotes or commas
 text = """
-Aperol 6x1L 11%
-Baileys Irish Cream 12x1L 17% [28/02/2027]
-Campari minis 200x5cl 25% glass
-Cointreau 12x70cl 40% 
-Dekuyper Amaretto Liqueur 12x1L
-Dekuyper Blackberry Brandy 12x1L 30%
-Dekuyper Creme de Cassis 12x1L 15%
-Dekuyper Watermelon 12x1L 35%
-Drambuie 6x1L 40%
-Jagermeister 6x50cl 35%
-Jagermeister 6x70cl 35% NRF
-Jagermeister 6x1L 35% NRF
-Kahlua 12x75cl 16%
-Kahlua 12x1L 16%
+1770 Glasgow Single Malt Original 
+Aberfeldy 12 YO Madeira Cask 
+Aberfeldy 16 YO Madeira Cask 
+Aberlour 16 YO Double Cask 
+Aberlour A'bunadh Alba Batch 7
+Aberlour A'bunadh Alba Batch 7 
+Absolut Vodka 
+Absolut Vodka 
+Absolut Vodka Keith Haring Edition 
+Amaro Averna Siciliano
+Aperol
+Arbikie Highland Rye 1794 Single Grain 2020 Release 
+Ardbeg 10 YO 
+Ardbeg 10 YO 
+Ardbeg 5 YO Wee Beastie
+Ardbeg An Oa
+Ardbeg Corryvreckan 
+Ardbeg Smoketrails Cote Rotie 
+Ardbeg Smoketrails V3 Napa Valley 
+Ardbeg Uigeadail 
+Arran Barrel Reserve 
+Arran Port Cask Finish 
+Arran Quarter Cask 
+Arran Sauternes Cask
+Arran Sherry Cask 
+Auchentoshan American Oak 
+Auchentoshan Blood Oak  
+Auchentoshan Dark Oak 
+Baileys 03-2027
+Baileys 11-2026 
+Baileys 11-2026 
+Ballantines  
+Ballantines 15 YO Glentauchers 
+Balvenie 12 YO Double Wood   
+Balvenie 12 YO Golden Cask   
+Balvenie 12 YO Golden Cask T1  Non European Goods 
+Balvenie 12 YO Sweet Toast of American Oak 
+Balvenie 16 YO French Oak 
+Balvenie 18 YO PX Cask  
+
 
 
 """
