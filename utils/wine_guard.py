@@ -9,7 +9,10 @@ WINE_KEYWORDS = [
     "v.s.o.p",
     "silver",
     "Single Barrel",
-    "Year Old"
+    "Year Old",
+    "Flora & Fauna",
+    "Classic",
+    "Original"
 ]
 
 # подготавливаем нормализованные формы

@@ -49,60 +49,77 @@ def tokenize(raw: str) -> list[str]:
 
 
 # ==========================================================
-# BRAND LIST
+# LOAD DATA FROM GRAPH
 # ==========================================================
-def load_brands(path="tests/multiword_brands.json"):
-    """Load all known brands (with normalization map)."""
-    with open(path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    brands = []
-    for k in ["one_word", "two_word", "three_word", "more"]:
-        brands += data.get(k, [])
-    # key = просто нижний регистр без удаления символов
-    normalized = {b.lower().strip(): b for b in brands}
-    logger.info(f"[INIT] Loaded {len(normalized)} brands")
-    return normalized
-
-BRANDS = load_brands()
-
-# ==========================================================
-# Глобальный справочник (все бренды + серии)
-# ==========================================================
-def load_all_brand_series(driver):
-    """
-    Загружаем все пары (brand, series) и default_series один раз — для быстрой валидации.
-    Возвращает кортеж:
-      • all_series (set[str]) — нормализованные серии всех брендов;
-      • default_series_map (dict[str, str]) — brand_norm → default_series_norm
-    """
-    all_series = set()
-    default_series_map = {}
+def load_graph_data(driver):
     with driver.session() as s:
-        rows = s.run("""
+        # 1) brands
+        brands_rows = s.run("""
+            MATCH (b:Brand)
+            RETURN b.name AS name
+        """).values()
+        brands = [r[0] for r in brands_rows if r and r[0]]
+        brands_norm = {b.lower().strip(): b for b in brands}
+
+        # 2) series + default_series
+        series_rows = s.run("""
             MATCH (b:Brand)
             OPTIONAL MATCH (b)-[:HAS_SERIES|HAS_VARIANT]->(s:Series)
-            RETURN DISTINCT b.name AS brand, s.name AS series, b.default_series AS default
+            RETURN b.name AS brand, s.name AS series, b.default_series AS default
         """).values()
+        all_series = set()
+        default_series = {}
+        brand_series = {}
 
-    for brand, series, default in rows:
-        if not brand:
-            continue
-        if series:
-            all_series.add(_normalize(series))
-        if default:
-            default_series_map[_normalize(brand)] = _normalize(default)
-            # добавим дефолт в общий список, чтобы он тоже проходил валидацию
-            all_series.add(_normalize(default))
+        for brand, series, default in series_rows:
+            if not brand:
+                continue
+            bnorm = brand.lower().strip()
+            if series:
+                all_series.add(series.lower().strip())
+                brand_series.setdefault(bnorm, []).append(series)
+            if default:
+                dnorm = default.lower().strip()
+                default_series[bnorm] = dnorm
+                all_series.add(dnorm)
 
-    logger.info(
-        f"[INIT] Global series dict loaded: {len(all_series)} items, defaults: {len(default_series_map)}"
-    )
-    return all_series, default_series_map
+        # 3) brand metadata
+        meta_rows = s.run("""
+            MATCH (b:Brand)-[:BELONGS_TO]->(c:Category)
+            RETURN b.name AS brand,
+                   c.name AS category,
+                   b.default_series AS default_series
+        """).data()
+        brands_meta = {
+            r["brand"]: {
+                "category": r["category"],
+                "default_series": r.get("default_series")
+            }
+            for r in meta_rows
+        }
 
+        # 4) canonical names
+        canon_rows = s.run("""
+            MATCH (c:Canonical)
+            RETURN DISTINCT c.name AS name
+        """).values()
+        canonical_names = [r[0] for r in canon_rows if r and r[0]]
 
-ALL_SERIES_SET, DEFAULT_SERIES_MAP = load_all_brand_series(driver)
-
-
+    return {
+        "brands": brands_norm,
+        "all_series": all_series,
+        "default_series": default_series,
+        "brand_series": brand_series,
+        "brands_meta": brands_meta,
+        "canonical": canonical_names,
+    }
+GRAPH = load_graph_data(driver)
+BRANDS = GRAPH["brands"]
+ALL_SERIES_SET = GRAPH["all_series"]
+DEFAULT_SERIES_MAP = GRAPH["default_series"]
+BRAND_SERIES_MAP = GRAPH["brand_series"]
+BRANDS_META = GRAPH["brands_meta"]
+CANONICAL_NAMES = GRAPH["canonical"]
 
 
 # ==========================================================
@@ -172,34 +189,6 @@ def score_brand_series(raw, brand_norm, series_norm=None):
 
     return base
 
-# ==========================================================
-# GRAPH SERIES RESOLVER (упрощённая)
-# ==========================================================
-def build_series_resolver(driver):
-    """
-    Возвращает функцию resolve(brand)->list[str].
-    Ищет серии, связанные с брендом, в графе.
-    Если ничего не найдено — возвращает None и пишет предупреждение.
-    """
-    def resolve(brand: str):
-        if not brand:
-            return None
-        bnorm = _normalize(brand)
-        with driver.session() as s:
-            rows = s.run("""
-                // ⚙️ исправлено: убран депрекейтнутый синтаксис ':HAS_SERIES|:HAS_VARIANT'
-                MATCH (b:Brand)-[:HAS_SERIES|HAS_VARIANT]->(s:Series)
-                WHERE toLower(b.name) CONTAINS $bn
-                RETURN DISTINCT s.name AS name
-                ORDER BY s.name ASC
-            """, bn=bnorm).values()
-        if not rows:
-            logger.debug(f"[GRAPH] no series found for brand: {brand}")
-            return None
-        series = [r[0] for r in rows if r and len(r[0]) > 1]
-        logger.debug(f"[GRAPH] found {len(series)} series for brand: {brand}")
-        return series
-    return resolve
 
 
 # ==========================================================
@@ -218,17 +207,13 @@ class BrandSeriesExtractor:
         self.brands = brands_dict
         self.brands_meta = brands_meta or {}
         # callback: series_resolver(brand:str) -> list[str] (из графа)
-        self.series_resolver = series_resolver
-        self._series_cache = {}  # cache: norm_brand -> list[str]
-        # 🔁 pre-warm cache so known brand series (Apple, Honey, etc.) are available
-        if self.series_resolver:
-            for b in self.brands.values():
-                try:
-                    s_list = self.series_resolver(b) or []
-                    if s_list:
-                        self._series_cache[_normalize(b)] = [(s, _normalize(s)) for s in s_list]
-                except Exception:
-                    continue
+        
+        self.series_resolver = None  # unused now
+        self._series_cache = {}
+
+        # Warm cache directly from global BRAND_SERIES_MAP
+        for b_norm, series_list in BRAND_SERIES_MAP.items():
+            self._series_cache[b_norm] = [(s, _normalize(s)) for s in series_list]
 
     # ==========================================================
     # Публичный метод
@@ -368,19 +353,14 @@ class BrandSeriesExtractor:
         """
         logger.debug(f"[GRAPH SERIES] enter brand='{brand}' raw='{raw}'")
 
-        if not self.series_resolver or not brand:
-            
+        if not brand:
             return None
+
         bkey = _normalize(brand)
-        if bkey not in self._series_cache:
-            try:
-                series_list = self.series_resolver(brand) or []
-            except Exception as e:
-                logger.warning(f"[WARN] series_resolver failed for '{brand}': {e}")
-                series_list = []
-            # храним нормализованные фразы, но и оригиналы тоже, чтобы вернуть красиво
-            self._series_cache[bkey] = [(s, _normalize(s)) for s in series_list if s and len(s) > 1]
-            logger.debug(f"[GRAPH SERIES] cached series for '{brand}': {[s for s, _ in self._series_cache[bkey]]}")
+        # use preloaded brand_series
+        series_list = BRAND_SERIES_MAP.get(bkey, [])
+        self._series_cache[bkey] = [(s, _normalize(s)) for s in series_list]
+
 
         raw_norm = _normalize(raw)
         # выбираем самое длинное совпадение по нормализованной подстроке
@@ -575,10 +555,10 @@ class BrandSeriesExtractor:
 # ==========================================================
 # NEO4J LOOKUPS
 # ==========================================================
-def find_canonical(tx, brand, series, raw):
+def find_canonical(brand, series, raw):
     """Finds the best canonical name from Neo4j with penalty for overreach."""
     # ⚙️ добавлен DISTINCT для устранения дубликатов Canonical с одинаковыми именами
-    rows = [r[0] for r in tx.run("MATCH (c:Canonical) RETURN DISTINCT c.name AS name").values()]
+    rows = CANONICAL_NAMES
     canon_logger.debug(f"[CANON CANDIDATES] total={len(rows)} for brand={brand!r}, series={series!r}")
     if len(rows) > 10:
         canon_logger.debug(f"[CANON CANDIDATES SAMPLE] {rows[:10]}")
@@ -633,7 +613,10 @@ def find_canonical(tx, brand, series, raw):
         
         # 🧮 NEW: numeric year-aware adjustment (penalize wrong ages, boost exact)
         def _extract_year(s: str):
-            m = re.search(r"(\d{1,2})\s*(?:yo|year|years?)", s.lower())
+            m = re.search(
+                    r"(\d{1,2})\s*(?:yo|y\.?o\.?|year|years?|yr|y/o)", 
+                    s.lower()
+                )
             return int(m.group(1)) if m else None
 
         y_raw = _extract_year(rnorm)
@@ -696,8 +679,8 @@ def find_canonical(tx, brand, series, raw):
     # ⚙️ если несколько равных — выбираем дефолтную серию бренда (если есть)
     tied = [c for c, s in scored if abs(s - best_score) < 1e-9]
     if len(tied) > 1:
-        from core.graph_normalizer import load_brands_meta_from_graph
-        meta = load_brands_meta_from_graph().get(brand, {})
+        
+        meta = BRANDS_META.get(brand, {})
         default_series = (meta.get("default_series") or "").lower()
         for candidate in tied:
             if default_series and default_series in candidate.lower():
@@ -707,52 +690,36 @@ def find_canonical(tx, brand, series, raw):
     
     return best
 
-def load_brands_meta_from_graph():
-    with driver.session() as s:
-        rows = s.run("""
-            MATCH (b:Brand)-[:BELONGS_TO]->(c:Category)
-            RETURN b.name AS brand,
-                   c.name AS category,
-                   b.default_series AS default_series
-        """).data()
-    return {
-        r["brand"]: {
-            "category": r["category"],
-            "default_series": r.get("default_series")
-        }
-        for r in rows
-    }
+
 
 # ==========================================================
 # MAIN NORMALIZER
 # ==========================================================
 def normalize_dataframe(df: pd.DataFrame, col_name: str = "Наименование") -> pd.DataFrame:
-    col = col_name  # back-compat alias
+    col = col_name
     if col not in df.columns:
         logger.warning(f"[WARN] no '{col}' column")
         return df
-    brands_meta = load_brands_meta_from_graph()
-    series_resolver = build_series_resolver(driver)
-    extractor = BrandSeriesExtractor(BRANDS, series_resolver, brands_meta)
 
-    with driver.session() as s:
-        for i, raw in enumerate(df[col_name].fillna("").astype(str)):
-            if not raw.strip():
-                continue
+    extractor = BrandSeriesExtractor(BRANDS, brands_meta=BRANDS_META)
 
-            brand, series = extractor.extract(raw)
+    for i, raw in enumerate(df[col].fillna("").astype(str)):
+        if not raw.strip():
+            continue
 
-            if not brand:
-                continue
-            canon_logger.debug(
-                f"[LOOKUP START] raw={raw!r} → brand={brand!r}, series={series!r}"
-            )
-            found = s.execute_read(find_canonical, brand, series, raw)
-            canon_logger.debug(f"[LOOKUP END] raw={raw!r} → canonical={found!r}")
-            if found:
-                df.at[i, col_name] = found
-                logger.debug(f"[CANON] → {found}")
-            else:
-                logger.debug(f"[CANON] no match for {raw}")
+        brand, series = extractor.extract(raw)
+        if not brand:
+            continue
+
+        canon_logger.debug(f"[LOOKUP START] raw={raw!r} → brand={brand!r}, series={series!r}")
+
+        found = find_canonical(brand, series, raw)
+
+        canon_logger.debug(f"[LOOKUP END] raw={raw!r} → canonical={found!r}")
+
+        if found:
+            df.at[i, col] = found
+        else:
+            logger.debug(f"[CANON] no match for {raw}")
 
     return df

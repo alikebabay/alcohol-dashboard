@@ -61,20 +61,103 @@ def upload_json_to_graph(path):
                  brand=brand, series=series, category=category)
 
         print(f"✅ Upserted {len(data)} canonical groups into LOCAL Neo4j")
-        # 🧹 Remove Canonicals that no longer exist in JSON
-        canonicals_in_json = [
-            entry["canonical_name"].strip()
-            for entry in data
-            if entry.get("canonical_name")
-        ]
+        print("🧹 Starting CLEANUP phase...")
 
-        session.run("""
+        # -------------------------------------------
+        # 1. Collect JSON sets
+        # -------------------------------------------
+        canonicals_in_json = set()
+        brands_in_json = set()
+        series_in_json = set()
+
+        for entry in data:
+            if entry.get("canonical_name"):
+                canonicals_in_json.add(entry["canonical_name"].strip())
+            if entry.get("brand"):
+                brands_in_json.add(entry["brand"].strip())
+
+            s = entry.get("series")
+            if isinstance(s, str) and s.strip():
+                series_in_json.add(s.strip())
+
+        print(f"📦 JSON Canonicals: {len(canonicals_in_json)}")
+        print(f"📦 JSON Brands:      {len(brands_in_json)}")
+        print(f"📦 JSON Series:      {len(series_in_json)}")
+
+        # -------------------------------------------
+        # 2. Delete Canonicals not in JSON
+        # -------------------------------------------
+        print("🗑️  Removing Canonicals not in JSON...")
+        result = session.run("""
             MATCH (c:Canonical)
             WHERE NOT c.name IN $canonicals
+            WITH c, c.name AS name
             DETACH DELETE c
-        """, canonicals=canonicals_in_json)
+            RETURN name
+        """, canonicals=list(canonicals_in_json))
 
-        print("🗑️  Removed Canonicals not found in JSON")
+        deleted = [r["name"] for r in result]
+        print(f"   → Deleted Canonicals: {len(deleted)}")
+        if deleted:
+            for n in deleted:
+                print("      -", n)
+
+        # -------------------------------------------
+        # 3. Delete Series not in JSON
+        # -------------------------------------------
+        print("🗑️  Removing Series not in JSON...")
+        result = session.run("""
+            MATCH (s:Series)
+            WHERE NOT s.name IN $series
+            WITH s, s.name AS name
+            DETACH DELETE s
+            RETURN name
+        """, series=list(series_in_json))
+
+        deleted = [r["name"] for r in result]
+        print(f"   → Deleted Series: {len(deleted)}")
+        if deleted:
+            for n in deleted:
+                print("      -", n)
+
+        # -------------------------------------------
+        # 4. Delete Brands not in JSON
+        # -------------------------------------------
+        print("🗑️  Removing Brands not in JSON...")
+        result = session.run("""
+            MATCH (b:Brand)
+            WHERE NOT b.name IN $brands
+            WITH b, b.name AS name
+            DETACH DELETE b
+            RETURN name
+        """, brands=list(brands_in_json))
+
+        deleted = [r["name"] for r in result]
+        print(f"   → Deleted Brands: {len(deleted)}")
+        if deleted:
+            for n in deleted:
+                print("      -", n)
+
+        # -------------------------------------------
+        # 5. Delete orphan Variants
+        # -------------------------------------------
+        print("🗑️  Removing orphan Variants...")
+        result = session.run("""
+            MATCH (v:Variant)
+            WHERE NOT (v)-[:SAME_AS]->(:Canonical)
+            WITH v, v.name AS name
+            DETACH DELETE v
+            RETURN name
+        """)
+
+        deleted = [r["name"] for r in result]
+        print(f"   → Deleted Orphan Variants: {len(deleted)}")
+        if deleted:
+            for n in deleted:
+                print("      -", n)
+
+        print("✨ CLEANUP DONE.")
+
 
 
 if __name__ == "__main__":

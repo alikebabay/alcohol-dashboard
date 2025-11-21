@@ -2,7 +2,7 @@
 # Также исправляет грамматические ошибки поставщиков
 import re
 
-# 🧩 Карта сокращений и их нормализованных форм
+# 🧩 Карта опечаток поставщиков, словарь замены
 ABBREVIATIONS = {
     "yl": "Yellow Label",
     "moët": "Moet & Chandon",
@@ -28,7 +28,11 @@ ABBREVIATIONS = {
     "VSOP": "V.S.O.P",
     "Gentleman Jack": "Jack Daniel's Gentleman Jack",
     "Blantons": "Blanton's",
-    "Dekuyper": "DeKuyper"
+    "Dekuyper": "DeKuyper",
+    "Hennesy": "Hennessy",
+    "Gordons": "Gordon's",
+    "Brokers": "Broker's",
+    "Smokey": "Smoky"
 }
 
 def convert_abbreviation(text: str) -> str:

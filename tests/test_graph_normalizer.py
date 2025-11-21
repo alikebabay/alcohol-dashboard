@@ -10,6 +10,22 @@ from utils.abbreviations_helper import convert_abbreviation
 
 # 🧾 Just paste your text here — no need for quotes or commas
 text = """
+
+Grants triple wood 6x70cl,code, 12000 bottles on floor in Riga price per bottle 3.9 eur
+
+Krug Rose 6x75cl,coded, GBX, t1, 108 bottles on floor Exw Riga price 255 eur per bottle
+
+Hennessy Paradis 3x70cl,GBX,coded, T1, 171 bottles on floor Exw Riga price per bottle 700 eur
+
+Jack daniels 12x70cl,coded,nrf, T1, 1065 cases on floor Exw Riga price 8 eur per bottle
+
+Isle of jura 10 y.o +hip flask 70cl, 700 bottles on floor Exw Riga 23 eur per bottle
+
+Nikka from barrel +glass 50cl, 200 bottles on floor Exw Riga price 35 eur per bottle
+
+Veuve brut 6x75cl,coded, GBX, 500 cases Exw Niderland price 180 eur per case lead time 1 week after deposit
+
+
 1770 Glasgow Single Malt Original 
 Aberfeldy 12 YO Madeira Cask 
 Aberfeldy 16 YO Madeira Cask 
