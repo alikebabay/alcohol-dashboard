@@ -5,7 +5,6 @@ import pandas as pd
 import logging
 
 from utils.logger import setup_logging
-from core.canonical_rules import apply_canonical_rules
 from utils.normalize import normalize as _normalize
 from utils.wine_guard import looks_like_new_wine
 from libraries.patterns import valid_numerical, short_series_whitelist
@@ -61,23 +60,40 @@ def load_graph_data(driver):
         brands = [r[0] for r in brands_rows if r and r[0]]
         brands_norm = {b.lower().strip(): b for b in brands}
 
-        # 2) series + default_series
+        # 2) series + default_series + aliases
         series_rows = s.run("""
             MATCH (b:Brand)
             OPTIONAL MATCH (b)-[:HAS_SERIES|HAS_VARIANT]->(s:Series)
-            RETURN b.name AS brand, s.name AS series, b.default_series AS default
+            RETURN b.name AS brand, 
+                   s.name AS series,
+                   s.alias AS alias,
+                   b.default_series AS default
         """).values()
         all_series = set()
         default_series = {}
         brand_series = {}
+        brand_series_full = {}
 
-        for brand, series, default in series_rows:
+        for brand, series, alias, default in series_rows:
             if not brand:
                 continue
             bnorm = brand.lower().strip()
             if series:
-                all_series.add(series.lower().strip())
+                s_norm = _normalize(series)
+                all_series.add(s_norm)
                 brand_series.setdefault(bnorm, []).append(series)
+                # формируем ключи для матчинга серии (сама серия + alias)
+                alias_keys = {s_norm}
+                if alias and isinstance(alias, (list, tuple)):
+                    for a in alias:
+                        if a:
+                            alias_keys.add(a.lower().strip())
+
+                brand_series_full.setdefault(bnorm, []).append({
+                    "series": series,
+                    "series_norm": s_norm,
+                    "alias": list(alias_keys),
+                })
             if default:
                 dnorm = default.lower().strip()
                 default_series[bnorm] = dnorm
@@ -88,15 +104,17 @@ def load_graph_data(driver):
             MATCH (b:Brand)-[:BELONGS_TO]->(c:Category)
             RETURN b.name AS brand,
                    c.name AS category,
-                   b.default_series AS default_series
+                   b.default_series AS default_series,
+                   b.brand_alias AS brand_alias
         """).data()
-        brands_meta = {
-            r["brand"]: {
-                "category": r["category"],
-                "default_series": r.get("default_series")
-            }
-            for r in meta_rows
-        }
+        brands_meta = {}
+        for r in meta_rows:
+             b = r["brand"]
+             brands_meta[b] = {
+                 "category": r["category"],
+                 "default_series": r.get("default_series"),
+                 "brand_alias": r.get("brand_alias") or []
+             }
 
         # 4) canonical names
         canon_rows = s.run("""
@@ -110,6 +128,7 @@ def load_graph_data(driver):
         "all_series": all_series,
         "default_series": default_series,
         "brand_series": brand_series,
+        "brand_series_full": brand_series_full,
         "brands_meta": brands_meta,
         "canonical": canonical_names,
     }
@@ -118,6 +137,7 @@ BRANDS = GRAPH["brands"]
 ALL_SERIES_SET = GRAPH["all_series"]
 DEFAULT_SERIES_MAP = GRAPH["default_series"]
 BRAND_SERIES_MAP = GRAPH["brand_series"]
+BRAND_SERIES_FULL = GRAPH["brand_series_full"]
 BRANDS_META = GRAPH["brands_meta"]
 CANONICAL_NAMES = GRAPH["canonical"]
 
@@ -357,29 +377,72 @@ class BrandSeriesExtractor:
             return None
 
         bkey = _normalize(brand)
-        # use preloaded brand_series
-        series_list = BRAND_SERIES_MAP.get(bkey, [])
-        self._series_cache[bkey] = [(s, _normalize(s)) for s in series_list]
-
+        entries = BRAND_SERIES_FULL.get(bkey, [])
 
         raw_norm = _normalize(raw)
-        # выбираем самое длинное совпадение по нормализованной подстроке
         logger.debug(f"[GRAPH SERIES] raw_norm='{raw_norm}'")
-        matches = []
-        for s_original, s_norm in self._series_cache[bkey]:
-            if not s_norm:
-                continue
-            logger.debug(f"[GRAPH SERIES] compare '{s_norm}' in '{raw_norm}'")
-            if s_norm in raw_norm:
-                logger.debug(f"[GRAPH SERIES] MATCH '{s_norm}' ⊂ '{raw_norm}' → {s_original}")
-                matches.append((len(s_norm), s_original))
+
+        matches = []          # прямые (по series_norm)
+        alias_matches = []    # alias fallback
+
+        for entry in entries:
+            s_original = entry["series"]
+            s_norm = entry["series_norm"]
+            alias_list = entry.get("alias", [])   # ← ВАЖНО: используем alias, как в canonical
+
+            # 1) PRIMARY: series_norm — все токены по порядку (допускаем вставки типа "75cl")
+            if s_norm:
+                tokens = [t for t in s_norm.split() if t]
+                pos = 0
+                ok = True
+                for t in tokens:
+                    idx = raw_norm.find(t, pos)
+                    if idx == -1:
+                        ok = False
+                        break
+                    pos = idx + len(t)
+
+                if ok:
+                    logger.debug(
+                        f"[GRAPH SERIES] DIRECT TOKENS MATCH '{s_norm}' → {s_original}"
+                    )
+                    matches.append((len(s_norm), s_original))
+                    continue
+
+            # 2) FALLBACK: alias (также через токены, но после series_norm)
+            for a in alias_list:
+                if not a:
+                    continue
+                a_norm = _normalize(a)
+                tokens = [t for t in a_norm.split() if t]
+                pos = 0
+                ok = True
+                for t in tokens:
+                    idx = raw_norm.find(t, pos)
+                    if idx == -1:
+                        ok = False
+                        break
+                    pos = idx + len(t)
+
+                if ok:
+                    logger.debug(
+                        f"[GRAPH SERIES] ALIAS TOKENS MATCH '{a_norm}' → {s_original}"
+                    )
+                    alias_matches.append((len(a_norm), s_original))
+                    break
             
-        if not matches:
-            logger.debug(f"[GRAPH SERIES] no matches for brand='{brand}' raw='{raw_norm}'")
-            return None
-        # берём наиболее «длинную» серию (чаще всего наиболее специфичная)
-        matches.sort(key=lambda x: -x[0])
-        return matches[0][1]
+        # 1) если есть нормальные совпадения → используем их
+        if matches:
+            matches.sort(key=lambda x: -x[0])
+            return matches[0][1]
+
+        # 2) иначе — alias fallback
+        if alias_matches:
+            alias_matches.sort(key=lambda x: -x[0])
+            return alias_matches[0][1]
+
+        logger.debug(f"[GRAPH SERIES] no matches for brand='{brand}' raw='{raw_norm}'")
+        return None
 
     # ==========================================================
     # Базовая логика извлечения бренда/серии (как раньше)
@@ -391,7 +454,8 @@ class BrandSeriesExtractor:
         logger.debug(f"[TOKENS] {tokens}")
         scores = {}
         logger.debug(f"[SCORES] {scores}")
-        for token in tokens[:6]:  # ограничиваем первые токены
+        raw_norm_full = _normalize(raw)
+        for token in tokens[:4]:  # ограничиваем первые токены
             t_norm = _normalize(token)
             
             # ✅ allow numeric brands (e.g. 1792, 1800, 19 Crimes, 7 Deadly Zins)
@@ -404,30 +468,45 @@ class BrandSeriesExtractor:
             for b_norm, b_orig in self.brands.items():
                 sc = score_brand_series(raw, b_norm)
                 b_tokens = b_norm.split()
-                # ✅ quick boost if brand literally appears in normalized raw
-                if b_norm in _normalize(raw):
-                    sc += 1.0
+                # ----------------------------------------------------
+                # BRAND ALIAS SUPPORT (перед обычными матчами)
+                # ----------------------------------------------------
+                meta = self.brands_meta.get(b_orig, {})
+                brand_aliases = meta.get("brand_alias") or []
+                variants = [b_norm] + [_normalize(a) for a in brand_aliases if a]
 
-                # прямые совпадения
-                if t_norm in b_tokens or t_norm == b_norm:
-                    sc += 1
-                    
-                elif len(t_norm) >= 4 and any(t_norm in bt for bt in b_tokens):
-                    sc += 0.25                    
+                for v_norm in variants:
+                    if not v_norm:
+                        continue
 
-                # ✅ исправленный plural-fix
-                for bt in b_tokens:
-                    if t_norm.rstrip("s") == bt or bt.rstrip("s") == t_norm:
-                        sc += 0.6
-                        
-                    elif t_norm.endswith("es") and t_norm[:-2] == bt:
-                        sc += 0.5
-                        
-                    elif t_norm.endswith("ies") and bt.endswith("y") and t_norm[:-3] + "y" == bt:
-                        sc += 0.5                        
+                    sc = score_brand_series(raw, v_norm)
+                    b_tokens = v_norm.split()
 
-                if sc > 0:
-                    scores[b_orig] = scores.get(b_orig, 0) + sc
+                    # ✅ quick boost если этот вариант буквально есть в raw
+                    if v_norm in raw_norm_full:
+                        sc += 1.0
+
+                    # прямые совпадения
+                    if t_norm in b_tokens or t_norm == v_norm:
+                        sc += 1
+
+                    elif len(t_norm) >= 4 and any(t_norm in bt for bt in b_tokens):
+                        sc += 0.25
+
+                    # ✅ исправленный plural-fix
+                    for bt in b_tokens:
+                        if t_norm.rstrip("s") == bt or bt.rstrip("s") == t_norm:
+                            sc += 0.6
+
+                        elif t_norm.endswith("es") and t_norm[:-2] == bt:
+                            sc += 0.5
+
+                        elif t_norm.endswith("ies") and bt.endswith("y") and t_norm[:-3] + "y" == bt:
+                            sc += 0.5
+
+                    if sc > 0:
+                        # 👇 все варианты (бренд + алиасы) копят скор в одном ключе бренда
+                        scores[b_orig] = scores.get(b_orig, 0) + sc
 
         if not scores:
             logger.debug(f"[DETECT] no brand candidates found in: {raw}")
@@ -518,6 +597,41 @@ class BrandSeriesExtractor:
         tokens = tokenize(after)
         logger.debug(f"[AFTER] normalized(after)='{after_norm}', tokens={tokens}")
 
+        # ============================================================
+        # 🔥 NEW: прямой match по series_norm и alias (НЕ ломает old logic)
+        # ============================================================
+        bkey = brand_norm
+        entries = BRAND_SERIES_FULL.get(bkey, [])
+
+        best = None
+        best_len = -1
+
+        for entry in entries:
+            s_original = entry["series"]
+            s_norm = entry["series_norm"]
+
+            # ---- SERIES MATCH ----
+            if all(tok in after_norm for tok in s_norm.split()):
+                ln = len(s_norm)
+                if ln > best_len:
+                    best_len = ln
+                    best = s_original
+
+            # ---- ALIAS MATCH ----
+            for a in entry.get("alias", []):
+                a_norm = _normalize(a)
+                if all(tok in after_norm for tok in a_norm.split()):
+                    ln = len(a_norm)
+                    if ln > best_len:
+                        best_len = ln
+                        best = s_original
+
+        if best:
+            logger.debug(f"[AFTER] series/alias direct match → {best!r}")
+            return best
+
+        logger.debug("[AFTER] no alias/series direct match → continue old logic")
+
         # 🧠 собираем все нормализованные серии, где бренд совпадает или не важен
         possible_series = list(ALL_SERIES_SET)
 
@@ -565,6 +679,54 @@ def find_canonical(brand, series, raw):
     bnorm = _normalize(brand or "")
     snorm = _normalize(series or "")
     rnorm = _normalize(raw)
+    canon_logger.debug(
+        f"[ALIAS SERIES] enter brand={brand!r}, series={series!r}, "
+        f"bnorm={bnorm!r}, snorm={snorm!r}, raw_norm={rnorm!r}"
+    )
+    # ---------------------------------------------------------
+    # 🔥 Алиасы серий (per brand)
+    # Если series == None, пробуем определить серию по alias-ключам
+    # ---------------------------------------------------------
+    if brand and not series:
+        bkey = bnorm
+        entries = BRAND_SERIES_FULL.get(bkey, [])
+        canon_logger.debug(
+            f"[ALIAS SERIES] lookup bkey={bkey!r}, entries={len(entries)}"
+        )
+        best = None
+        best_len = -1
+        for entry in entries:
+            canon_logger.debug(
+                f"[ALIAS SERIES] entry series={entry.get('series')!r}, "
+                f"series_norm={entry.get('series_norm')!r}, "
+                f"alias={entry.get('alias')!r}"
+            )
+            for key in entry.get("alias", []):
+                if key and key in rnorm:
+                    canon_logger.debug(
+                        f"[ALIAS SERIES] MATCH key={key!r} ⊂ raw_norm → "
+                        f"series={entry.get('series')!r}"
+                    )
+                    # выбираем самую длинную alias-форму (yl magnum > yl)
+                    if len(key) > best_len:
+                            best_len = len(key)
+                            best = entry["series"]
+            canon_logger.debug(
+                f"[ALIAS SERIES] best={best!r}, best_len={best_len}, "
+                f"before_snorm={snorm!r}"
+            )
+        if best:
+            # конвертируем найденную alias-серию в нормализованную форму
+            snorm = _normalize(best)
+            canon_logger.debug(
+                f"[ALIAS SERIES] resolved via alias → series={best!r}, "
+                f"snorm={snorm!r}"
+            )
+        else:
+            canon_logger.debug(
+                f"[ALIAS SERIES] no alias match for brand={brand!r} "
+                f"in raw_norm={rnorm!r}"
+            )
 
     def canonical_score(cname):
         cn_norm = _normalize(cname)
@@ -642,16 +804,7 @@ def find_canonical(brand, series, raw):
         if cn_norm == bnorm or cn_norm == rnorm:
             score += 0.3
 
-        # 🧩 применяем доменные правила (штраф за Magnum и др.)
-        try:            
-            delta = apply_canonical_rules(raw, cname)
-            if delta != 0:
-                logging.getLogger(__name__).debug(
-                    f"[CANON RULE] {cname}: delta={delta:+.2f}"
-                )
-            score += delta
-        except Exception as e:
-            logging.getLogger(__name__).warning(f"[CANON RULE] failed for {cname}: {e}")
+        
         
         canon_logger.debug(f"[CANON SCORE] {cname!r} → {score:.2f}")
         return score

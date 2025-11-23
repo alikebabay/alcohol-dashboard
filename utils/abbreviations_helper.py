@@ -4,35 +4,34 @@ import re
 
 # 🧩 Карта опечаток поставщиков, словарь замены
 ABBREVIATIONS = {
-    "yl": "Yellow Label",
+    #"yl": "Yellow Label",
     "moët": "Moet & Chandon",
     "moet": "Moet & Chandon",
     "Moët": "Moet",
     "imperial brut": "Brut Imperial",
     "xo": "X.O",
-    "yo": "Year Old",
-    "teachers": "Teacher's",
+    "yo": "Year Old",    
     "Grey Goose Blue": "Grey Goose",
     "PS": "Pagos Seleccionados",
     "Guidlaberto": "Guidalberto",
     "JD": "Jack Daniel's",
     "Jack daniels": "Jack Daniel's",
-    "Raspberri": "Raspberry",
-    "Grants": "Grant's",
-    "Hendricks": "Hendrick's",
+    "Raspberri": "Raspberry",    
     "vs":"V.S",
     "VS":"V.S",
+    "VSOP": "V.S.O.P",
+    "Gentleman Jack": "Jack Daniel's Gentleman Jack",
+    "teachers": "Teacher's",
+    "Grants": "Grant's",
+    "Hendricks": "Hendrick's",
     "Ballantines": "Ballantine's",
     "Grants": "Grant's",
     "Makers Mark": "Maker's Mark",
-    "VSOP": "V.S.O.P",
-    "Gentleman Jack": "Jack Daniel's Gentleman Jack",
     "Blantons": "Blanton's",
     "Dekuyper": "DeKuyper",
     "Hennesy": "Hennessy",
     "Gordons": "Gordon's",
     "Brokers": "Broker's",
-    "Smokey": "Smoky"
 }
 
 def convert_abbreviation(text: str) -> str:

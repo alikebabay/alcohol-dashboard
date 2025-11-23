@@ -30,8 +30,20 @@ def upload_json_to_graph_local(path):
         for entry in data:
             canonical = entry.get("canonical_name")
             variants = entry.get("raw_examples", [])
+            # BRAND ALIAS SUPPORT
+            brand_alias = entry.get("brand_alias") or []
+            if isinstance(brand_alias, str):
+                brand_alias = [brand_alias]
+            brand_alias = [a.strip() for a in brand_alias if a and a.strip()]
             brand = entry.get("brand")
             series = entry.get("series")
+            #  ALIAS: extract list of alias-keys for Series
+            alias_map = entry.get("alias") or {}
+            if isinstance(alias_map, dict):
+                alias_list = [k.strip() for k in alias_map.keys() if k.strip()]
+            else:
+                alias_list = []
+
             category = entry.get("category") or "Без категории"
                         # Neo4j does NOT support map properties → convert dict → list of "key=value"
             syn_dict = entry.get("synonyms") or {}
@@ -44,7 +56,6 @@ def upload_json_to_graph_local(path):
                 continue
 
             canonical_clean = canonical.strip()
-
             variants_clean = [v.strip() for v in variants if v.strip()]
 
             session.run("""
@@ -58,17 +69,30 @@ def upload_json_to_graph_local(path):
                 CALL {
                     WITH c
                     MERGE (b:Brand {name:$brand})
+                    SET b.brand_alias = $brand_alias
                     MERGE (cat:Category {name:$category})
                     MERGE (b)-[:BELONGS_TO]->(cat)
                     MERGE (b)-[:HAS_CANONICAL]->(c)
+
                     FOREACH (s IN CASE WHEN $series IS NULL THEN [] ELSE [$series] END |
                         MERGE (ser:Series {name:s})
+                        SET ser.alias = $alias_list,
+                            ser.updatedAt = timestamp()
                         MERGE (b)-[:HAS_SERIES]->(ser)
                         MERGE (ser)-[:HAS_CANONICAL]->(c)
                     )
+
                 }
-            """, canonical=canonical_clean, variants=variants_clean, synonyms=synonyms,
-                 brand=brand, series=series, category=category)
+            """,
+            canonical=canonical_clean,
+            variants=variants_clean,
+            synonyms=synonyms,
+            brand=brand,
+            brand_alias=brand_alias,
+            series=series,
+            category=category,
+            alias_list=alias_list)
+
 
         print(f"✅ Upserted {len(data)} canonical groups into LOCAL Neo4j")
         print("🧹 Starting CLEANUP phase...")

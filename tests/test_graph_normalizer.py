@@ -11,60 +11,17 @@ from utils.abbreviations_helper import convert_abbreviation
 # 🧾 Just paste your text here — no need for quotes or commas
 text = """
 
-Grants triple wood 6x70cl,code, 12000 bottles on floor in Riga price per bottle 3.9 eur
 
-Krug Rose 6x75cl,coded, GBX, t1, 108 bottles on floor Exw Riga price 255 eur per bottle
-
-Hennessy Paradis 3x70cl,GBX,coded, T1, 171 bottles on floor Exw Riga price per bottle 700 eur
-
-Jack daniels 12x70cl,coded,nrf, T1, 1065 cases on floor Exw Riga price 8 eur per bottle
-
-Isle of jura 10 y.o +hip flask 70cl, 700 bottles on floor Exw Riga 23 eur per bottle
-
-Nikka from barrel +glass 50cl, 200 bottles on floor Exw Riga price 35 eur per bottle
-
-Veuve brut 6x75cl,coded, GBX, 500 cases Exw Niderland price 180 eur per case lead time 1 week after deposit
-
-
-1770 Glasgow Single Malt Original 
-Aberfeldy 12 YO Madeira Cask 
-Aberfeldy 16 YO Madeira Cask 
-Aberlour 16 YO Double Cask 
-Aberlour A'bunadh Alba Batch 7
-Aberlour A'bunadh Alba Batch 7 
-Absolut Vodka 
-Absolut Vodka 
-Absolut Vodka Keith Haring Edition 
-Amaro Averna Siciliano
-Aperol
-Arbikie Highland Rye 1794 Single Grain 2020 Release 
-Ardbeg 10 YO 
-Ardbeg 10 YO 
-Ardbeg 5 YO Wee Beastie
-Ardbeg An Oa
-Ardbeg Corryvreckan 
-Ardbeg Smoketrails Cote Rotie 
-Ardbeg Smoketrails V3 Napa Valley 
-Ardbeg Uigeadail 
-Arran Barrel Reserve 
-Arran Port Cask Finish 
-Arran Quarter Cask 
-Arran Sauternes Cask
-Arran Sherry Cask 
-Auchentoshan American Oak 
-Auchentoshan Blood Oak  
-Auchentoshan Dark Oak 
-Baileys 03-2027
-Baileys 11-2026 
-Baileys 11-2026 
-Ballantines  
-Ballantines 15 YO Glentauchers 
-Balvenie 12 YO Double Wood   
-Balvenie 12 YO Golden Cask   
-Balvenie 12 YO Golden Cask T1  Non European Goods 
-Balvenie 12 YO Sweet Toast of American Oak 
-Balvenie 16 YO French Oak 
-Balvenie 18 YO PX Cask  
+Harahorn Gin 
+Hendricks Amazonia Gin
+Hendricks Gin
+Hendricks Gin
+Hendricks Gin  
+Hendricks Gin  
+Hendricks Gin  
+Johnnie Walker Blue 
+Johnnie Walker Blue Ghost & Rare Port Dundas 
+Johnnie Walker Blue TR Marking  
 
 
 
