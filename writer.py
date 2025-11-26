@@ -116,7 +116,7 @@ def save_to_excel(df: pd.DataFrame, supplier: str) -> pd.DataFrame:
     if location_src is not None:
         df_out[col_location] = location_src    
 
-    # 3) минимальная чистка
+    # 3) минимальная чистка - replacec nan with empty cells
     df_out = df_out.fillna("")
 
     # 4) добавляем отпечатки предложений, колонки: crc32_hash, b64 

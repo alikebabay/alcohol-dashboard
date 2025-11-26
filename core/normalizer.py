@@ -6,7 +6,6 @@ import logging
 import json
 
 from libraries.patterns import PATS
-
 #проверка свежести кода
 import time
 print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
@@ -45,6 +44,7 @@ def _find_cols(df: pd.DataFrame, patterns: List[str]) -> List[str]:
             out.append(col)
     if out:
         logger.debug(f"_find_cols: найдено {out} по паттернам {patterns}")
+        
     return out
 
 
@@ -209,17 +209,31 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     """
 
     df = df_in.copy()
+    # === DEBUG: RAW INPUT PREVIEW ===
+    try:
+        logger.debug(
+            "\n=== RAW DF (first 10 rows) ===\n" +
+            df.head(10).to_string()
+        )
+    except Exception as e:
+        logger.debug(f"[ERROR] cannot preview RAW DF: {e}")
 
     # --- поиск колонок ---
     name_cols  = _find_cols(df, PATS.NAME)
     vintage_cols = _find_cols(df, PATS.VINTAGE)
+    # price case
     price_cols = _find_cols(df, PATS.PRICE_CASE)
-    bpc_cols   = [c for c in _find_cols(df, PATS.BOTTLES_PER_CASE) if c not in price_cols]
-    avail_cols = _find_cols(df, PATS.AVAILABILITY)
-    loc_cols   = _find_cols(df, PATS.LOCATION)
-    price_bottle_cols = _find_cols(df, ["price_per_bottle", "цена за бутылку", "bottle price"])
+    # bpc
+    bpc_cols = [c for c in _find_cols(df, PATS.BOTTLES_PER_CASE) if c not in price_cols]
     
 
+    avail_cols = _find_cols(df, PATS.AVAILABILITY)
+    loc_cols   = _find_cols(df, PATS.LOCATION)
+
+    # price bottle
+    price_bottle_cols = _find_cols(df, ["price_per_bottle", "цена за бутылку", "bottle price"])    
+
+    # делаем предварительный маппинг
     mapping = {
         "name": name_cols,
         "bottles_per_case": bpc_cols,
@@ -310,7 +324,8 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     
     if loc_cols:
         logger.debug(f"location заполнено из {loc_cols}")
-
+    
+    
     # --- Очистка пустых строк ---
     if name_cols:
         out = out[~out["name"].fillna("").str.strip().eq("")].reset_index(drop=True)
@@ -322,4 +337,17 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     
     logger.debug(f"normalize_alcohol_df: удалено пустых строк {before - len(out)}")
     logger.debug(f"✅ normalize_alcohol_df: завершено, итог shape={out.shape}")
+
+    # === DEBUG: NORMALIZED DF PREVIEW ===
+    try:
+        logger.debug(
+            "\n=== NORMALIZED DF (first 5 rows) ===\n" +
+            out.head(5).to_string()
+        )
+    except Exception as e:
+        logger.debug(f"[ERROR] cannot preview NORMALIZED DF: {e}")
+
+    # === DEBUG: MAPPING USED ===
+    logger.debug("\n=== MAPPING USED ===\n" + str(mapping))
+
     return out, mapping

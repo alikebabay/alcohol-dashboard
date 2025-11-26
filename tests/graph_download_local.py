@@ -37,7 +37,7 @@ def export_node(record_id: str):
         return
 
     labels = rec["labels"]
-    blob = rec["blob"]
+    blob = rec.get("blob")
     file_name = rec.get("fileName") or f"node_{record_id}"
     ftype = rec.get("type")
     ext = rec.get("ext") or ""
@@ -72,13 +72,46 @@ def export_node(record_id: str):
         with open(out_path, "wb") as f:
             f.write(blob)
         logger.debug(f"✅ DfOut сохранён: {out_path} ({len(blob)} байт, формат={fmt or 'excel'})")
+    # 🟡 DfRaw (JSON DataFrame)
+    elif "DfRaw" in labels:
+        # DfRaw не содержит blob — данные хранятся в свойстве json
+        with local_driver.session() as sess:
+            raw_rec = sess.run("""
+                MATCH (n:DfRaw {id:$id})
+                RETURN n.json AS json, n.supplier AS supplier
+            """, id=record_id).single()
+
+        if not raw_rec or not raw_rec["json"]:
+            logger.error("❌ Ошибка: DfRaw без json-содержимого")
+            return
+
+        json_text = raw_rec["json"]
+
+        
+        # Сохраняем под supplier_name.json
+        json_text  = raw_rec["json"]
+        supplier   = raw_rec["supplier"] or "dfraw"
+
+        # безопасное имя
+        safe_supplier = supplier.replace("/", "_").replace("\\", "_")
+        json_name = f"{safe_supplier}.json"
+        out_path = os.path.join(PROCESSED_DIR, json_name)
+
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(json_text)
+
+        logger.debug(f"✅ DfRaw JSON сохранён: {out_path} ({len(json_text)} символов)")
+
 
     else:
         logger.error(f"⚠️ Неизвестный тип ноды: {labels}")
         out_path = os.path.join(PROCESSED_DIR, f"{file_name}.bin")
-        with open(out_path, "wb") as f:
-            f.write(blob)
-        logger.debug(f"💾 Содержимое сохранено в {out_path} (сырой бинарь)")
+        if blob:
+            with open(out_path, "wb") as f:
+                f.write(blob)
+            logger.debug(f"💾 Содержимое сохранено в {out_path} (сырой бинарь)")
+        else:
+            logger.debug(f"💾 Узел без blob. Ничего не сохранено.")
 
 
 if __name__ == "__main__":

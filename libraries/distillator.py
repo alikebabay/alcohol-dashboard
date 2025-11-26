@@ -73,7 +73,7 @@ def extract_volume_smart(row: pd.Series, df_raw: pd.DataFrame | None = None) -> 
     Пытается вытащить объём (cl/ml/l) из разных полей строки:
     1. name / Наименование / Description
     2. Size / 规格 / Size/规格
-    3. (если не найдено) ищет в df_raw по этой же строке
+    3. (если не найдено) ищет в других колонках
     """
     possible_fields = ["name", "Наименование", "Size", "规格", "Description", "Item"]
     

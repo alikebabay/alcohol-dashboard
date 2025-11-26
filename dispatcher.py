@@ -17,6 +17,7 @@ from config import MODE, driver
 from workers.event_bus import publish
 from integrations.reference_to_graph import reference_to_graph
 from utils.logger import setup_logging
+from integrations.df_raw_to_graph import df_raw_to_graph
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -37,6 +38,19 @@ async def dispatch_excel(update, context, supplier_choice=None):
     # 💾 Детерминированный сброс сырья в граф
     raw_id = persist_raw_blob(driver, file_src, file_name)
     await publish("raw_blob_ready", {"supplier": supplier_sm.name, "raw_id": raw_id})
+
+    # 💾 сброс спарсенной таблицы в граф
+    df_raw_id = df_raw_to_graph(driver, supplier_sm.df_raw)
+    # уведомляем воркера, чтобы он связал (Supplier)-[:HAS_BLOB]->(RawBlob)-[:HAS_DFRAW]->(DfRaw)
+    await publish("df_raw_ready", {
+        "supplier": supplier_sm.name,
+        "raw_id": raw_id,
+        "df_raw_id": df_raw_id
+    })
+    logger.debug(
+        f"[DISPATCH] Event 'df_raw_ready' published: "
+        f"supplier={supplier_sm.name}, raw_id={raw_id}, df_raw_id={df_raw_id}"
+    )
 
     # 3.1 Категоризация + порядок
     df_distilled = attach_categories(df_distilled, name_col="name", out_col="Тип")

@@ -15,6 +15,7 @@ from handler_userdata import handle_userdata
 from menu_states import SUPPLIER, INGEST
 from workers.blob_worker import init_worker as init_blob_worker
 from workers.reference_worker import init_worker as init_reference_worker
+from workers.excel_worker import init_worker as init_excel_worker
 from utils.logger import setup_logging
 
 
@@ -31,7 +32,8 @@ logger = logging.getLogger(__name__)
 #будим работников
 init_blob_worker()
 init_reference_worker()
-logger.info("[BUS] Работники разбужены: init_blob_worker, init_reference_worker")
+init_excel_worker()
+logger.info("[BUS] Работники разбужены: init_blob_worker, init_reference_worker, init_excel_worker")
 
 
 # /start

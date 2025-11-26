@@ -50,27 +50,32 @@ def setup_logging(global_level=logging.INFO):
 
     # === Уровни для конкретных модулей ===
     modules = {
+        #оркестрация
+        "dispatcher": logging.ERROR,
         # инфраструктура
         "integrations.matrix_merger": logging.ERROR,
-        "core.graph_normalizer": logging.DEBUG,
-        "core.graph_normalizer.canonical": logging.DEBUG,
+        "core.graph_normalizer": logging.ERROR,
+        "core.graph_normalizer.canonical": logging.ERROR,
+        "core.normalizer": logging.DEBUG,
         "integrations.rules_typing": logging.ERROR,
         "integrations.graph_offers": logging.ERROR,
         "integrations.graph_to_sheets": logging.ERROR,
         "core.parser": logging.ERROR,
-        "core.name_enricher": logging.ERROR,
-        "state_macihe": logging.ERROR,
+        "core.name_enricher": logging.DEBUG,
+        "state_machine": logging.DEBUG,
         "text_state": logging.ERROR,
         "currency": logging.ERROR,
         "save_to_excel": logging.ERROR,
+        "integrations.df_raw_to_graph": logging.DEBUG,
+        #workers
+        "workers.excel_worker": logging.DEBUG,
         # утилиты и извлекатели
         "utils.text_extractors": logging.ERROR,
         "utils.text_extractors.prices": logging.ERROR,
         "utils.text_extractors.access": logging.ERROR,
         "utils.text_extractors.location": logging.ERROR,
         "core.access_assistant": logging.ERROR,
-        "core.location_assistant": logging.ERROR,
-        "core.normalizer": logging.ERROR,
+        "core.location_assistant": logging.ERROR,        
         "core.text_parser": logging.ERROR,
         "integrations.raw_to_graph": logging.ERROR,
         "workers.blob_worker": logging.ERROR,
@@ -80,7 +85,9 @@ def setup_logging(global_level=logging.INFO):
         "integrations.fingerprint_utils": logging.ERROR,
         "core.distillator": logging.ERROR,
         "core.normalizer.access_location": logging.ERROR,
-        "utils.verifier": logging.ERROR
+        "utils.verifier": logging.ERROR,
+        "utils.verify_cols": logging.DEBUG,
+        "core.volume_detector": logging.DEBUG
 
     }
 
@@ -110,12 +117,17 @@ def setup_logging(global_level=logging.INFO):
         "core.distillator": "distillator_debug.txt",
         "core.name_enricher": "name_enricher_debug.txt",
         "core.access_assistant": "access_assistant_debug.txt",
-        "state_macihe": "state_machine_debug.txt",
+        "state_machine": "state_machine_debug.txt",
         "utils.verifier": "verifier_debug.txt",
         "text_state": "text_state_debug.txt",
         "core.location_assistant": "location_assistant_debug.txt",
         "currency": "currency_debug.txt",
         "save_to_excel": "save_to_excel_debug.txt",
+        "df_raw_to_graph": "df_raw_to_graph_debug.txt",
+        "dispatcher": "dispatcher_debug.txt",
+        "workers.excel_worker": "excel_worker_debug.txt",
+        "utils.verify_cols": "verify_cols_debug.txt",
+        "core.volume_detector": "volume_detector_debug.txt"
     }
 
     

@@ -52,6 +52,12 @@ class AlcoholStateMachine:
         self.activate()  # ✅ теперь self доступна глобально как "активная"
         df_raw, _ = parse_excel(file_src)
         self.df_raw = df_raw.copy()  # 💾 сохраняем исходный датафрейм для доп. поиска
+        logger.debug(f"[FSM] Saved df_raw from FileState, shape={self.df_raw.shape}")
+        try:
+            preview = self.df_raw.head(3).to_string(index=True)
+            logger.debug(f"[FSM] df_raw preview (first 3 rows):\n{preview}")
+        except Exception as e:
+            logger.debug(f"[FSM] Could not print df_raw preview: {e}")
         df_norm, _ = normalize_alcohol_df(df_raw)
         return filter_and_enrich(df_norm, col_name="name", df_raw=self.df_raw)
 
