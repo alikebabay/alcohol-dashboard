@@ -46,3 +46,6 @@ plugins/
 
 #Excel files
 *.xlsx
+
+#test modules
+test_graph_normalizer.py

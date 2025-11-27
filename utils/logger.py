@@ -62,13 +62,14 @@ def setup_logging(global_level=logging.INFO):
         "integrations.graph_to_sheets": logging.ERROR,
         "core.parser": logging.ERROR,
         "core.name_enricher": logging.DEBUG,
-        "state_machine": logging.DEBUG,
+        "state_machine": logging.ERROR,
         "text_state": logging.ERROR,
         "currency": logging.ERROR,
         "save_to_excel": logging.ERROR,
-        "integrations.df_raw_to_graph": logging.DEBUG,
+        "integrations.df_raw_to_graph": logging.ERROR,
+        "core.gbx_detector": logging.DEBUG,
         #workers
-        "workers.excel_worker": logging.DEBUG,
+        "workers.excel_worker": logging.ERROR,
         # утилиты и извлекатели
         "utils.text_extractors": logging.ERROR,
         "utils.text_extractors.prices": logging.ERROR,
@@ -86,8 +87,8 @@ def setup_logging(global_level=logging.INFO):
         "core.distillator": logging.ERROR,
         "core.normalizer.access_location": logging.ERROR,
         "utils.verifier": logging.ERROR,
-        "utils.verify_cols": logging.DEBUG,
-        "core.volume_detector": logging.DEBUG
+        "utils.verify_cols": logging.ERROR,
+        "core.volume_detector": logging.ERROR
 
     }
 
@@ -127,7 +128,8 @@ def setup_logging(global_level=logging.INFO):
         "dispatcher": "dispatcher_debug.txt",
         "workers.excel_worker": "excel_worker_debug.txt",
         "utils.verify_cols": "verify_cols_debug.txt",
-        "core.volume_detector": "volume_detector_debug.txt"
+        "core.volume_detector": "volume_detector_debug.txt",
+        "core.gbx_detector": "gbx_detector_debug.txt"
     }
 
     

@@ -69,7 +69,7 @@ PATS.BOTTLES_PER_CASE = [
     r"bottles_per_case",
     r"^\s*bt\s*/?\s*cs\s*$",
     r"bt.?/?cs", r"btl.?/?case",
-    r"\bbottles?\b", r"bottl.?/case",
+    r"bottl.?/case",
     r"шт.*[/ ]*кор", r"шт.*в.*кор", r"шт.*в.*ящ",
     r"pcs.*[/ ]*case", r"qty.*case",
     r"size(?!.*price)",   # исключаем Price/Size
@@ -91,7 +91,7 @@ PATS.AVAILABILITY = [
 ]
 
 PATS.LOCATION = [
-    r"wareh", r"склад", r"origin", r"отгруз", r"exw", r"dap", r"fob", r"cif", r"место\s*загруз", r"location", r"incoterm", r"ETA\s*Rdam",
+    r"ware",       # ← ловит все ware-, warehouse, ware house
+    r"склад", r"origin", r"отгруз", r"exw", r"dap", r"fob", r"cif",
+    r"место\s*загруз", r"location", r"incoterm", r"ETA\s*Rdam",
 ]
-
-PATS.RX_CASES_FROM_SIZE = re.compile(r'(?i)\b(\d{1,3})\s*[x×]\s*\d')

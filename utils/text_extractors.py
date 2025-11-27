@@ -18,6 +18,18 @@ price_logger = logging.getLogger("utils.text_extractors.prices")
 access_logger = logging.getLogger("utils.text_extractors.access")
 location_logger = logging.getLogger("utils.text_extractors.location")
 
+# ---- global location aliases (loaded once) ----
+try:
+    with open("libraries/location_aliases.json", encoding="utf-8") as f:
+        _loc_data = json.load(f)
+        CITY_ALIASES = {k.lower(): v for k, v in _loc_data.get("cities", {}).items()}
+        INCOTERM_ALIASES = {k.lower(): v for k, v in _loc_data.get("incoterms", {}).items()}
+except Exception as e:
+    logger.error(f"[LOCATION] failed to load location_aliases.json: {e}")
+    CITY_ALIASES = {}
+    INCOTERM_ALIASES = {}
+
+
 def extract_volume(text: str):
     return _extract_volume(text)
 
@@ -187,7 +199,7 @@ class PriceExtractor:
 
         # если всё остальное не сработало — пробуем общий инфер
         try:
-            from utils.text_extractors import _infer_bpc_from_name
+            
             inferred = _infer_bpc_from_name(text)
             logger.debug(f"[BPC] _infer_bpc_from_name returned {inferred!r}")
             if inferred:
@@ -276,12 +288,7 @@ def extract_location(text: str):
         return None
     s = str(text).strip()
 
-    # загрузка словарей
-    with open("aliases/city_aliases.json", encoding="utf-8") as f:
-        CITY_ALIASES = json.load(f)["aliases"]
-    with open("aliases/incoterms_aliases.json", encoding="utf-8") as f:
-        INCOTERM_ALIASES = json.load(f)["aliases"]
-
+    
     # предварительная очистка и нормализация
     s = re.sub(r'\s+', ' ', s)
     s = s.replace(",", ", ").replace("  ", " ").strip()

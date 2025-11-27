@@ -28,7 +28,10 @@ class TextState:
 
         #3. фильтрация и обогащение (этап df_distilled)
         
-        self.df_distilled = filter_and_enrich(self.df_norm, col_name="name")
+        self.df_distilled = filter_and_enrich(
+            self.df_norm,
+            col_name="name",
+            df_raw=self.df_raw )
        
 
         verifier.reset()  # сброс состояния дл логики

@@ -8,6 +8,7 @@ from utils.verifier import verifier
 from utils.abbreviations_helper import convert_abbreviation
 from libraries.regular_expressions import RX_GBX_MARKER, RX_GBX_NEGATIVE
 from core.volume_detector import detect_volume_column, normalize_volume_num_to_cl
+from core.gbx_detector import detect_gbx
 
 
 logger = logging.getLogger(__name__)
@@ -116,34 +117,19 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
         else:
             logger.debug("[VOLUME] NO numeric volume column found in df_raw")
 
-
-
     # удаляем cl-часть из названия (все токены)
     df[col_name] = df[col_name].map(_remove_volume_tokens)
 
+    # --- GBX DETECTION (row-wise, index-preserving) ---
+    if df_raw is None:
+        logger.error("[GBX] df_raw is None — cannot detect GBX reliably")
+        gbx_df = pd.DataFrame({"gb_flag": [False]*len(df), "gb_type": [None]*len(df)})
+    else:
+        gbx_df = detect_gbx(df_raw)
 
-    # --- detect GB/GBX markers directly in the name column ---
-    df["gb_flag"] = False
-    df["gb_type"] = None
 
-    def _detect_gb_marker_from_name(name: str):
-        if not isinstance(name, str):
-            return None
-        s = name.lower()
-        # normalize separators so "GBX," / "GBX." / "GBX-" etc. are all matched
-        s = re.sub(r"[,.;:/\\|+]", " ", s)
-        # skip explicit negatives like "NoGBX", "Non GBX", "Without box"
-        if RX_GBX_NEGATIVE.search(s):
-            return None
-
-        # detect any GB/GBX/gift packaging indicator
-        if RX_GBX_MARKER.search(s):
-            return "GBX"
-        return None
-
-    df["gb_type"] = df[col_name].map(_detect_gb_marker_from_name)
-    df["gb_flag"] = df["gb_type"].notna()
-
+    df["gb_flag"] = gbx_df["gb_flag"].values
+    df["gb_type"] = gbx_df["gb_type"].values
 
     # дополнительно чистим от лишних слов и хвостов
     df[col_name] = df[col_name].map(_clean_name_extras)

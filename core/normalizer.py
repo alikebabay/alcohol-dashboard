@@ -5,10 +5,12 @@ from typing import Dict, List, Optional, Tuple
 import logging
 import json
 
-from libraries.patterns import PATS
 #проверка свежести кода
 import time
 print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+
+from libraries.patterns import PATS
+from core.bpc_detector import detect_bpc_column, parse_bpc_loose
 
 logger = logging.getLogger(__name__)
 
@@ -49,20 +51,6 @@ def _find_cols(df: pd.DataFrame, patterns: List[str]) -> List[str]:
 
 
 
-def _cases_from_size_text(x) -> Optional[float]:
-    if pd.isna(x):
-        return None
-    m = PATS.RX_CASES_FROM_SIZE.search(str(x))
-    if m:
-        try:
-            return float(m.group(1))
-        except Exception:
-            logger.debug(f"_cases_from_size_text: не удалось извлечь число из {x!r}")
-            return None
-    return _to_number(x)
-
-
-
 class AccessLocationClassifier:
     """
     Проверяет найденные availability/location колонки по оси и шапке.
@@ -78,10 +66,12 @@ class AccessLocationClassifier:
         self.log = logging.getLogger("core.normalizer.access_location")
         self.log.debug(f"[INIT] AccessLocationClassifier started with {len(avail_cols)} avail_cols, {len(loc_cols)} loc_cols")
 
-        with open("aliases/city_aliases.json", encoding="utf-8") as f:
-            self.city_aliases = json.load(f)["aliases"]
-        with open("aliases/incoterms_aliases.json", encoding="utf-8") as f:
-            self.incoterms_aliases = json.load(f)["aliases"]
+        with open("libraries/location_aliases.json", encoding="utf-8") as f:
+            data = json.load(f)
+
+        self.city_aliases = data.get("cities", {})
+        self.incoterms_aliases = data.get("incoterms", {})
+
 
         # паттерны для анализа содержимого по вертикали
         self.rx_access = re.compile(r"\b(ready|t[12]|tbo|stock|lead\s*time|\d+\s*(?:day|week))", re.I)
@@ -269,18 +259,24 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
         logger.debug("normalize_alcohol_df: не найдены колонки с винтажом")
 
     # --- Кол-во бутылок в кейсе ---
+    bpc_cols = mapping.get("bottles_per_case")
+
     if bpc_cols:
+        # нашли по заголовкам → как раньше
         tmp = df[bpc_cols].bfill(axis=1)
         col0 = tmp.columns[0]
-        header_norm = _clean_header(col0)
-        looks_like_size = bool(re.search(r"size|规格", header_norm)) or \
-            tmp.iloc[:, 0].astype(str).str.contains(r"\d\s*[x×]\s*\d", case=False, na=False).any()
-        if looks_like_size:
-            out["bottles_per_case"] = tmp.iloc[:, 0].map(_cases_from_size_text)
-        else:
-            out["bottles_per_case"] = tmp.iloc[:, 0].map(_to_number)
+        out["bottles_per_case"] = tmp[col0].map(parse_bpc_loose)
     else:
-        out["bottles_per_case"] = None
+        # fallback: headless numeric детектор по ИНДЕКСУ
+        idx = detect_bpc_column(df)
+        if isinstance(idx, int):
+            series = df.iloc[:, idx]
+            out["bottles_per_case"] = series.map(parse_bpc_loose)
+        else:
+            out["bottles_per_case"] = None
+
+
+
 
     # --- Цена за кейс ---
     if price_cols:

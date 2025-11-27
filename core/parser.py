@@ -326,10 +326,10 @@ def parse_excel(src: BytesIO):
             for col_idx in range(num_cols):
                 parts = []
                 for row in rows:
-                    val = row[col_idx].strip()
+                    val = re.sub(r"\s+", " ", row[col_idx]).strip()            
                     if val:
                         parts.append(val)
-                merged.append(" ".join(parts).strip())
+                merged.append(" ".join(parts))
 
             logger.debug(f"[HEADER MERGED] cols={num_cols} | {merged}")
 
