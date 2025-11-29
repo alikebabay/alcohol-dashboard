@@ -61,13 +61,13 @@ def setup_logging(global_level=logging.INFO):
         "integrations.graph_offers": logging.ERROR,
         "integrations.graph_to_sheets": logging.ERROR,
         "core.parser": logging.ERROR,
-        "core.name_enricher": logging.DEBUG,
+        "core.name_enricher": logging.ERROR,
         "state_machine": logging.ERROR,
         "text_state": logging.ERROR,
         "currency": logging.ERROR,
         "save_to_excel": logging.ERROR,
         "integrations.df_raw_to_graph": logging.ERROR,
-        "core.gbx_detector": logging.DEBUG,
+        "core.gbx_detector": logging.ERROR,
         #workers
         "workers.excel_worker": logging.ERROR,
         # утилиты и извлекатели

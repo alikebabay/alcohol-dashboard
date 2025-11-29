@@ -7,6 +7,7 @@ import re
 from state_machine import AlcoholStateMachine
 from integrations.fingerprint_utils import add_offer_metadata
 from utils.logger import setup_logging
+from libraries.patterns import CURRENCY_PATTERNS
 
 # активируем общий логгер 
 setup_logging()
@@ -20,33 +21,36 @@ def detect_currency(df_raw: pd.DataFrame) -> str:
     if df_raw is None or df_raw.empty:
         logger_currency.warning("⚠️ df_raw пуст или None — возвращаем ''")
         return ""
-    
-    # объединяем текст и заголовки
+
     text = " ".join(
         list(df_raw.columns.astype(str)) +
         list(df_raw.astype(str).fillna("").values.ravel())
     ).lower()
 
-    for cur in ["eur", "€", "usd", "$", "₸", "kzt", "rub", "₽"]:
-        m = re.search(rf"(?<![A-Za-z]){re.escape(cur)}(?![A-Za-z])", text)
-        if m:            
-            result = {
-                "eur": "EUR", "€": "EUR",
-                "usd": "USD", "$": "USD",
-                "₸": "KZT", "kzt": "KZT",
-                "rub": "RUB", "₽": "RUB",
-                        }[cur]
-            pos = m.start()
-            start = max(pos - 40, 0)
-            end = min(pos + 40, len(text))
-            snippet = text[start:end].replace("\n", " ")
-            logger_currency.info(
-                f"✅ Обнаружена валюта: {result} (по '{cur}'), контекст: '{snippet}'"
-            )
-            return result
+    text = text.replace("\u00A0", " ")  # non-breaking space fix
+
+    for code, patterns in CURRENCY_PATTERNS.items():
+        for pat, is_word in patterns:
+
+            if is_word:
+                # строгие границы для слов
+                rx = pat
+            else:
+                # символы ищем в любом месте, без границ
+                rx = pat
+
+            m = re.search(rx, text)
+            if m:
+                pos = m.start()
+                snippet = text[max(0, pos-40):pos+40]
+                logger_currency.info(
+                    f"✅ Обнаружена валюта: {code} по '{pat}' — '{snippet}'"
+                )
+                return code
 
     logger_currency.error("❌ Валюта не обнаружена")
     return ""
+
 
   
 

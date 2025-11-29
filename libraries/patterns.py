@@ -95,3 +95,24 @@ PATS.LOCATION = [
     r"склад", r"origin", r"отгруз", r"exw", r"dap", r"fob", r"cif",
     r"место\s*загруз", r"location", r"incoterm", r"ETA\s*Rdam",
 ]
+
+
+CURRENCY_PATTERNS = {
+    "EUR": [
+        (r"\beur\b", True),
+        (r"\beuro(s)?\b", True),
+        (r"€", False),
+    ],
+    "USD": [
+        (r"\busd\b", True),
+        (r"\$", False),
+    ],
+    "KZT": [
+        (r"\bkzt\b", True),
+        (r"₸", False),
+    ],
+    "RUB": [
+        (r"\brub\b", True),
+        (r"₽", False),
+    ],
+}
