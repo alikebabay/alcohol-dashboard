@@ -56,7 +56,8 @@ def setup_logging(global_level=logging.INFO):
         "integrations.matrix_merger": logging.ERROR,
         "core.graph_normalizer": logging.ERROR,
         "core.graph_normalizer.canonical": logging.ERROR,
-        "core.normalizer": logging.DEBUG,
+        "core.graph_normalizer.loader": logging.ERROR,
+        "core.normalizer": logging.ERROR,
         "integrations.rules_typing": logging.ERROR,
         "integrations.graph_offers": logging.ERROR,
         "integrations.graph_to_sheets": logging.ERROR,
@@ -129,7 +130,8 @@ def setup_logging(global_level=logging.INFO):
         "workers.excel_worker": "excel_worker_debug.txt",
         "utils.verify_cols": "verify_cols_debug.txt",
         "core.volume_detector": "volume_detector_debug.txt",
-        "core.gbx_detector": "gbx_detector_debug.txt"
+        "core.gbx_detector": "gbx_detector_debug.txt",
+        "core.graph_normalizer.loader": "graph_loader_debug.txt"
     }
 
     

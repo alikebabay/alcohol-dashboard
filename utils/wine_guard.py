@@ -12,7 +12,10 @@ WINE_KEYWORDS = [
     "Year Old",
     "Flora & Fauna",
     "Classic",
-    "Original"
+    "Original",
+    "Single Malt",
+    "Especial Reposado",
+    "Reposado"
 ]
 
 # подготавливаем нормализованные формы

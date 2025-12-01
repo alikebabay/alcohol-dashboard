@@ -21,6 +21,9 @@ logger = logging.getLogger(__name__)
 #separate logging for canonical lookups
 canon_logger = logging.getLogger("core.graph_normalizer.canonical")
 
+loader_logger = logging.getLogger("core.graph_normalizer.loader")
+
+
 # ==========================================================
 # 🕸 Neo4j driver (из config)
 # ==========================================================
@@ -52,6 +55,7 @@ def tokenize(raw: str) -> list[str]:
 # ==========================================================
 def load_graph_data(driver):
     with driver.session() as s:
+        loader_logger.debug (f"starting load")
         # 1) brands
         brands_rows = s.run("""
             MATCH (b:Brand)
@@ -84,10 +88,18 @@ def load_graph_data(driver):
                 brand_series.setdefault(bnorm, []).append(series)
                 # формируем ключи для матчинга серии (сама серия + alias)
                 alias_keys = {s_norm}
-                if alias and isinstance(alias, (list, tuple)):
-                    for a in alias:
+                if alias:
+                    if isinstance(alias, dict):
+                        alias_iter = alias.keys()  # or .values()
+                    elif isinstance(alias, (list, tuple)):
+                        alias_iter = alias
+                    else:
+                        alias_iter = [alias]
+
+                    for a in alias_iter:
                         if a:
-                            alias_keys.add(a.lower().strip())
+                            alias_keys.add(_normalize(a))
+
 
                 brand_series_full.setdefault(bnorm, []).append({
                     "series": series,
@@ -140,6 +152,91 @@ BRAND_SERIES_MAP = GRAPH["brand_series"]
 BRAND_SERIES_FULL = GRAPH["brand_series_full"]
 BRANDS_META = GRAPH["brands_meta"]
 CANONICAL_NAMES = GRAPH["canonical"]
+
+# =====================================================================
+# UNIVERSAL GRAPH DATA DEBUG DUMP – complete coverage of all loaded data
+# =====================================================================
+
+def _cp(s):
+    """Return unicode code points for every character."""
+    return " ".join(hex(ord(ch)) for ch in s)
+
+loader_logger.warning("===== GRAPH DEBUG DUMP: BEGIN =====")
+
+# ---------------------------------------------------------
+# BRANDS
+# ---------------------------------------------------------
+loader_logger.warning(f"→ TOTAL BRANDS: {len(BRANDS)}")
+
+for norm, orig in sorted(BRANDS.items(), key=lambda x: x[0]):
+    loader_logger.warning(
+        f"[BRAND] norm='{norm}' | orig='{orig}' | codepoints={_cp(orig)}"
+    )
+
+# ---------------------------------------------------------
+# BRAND META
+# ---------------------------------------------------------
+loader_logger.warning(f"→ TOTAL BRAND META ENTRIES: {len(BRANDS_META)}")
+
+for brand, meta in sorted(BRANDS_META.items(), key=lambda x: x[0]):
+    loader_logger.warning(
+        f"[META] brand='{brand}' | category='{meta.get('category')}' | "
+        f"default_series='{meta.get('default_series')}' | "
+        f"brand_alias={meta.get('brand_alias')}"
+    )
+
+# ---------------------------------------------------------
+# SERIES
+# ---------------------------------------------------------
+loader_logger.warning(f"→ TOTAL UNIQUE SERIES: {len(ALL_SERIES_SET)}")
+
+for brand_norm, series_list in sorted(BRAND_SERIES_MAP.items(), key=lambda x: x[0]):
+    loader_logger.warning(f"[SERIES] brand_norm='{brand_norm}' → {series_list}")
+
+# ---------------------------------------------------------
+# SERIES FULL (with alias)
+# ---------------------------------------------------------
+loader_logger.warning(f"→ SERIES FULL (with alias): {len(BRAND_SERIES_FULL)} brands")
+
+for bn, entries in sorted(BRAND_SERIES_FULL.items(), key=lambda x: x[0]):
+    loader_logger.warning(f"[SERIES FULL] brand_norm='{bn}'")
+    for entry in entries:
+        loader_logger.warning(
+            f"    series='{entry['series']}' "
+            f"series_norm='{entry['series_norm']}' "
+            f"alias={entry['alias']}"
+        )
+
+# ---------------------------------------------------------
+# DEFAULT SERIES
+# ---------------------------------------------------------
+loader_logger.warning(f"→ DEFAULT SERIES MAP size: {len(DEFAULT_SERIES_MAP)}")
+
+for bn, ds in sorted(DEFAULT_SERIES_MAP.items(), key=lambda x: x[0]):
+    loader_logger.warning(f"[DEFAULT SERIES] brand_norm='{bn}' → '{ds}'")
+
+# ---------------------------------------------------------
+# CANONICAL NAMES
+# ---------------------------------------------------------
+loader_logger.warning(f"→ TOTAL CANONICAL NAMES: {len(CANONICAL_NAMES)}")
+
+for c in sorted(CANONICAL_NAMES):
+    loader_logger.warning(f"[CANONICAL] '{c}' | codepoints={_cp(c)}")
+
+# ---------------------------------------------------------
+# SUMMARY
+# ---------------------------------------------------------
+loader_logger.warning("===== GRAPH DEBUG SUMMARY =====")
+loader_logger.warning(f"Brands:           {len(BRANDS)}")
+loader_logger.warning(f"Brand meta:       {len(BRANDS_META)}")
+loader_logger.warning(f"Series sets:      {len(BRAND_SERIES_MAP)} brands")
+loader_logger.warning(f"Series entries:   {sum(len(v) for v in BRAND_SERIES_MAP.values())}")
+loader_logger.warning(f"Series full map:  {len(BRAND_SERIES_FULL)} brands")
+loader_logger.warning(f"Default series:   {len(DEFAULT_SERIES_MAP)}")
+loader_logger.warning(f"All series uniq:  {len(ALL_SERIES_SET)}")
+loader_logger.warning(f"Canonical total:  {len(CANONICAL_NAMES)}")
+
+loader_logger.warning("===== GRAPH DEBUG DUMP: END =====")
 
 
 # ==========================================================
@@ -340,7 +437,7 @@ class BrandSeriesExtractor:
             return brand, None
         
         # 2️⃣ если контекстный бренд не встречается — пробуем искать серии контекстного бренда в строке
-        #    но сначала проверим костыль: не выглядит ли это как самостоятельное вино
+        #   но сначала проверим костыль: не выглядит ли это как самостоятельное вино
         if looks_like_new_wine(raw_norm):
             logger.debug(f"[WINE GUARD] skip series via graph for {brand}: looks like independent wine ({raw})")
         else:
@@ -378,6 +475,7 @@ class BrandSeriesExtractor:
 
         bkey = _normalize(brand)
         entries = BRAND_SERIES_FULL.get(bkey, [])
+
 
         raw_norm = _normalize(raw)
         logger.debug(f"[GRAPH SERIES] raw_norm='{raw_norm}'")
@@ -450,6 +548,10 @@ class BrandSeriesExtractor:
     
     def _extract_brand_series(self, raw: str):
         """Оригинальная версия без FSM-ограничений (мягкий скоринг, полное сканирование)."""
+        logger.debug(
+            "[BRAND RAW CP] raw=%r → %s" %
+            (raw, " ".join(hex(ord(ch)) for ch in raw))
+        )
         tokens = [t for t in tokenize(raw)]
         logger.debug(f"[TOKENS] {tokens}")
         scores = {}
@@ -633,7 +735,10 @@ class BrandSeriesExtractor:
         logger.debug("[AFTER] no alias/series direct match → continue old logic")
 
         # 🧠 собираем все нормализованные серии, где бренд совпадает или не важен
-        possible_series = list(ALL_SERIES_SET)
+        bkey = brand_norm
+        entries = BRAND_SERIES_FULL.get(bkey, [])
+        possible_series = [ _normalize(e["series"]) for e in entries ]
+
 
         # фильтруем токены — оставляем только те, которые реально входят в серии
         series_tokens = []

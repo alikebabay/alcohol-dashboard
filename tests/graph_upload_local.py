@@ -37,12 +37,14 @@ def upload_json_to_graph_local(path):
             brand_alias = [a.strip() for a in brand_alias if a and a.strip()]
             brand = entry.get("brand")
             series = entry.get("series")
-            #  ALIAS: extract list of alias-keys for Series
-            alias_map = entry.get("alias") or {}
-            if isinstance(alias_map, dict):
+            # --- SERIES ALIAS (safe mode) ---
+            # If alias map exists → extract keys.
+            # If alias map missing/empty → do NOT overwrite alias in DB.
+            alias_map = entry.get("alias")
+            if alias_map and isinstance(alias_map, dict) and len(alias_map) > 0:
                 alias_list = [k.strip() for k in alias_map.keys() if k.strip()]
             else:
-                alias_list = []
+                alias_list = None   # <-- None means "do not update alias"
 
             category = entry.get("category") or "Без категории"
                         # Neo4j does NOT support map properties → convert dict → list of "key=value"
@@ -76,8 +78,13 @@ def upload_json_to_graph_local(path):
 
                     FOREACH (s IN CASE WHEN $series IS NULL THEN [] ELSE [$series] END |
                         MERGE (ser:Series {name:s})
-                        SET ser.alias = $alias_list,
-                            ser.updatedAt = timestamp()
+                        SET ser.updatedAt = timestamp()
+
+                        // Only update alias if alias_list is provided
+                        FOREACH (_ IN CASE WHEN $alias_list IS NOT NULL THEN [1] ELSE [] END |
+                            SET ser.alias = $alias_list
+                        )
+
                         MERGE (b)-[:HAS_SERIES]->(ser)
                         MERGE (ser)-[:HAS_CANONICAL]->(c)
                     )
