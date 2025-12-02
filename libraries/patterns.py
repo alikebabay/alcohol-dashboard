@@ -85,6 +85,7 @@ PATS.PRICE_CASE = [
     r"price\s*\(?(?:usd|eur|euro|€|gbp)?\)?\s*/\s*(?:box|case|carton|ctn)\b",
 ]
 
+
 PATS.AVAILABILITY = [
     r"stock", r"lead\s*time", r"availability", r"status", r"eta", 
     r"ready", r"t1", r"t2", r"tbo", r"доступ", r"наличи", r"access",

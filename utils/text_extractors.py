@@ -9,7 +9,7 @@ import json
 import logging
 
 from libraries.distillator import _extract_volume, _infer_bpc_from_name, RX_ABV
-from libraries.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC, RX_BPC_STAR
+from libraries.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC, RX_BPC_STAR, RX_CURRENCY_MARKER, RX_BOTTLE_LEFT, RX_BOTTLE_RIGHT, RX_CASE_LEFT, RX_CASE_RIGHT, RX_BPC_DASH, RX_NUMBER, RX_BPC_TRIPLE
 from libraries.patterns import PATS
 
 logger = logging.getLogger(__name__)
@@ -33,6 +33,7 @@ except Exception as e:
 def extract_volume(text: str):
     return _extract_volume(text)
 
+#экстрактор BPC для создания колонки
 def extract_bottles_per_case(text: str):
     return _infer_bpc_from_name(text)
 
@@ -44,193 +45,397 @@ def extract_abv(text: str):
         return float(m.group(0).replace("%", "").replace(",", "."))
     return None
 
+#экстрактор BPC integer для расчетов
+def detect_bpc(s: str) -> int | None:
+    """
+    Найти bottles-per-case по локальной строке.
+    Работает ТОЛЬКО по текущему string контексту.
+    Возвращает int или None.
+    """
+    if not s:
+        return None
+    # 0) triple format: 6/70/40, 6/70/43 etc
+    m = RX_BPC_TRIPLE.search(s)
+    if m:
+        return int(m.group("bpc"))
+
+    # 1) классический вариант 6x75, 6×70, 12x750 etc
+    m = RX_BPC.search(s)
+    if m:
+        return int(m.group(1))
+
+    # 2) cs*6 btl, *12 btl/btls
+    m = RX_BPC_STAR.search(s)
+    if m:
+        return int(m.group("cases"))
+    # 3) dash-style: — 6 —
+    m = RX_BPC_DASH.search(s)
+    if m:
+        return int(m.group("cases"))
+
+    return None
+
+#normalizer for float prices 
+def normalize_number(num: str) -> float:
+    s = num.replace(" ", "")
+
+    # Пример: "1,048.89" → decimal ".", thousand ","
+    if "," in s and "." in s:
+        if s.rfind(".") > s.rfind(","):
+            # decimal ".", thousands ","
+            s = s.replace(",", "")
+        else:
+            # decimal ",", thousands "."
+            s = s.replace(".", "").replace(",", ".")
+    else:
+        # один разделитель → считаем decimal
+        s = s.replace(",", ".")
+
+    return float(s)
+
 
 class PriceExtractor:
     """
-    Унифицированный извлекатель цен.
-    Состояния:
-      - 'bottle'  → ищет цену за бутылку
-      - 'case'    → ищет цену за кейс
-      - 'derived' → вычисляет недостающую цену из другой и кол-ва бутылок
+    Новый контекстный извлекатель цен.
+    Трёхслойная логика:
+      1) собрать все числа + левый/правый контекст
+      2) классификация: bottle/case/bpc/qty/unknown
+      3) derive/fallback финальной цены
     """
 
-    # берём из единого источника
-    RX_BOTTLE = RX_BOTTLE
-    RX_CASE = RX_CASE
-    RX_BPC = RX_BPC
-
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.state = "init"
         self.price_bottle = None
         self.price_case = None
         self.bottles_per_case = None
-        
 
-
-    # --- main entry ---
+    # ----------------------------
+    # MAIN ENTRY
+    # ----------------------------
     def extract(self, text: str) -> dict:
-        if not text:
-            return {}
-        # сброс состояния на каждый вызов
-        logger.debug(f"[RESET] before → state={self.state}, bottle={self.price_bottle}, case={self.price_case}, bpc={self.bottles_per_case}")
-        self.state = "init"
-        self.price_bottle = None
-        self.price_case = None
-        self.bottles_per_case = None
-        logger.debug(f"[RESET] after  → state={self.state}, bottle={self.price_bottle}, case={self.price_case}, bpc={self.bottles_per_case}")
-
+        self.reset()
         s = str(text)
-           
-        logger.debug(f"[PRICE] raw={text!r}")
-        self._extract_bpc(s)
-        price_logger.debug(f"[PRICE] bottles_per_case → {self.bottles_per_case}")
-        # 🧠 Предварительная эвристика: если явно указано 'cases' → считаем ценой за кейс
-        if re.search(r'\bcases?\b', s, re.I):
-            m = re.search(r'at\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', s, re.I)
-            if m:
-                self.price_case = float(m.group(1).replace(",", "."))
-                self.state = "case"
-                self._derive_bottle()
-                
-                return self._result()
+        self.raw_text = s
+        # HARD RULE: skip rows with no currency markers
+        if not RX_CURRENCY_MARKER.search(s):
+            price_logger.debug("[HARD-RULE] No currency markers → skip")
+            self.state = "none"
+            return {
+                "state": self.state,
+                "price_bottle": None,
+                "price_case": None,
+                "bottles_per_case": None,
+            }
 
-        # 1️⃣ явные указания (per bottle / per case)
-        self.price_bottle = self._match_any(s, self.RX_BOTTLE)
-        
-        if self.price_bottle is not None:
-            self.state = "bottle"
-            
-            self._derive_case()
-            price_logger.debug(f"[PRICE] matched bottle={self.price_bottle} (state={self.state})")
-            return self._result()
+        price_logger.debug(f"\n[EXTRACT] raw={s!r}")        
 
-       
-        self.price_case = self._match_any(s, self.RX_CASE)
-        
-        if self.price_case is not None:
-            self.state = "case"
-            
-            self._derive_bottle()
-            price_logger.debug(f"[PRICE] matched case={self.price_case} (state={self.state})")
-            return self._result()
+        # Layer 1 — collect raw numeric tokens
+        numeric_tokens = self._collect_numeric_tokens(s)
+        price_logger.debug(f"[L1] numeric tokens → {numeric_tokens}")
 
-        # 2️⃣  эвристика по контексту
-        at_match = re.search(r'at\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', s, re.I)
-       
-        if at_match:
-            val = float(at_match.group(1).replace(',', '.'))
-            has_cases = re.search(r'\bcases?\b', s, re.I)
-            has_bpc = bool(self.RX_BPC.search(s))
-            price_logger.debug(f"[PRICE] heuristic match at={val} cases={bool(has_cases)} bpc={has_bpc}")
- 
+        # Layer 2 — classify those numeric tokens
+        classified = self._classify_tokens(numeric_tokens, s)
+        price_logger.debug(f"[L2] classified → {classified}")
 
-            # если есть 'cases' — считаем ценой за кейс
-            if has_cases:
-                self.price_case = val
-                self.state = "case"
-                self._derive_bottle()
-                
-                return self._result()
+        # Layer 3 — extract BPC
+        self.bottles_per_case = detect_bpc(self.raw_text)
+        price_logger.debug(f"[L3] BPC → {self.bottles_per_case}")
 
-            # если нет 'cases', но есть 6x75cl/12x70cl — считаем ценой за бутылку
-            if has_bpc:
-                self.price_bottle = val
-                self.state = "bottle"
-                self._derive_case()
-                
-                return self._result()
+        # Layer 3 — resolve to final state
+        self._decide_final(classified)
 
-
-
-        # 3️⃣ derived nothing
-        self.state = "none"
-        price_logger.debug(f"[PRICE] nothing matched → state={self.state}")
-        return self._result()
-
-    # --- helpers ---
-    def _match_any(self, text, patterns):
-        for rx in patterns:
-            m = rx.search(text)            
-            if m:
-                raw_val = m.group(1)
-                # ✅ Added explicit debug line to trace raw and parsed values
-                price_logger.debug(
-                    f"[REGEX] pattern={rx.pattern} → full={m.group(0)!r}, group1={raw_val!r}"
-                )
-                try:
-                    sanitized = raw_val.strip()
-                    # if comma is decimal separator (European format), convert it to dot
-                    if re.search(r"\d,\d{1,2}$", sanitized):
-                        sanitized = sanitized.replace(",", ".")
-                    # if comma is thousands separator, remove it
-                    elif "," in sanitized and "." not in sanitized:
-                        sanitized = sanitized.replace(",", "")
-                    sanitized = sanitized.replace(" ", "")
-                    val = float(sanitized)
-                    price_logger.debug(f"[REGEX] parsed float={val} from {sanitized!r}")
-                    return val
-                except Exception as e:
-                    price_logger.warning(f"[REGEX] parse fail {raw_val!r} ({e})")
-        price_logger.debug("[REGEX] no match for any price pattern")
-        return None
-
-    def _extract_bpc(self, text):
-        logger.debug(f"[BPC] start (before search) bpc={self.bottles_per_case} text[:60]={text[:60]!r}")
-        # стандартный паттерн: "6x75", "12×70"
-        m = self.RX_BPC.search(text)
-        if m:
-            self.bottles_per_case = int(m.group(1))
-            logger.debug(f"[BPC] matched direct pattern → {self.bottles_per_case}")
-            return
-        
-        # star-style (cs*6 btl, *12 btl)
-        m = RX_BPC_STAR.search(text)
-        if m:
-            self.bottles_per_case = int(m.group("cases"))
-            logger.debug(f"[BPC] matched star+btl pattern → {self.bottles_per_case}")
-            return
-        
-        # формат с тире: "— 6 —" или "- 12 -"
-        m = re.search(r'[—\-–]\s*(\d{1,2})\s*[—\-–]', text)
-        if m:
-            self.bottles_per_case = int(m.group(1))
-            logger.debug(f"[BPC] matched dash pattern → {self.bottles_per_case}")
-            return
-
-        # если всё остальное не сработало — пробуем общий инфер
-        try:
-            
-            inferred = _infer_bpc_from_name(text)
-            logger.debug(f"[BPC] _infer_bpc_from_name returned {inferred!r}")
-            if inferred:
-                self.bottles_per_case = int(inferred)
-                logger.debug(f"[BPC] final inferred → {self.bottles_per_case}")
-            else:
-                logger.debug("[BPC] no inferred value")
-        except Exception as e:
-            print(f"[BPC] _infer_bpc_from_name() failed: {e}")
-           
- 
-
-    def _derive_case(self):
-        if self.price_bottle and self.bottles_per_case:
-            self.price_case = round(self.price_bottle * self.bottles_per_case, 2)
-            self.state = "derived"
-          
-
-    def _derive_bottle(self):
-        if self.price_case and self.bottles_per_case:
-            self.price_bottle = round(self.price_case / self.bottles_per_case, 4)
-            self.state = "derived"
-           
-
-    def _result(self):
         return {
             "state": self.state,
             "price_bottle": self.price_bottle,
             "price_case": self.price_case,
             "bottles_per_case": self.bottles_per_case,
         }
+
+    # ----------------------------
+    # LAYER 1
+    # ----------------------------
+    def _collect_numeric_tokens(self, s: str):
+        """
+        Возвращает ВСЕ возможные валюта+число / число+валюта токены.
+        Для каждого вхождения валюты ищет:
+        • ближайшее число слева (через пробелы)
+        • ближайшее число справа (через пробелы)
+        Ничего не фильтрует. Оба кандидата передаются дальше в L2/L3.
+        """
+
+        tokens = []
+
+        def scan_right(idx):
+            # ищем число СРАЗУ после валюты (пробелы разрешены)
+            n = len(s)
+            i = idx
+
+            # пропускаем пробелы и табы
+            while i < n and s[i].isspace():
+                i += 1
+
+            # число должно начинаться с цифры
+            if i >= n or not s[i].isdigit():
+                return None
+
+            start = i
+            i += 1
+
+            # продолжаем, пока идут цифры / . / , / пробел
+            while i < n and (s[i].isdigit() or s[i] in "., "):
+                i += 1
+
+            # удаляем внутренние пробелы "10 000.50" → "10000.50"
+            num = s[start:i].replace(" ", "")
+            return {"num": num, "start": start, "end": i}
+        
+        def scan_left(idx):
+            # ищем число ПЕРЕД валютой (пробелы разрешены)
+            i = idx - 1
+
+            # пропускаем пробелы
+            while i >= 0 and s[i].isspace():
+                i -= 1
+
+            # число должно оканчиваться на цифру
+            if i < 0 or not s[i].isdigit():
+                return None
+
+            end = i + 1
+            i -= 1
+
+            # продолжаем влево, пока идут цифры / . / , / пробел
+            while i >= 0 and (s[i].isdigit() or s[i] in "., "):
+                i -= 1
+
+            start = i + 1
+
+            # удаляем внутренние пробелы
+            num = s[start:end].replace(" ", "")
+            return {"num": num, "start": start, "end": end}
+
+
+
+        for m in RX_CURRENCY_MARKER.finditer(s):
+            cur_start, cur_end = m.span()
+            
+            cur_text = s[cur_start:cur_end]
+            price_logger.debug(f"[L1] CURRENCY FOUND '{cur_text}' at {cur_start}:{cur_end}")
+
+
+            left_info = scan_left(cur_start)
+            right_info = scan_right(cur_end)
+
+            price_logger.debug(
+                f"[L1] scan_left → {left_info} | text='{s[left_info['start']:left_info['end']] if left_info else None}'"
+            )
+            price_logger.debug(
+                f"[L1] scan_right → {right_info} | text='{s[right_info['start']:right_info['end']] if right_info else None}'"
+            )
+
+            # добавляем оба токена, не выбирая лучший
+            if left_info:
+                price_logger.debug(f"[L1] ADD LEFT TOKEN: {left_info['num']!r}")
+                tokens.append({
+                    "value": left_info["num"],
+                    "start": left_info["start"],   # добавляем для ограничения контекста
+                    "end": left_info["end"], # добавляем для ограничения контекста
+                    "left": s[max(0, left_info["start"] - 32):left_info["start"]],
+                    "right": s[left_info["end"]:left_info["end"] + 32],
+                    "has_currency": True,
+                    "side": "left",
+                })
+
+            if right_info:
+                price_logger.debug(f"[L1] ADD RIGHT TOKEN: {right_info['num']!r}")
+                tokens.append({
+                    "value": right_info["num"],
+                    "start": right_info["start"],   # добавляем для ограничения контекста
+                    "end": right_info["end"], # добавляем для ограничения контекста
+                    "left": s[max(0, right_info["start"] - 32):right_info["start"]],
+                    "right": s[right_info["end"]:right_info["end"] + 32],
+                    "has_currency": True,
+                    "side": "right",
+                })
+        price_logger.debug(f"[L1] FINAL TOKENS: {tokens}")
+        return tokens
+
+
+    # ----------------------------
+    # LAYER 2 — classification
+    # ----------------------------
+    def _classify_tokens(self, tokens, s):
+        classified = []   # итог: [(val, token, scores_dict)]
+        # --------------------------------------------------------
+        # Универсальный скорер: ищет regex в строке и даёт баллы.
+        # direction: "left" → проверяем m.end() == len(ctx)
+        #             "right" → проверяем m.start() == 0
+        # --------------------------------------------------------
+        def score_side(score_dict, key, ctx, regex_list, direction):
+            for rx in regex_list:
+                m = rx.search(ctx)
+                if not m:
+                    continue
+                if direction == "left":
+                    score_dict[key] += 1 if m.end() == len(ctx) else 0.5
+                else:  # "right"
+                    score_dict[key] += 1 if m.start() == 0 else 0.5
+
+        for t in tokens:
+            val = normalize_number(t["value"])
+
+            l = t["left"].lower()
+            r = t["right"].lower()
+            # Система баллов — минимально нужная
+            scores = {
+                "bottle": 0,
+                "case":   0,
+            }
+
+            #ограничиваем контекст для регексов
+            def tight_right(s, num_end):
+                ctx = []
+                i = num_end
+
+                # пропускаем пробелы
+                while i < len(s) and s[i].isspace():
+                    ctx.append(s[i]); i+=1
+
+                # допускаем 1 разделитель
+                if i < len(s) and s[i] in "/-:":
+                    ctx.append(s[i]); i+=1
+
+                # допускаем до 1 слова
+                start_word = i
+                while i < len(s) and s[i].isalpha():
+                    ctx.append(s[i]); i+=1
+
+                return "".join(ctx)
+            
+            r_tight = tight_right(s, t["end"])  # end = позиция конца числа
+
+            # Новый унифицированный вызов
+            score_side(scores, "bottle", l, RX_BOTTLE_LEFT,  "left")
+            score_side(scores, "bottle", r_tight, RX_BOTTLE_RIGHT, "right")
+            score_side(scores, "case",   l, RX_CASE_LEFT,    "left")            
+            score_side(scores, "case",   r_tight, RX_CASE_RIGHT, "right")         
+            
+            # ------------------------------------------
+            # EXPLICIT CASE and bottle RULES 
+            # for at <price> and
+            # ("cases ... at <price>")
+            # ------------------------------------------            
+            #расширяем контекст локально для правила
+            l_stripped = l.rstrip()
+            # шире контекст слева: всё, что перед числом в исходной строке
+            num_idx = s.lower().find(t["value"].lower())
+            if num_idx != -1:
+                global_left = s[:num_idx].lower()
+            else:
+                global_left = l
+            
+            # 1) LEFT: "... at <price>" → слабый сигнал bottle
+            if l_stripped.endswith(" at"):
+                scores["bottle"] += 0.5
+                # 1b) если где-то слева есть "case"/"cases" → слабый сигнал case,
+                # чтобы в примере "85 cases ... at 315 euro" бутылка/кейс сбалансировались
+                # и мы упали в дефолт CASE.
+                if " case" in global_left or " cases" in global_left:
+                    scores["case"] += 0.5
+
+            # 3) RIGHT: "<price> per bottle/btl"
+             # RULE LOGIC — используем ТОЛЬКО t["right"]
+            right_clean = t["right"].lower().lstrip()
+            
+            if any(x in right_clean for x in ("per bottle", "per btl", "per-bottle", "per-btl")):
+                 scores["bottle"] += 1.5
+            
+            if any(x in right_clean for x in ("per case", "per cs", "per-case", "per-case")):
+                 scores["case"] += 1.5
+
+            # ALL TOKENS HERE ARE CANDIDATES,
+            # потому что L1 уже отфильтровал неценовые числа
+            classified.append((val, t, scores))
+        return classified
+    # ----------------------------
+    # LAYER 3 — price resolution logic
+    # ----------------------------
+    def _decide_final(self, classified):
+        # Слой 3 = полноценный резолвер контекста.
+        #
+        # На входе:
+        #   classified = [(val, token, scores_dict)]
+        #
+        # Задача:
+        #   1) проверить делимость между токенами
+        #   2) использовать лексические баллы
+        #   3) fallback → BPC
+        #   4) fallback → default case
+        # извлекаем только числа
+        
+        tokens = [(val, t, scores) for (val, t, scores) in classified]
+        if not tokens:
+            self.state = "none"
+            return
+
+        # Если два ценовых токена → пытаемся определить bottle/case и BPC
+        if len(tokens) >= 2:
+            vals = [x[0] for x in tokens]
+            big = max(vals)
+            small = min(vals)
+
+            ratio = big / small
+            rounded = round(ratio)
+
+            # ratio должен быть ИНТЕРОМ (BPC = integer)
+            if abs(ratio - rounded) < 0.0001:
+                self.bottles_per_case = rounded
+                self.price_case = big
+                self.price_bottle = small
+                self.state = "derived"
+                return
+        
+        # Если токен один → работаем по весам и контексту
+        val, token, scores = tokens[-1]
+
+        bottle_score = scores["bottle"]
+        case_score   = scores["case"]
+
+        # Если больше очков bottle → bottle
+        if bottle_score > case_score:
+            self.price_bottle = val
+            # попытка derive case по BPC
+            if self.bottles_per_case:
+                self.price_case = round(val * self.bottles_per_case, 2)
+                self.state = "derived"
+            else:
+                self.state = "bottle"
+            return
+
+        # Если больше очков case → case
+        if case_score > bottle_score:
+            self.price_case = val
+            if self.bottles_per_case:
+                self.price_bottle = round(val / self.bottles_per_case, 4)
+                self.state = "derived"
+            else:
+                self.state = "case"
+            return
+
+        # Иначе → нет контекста → ищем BPC
+        if self.bottles_per_case:
+            # считаем этот токен как case по умолчанию
+            self.price_case = val
+            self.price_bottle = round(val / self.bottles_per_case, 4)
+            self.state = "derived"
+            return
+
+        # Нет BPC → default = bottle
+        self.price_bottle = val
+        self.state = "bottle"
 
 
 def extract_access(text: str):

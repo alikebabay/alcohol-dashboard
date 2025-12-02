@@ -10,20 +10,14 @@ from utils.abbreviations_helper import convert_abbreviation
 
 # 🧾 Just paste your text here — no need for quotes or commas
 text = """
-1600 cs Peachtree 6×70cl 20% RF T2, CODED @ EUR 34.33€ cs, Exwork Loendersloot, On Floor
-1500 cs Jose Cuervo Especial Silver 6×70cl 35% RF T2, CODED @ EUR 34.55€ cs, Exwork Loendersloot, On Floor
-20 cs The Macallan 15YO Double Cask 6×70cl 43% RF T2, CODED @ EUR 596.74€ cs, Exwork Loendersloot, On Floor
--
-22 cs The Macallan 18YO Double Cask 6×70cl 43% RF T2, CODED @ EUR 1238.80€ cs, Exwork Loendersloot, On Floor
-500 cs Tia Maria 12×70cl 20% RF T2, CODED @ EUR 84.74€ cs, Exwork Loendersloot, On Floor
 
-350 cs William Lawson’s 6×100cl 40% RF T2, CODED @ EUR 30.00€ cs, Exwork Loendersloot, On Floor
-1000 cs Hendrick’s Gin 6×70cl 41.4% RF T2, CODED @ EUR 87€ cs, Exwork Loendersloot, On Floor
-275 cs Chivas Regal 12yo GBX with Cradle 2x450cl 40% T1 @  181€ cs, Exwork Loendersloot, on Floor
-110 cs Glenlivet Founder’s Reserve 6x70cl GBX, RF, T2@ € 92 cs, Exwork Loendersloot, on floor
-110 cs Chivas Regal 12yo GBX with Cradle 2x450cl 40% T1 @  181€ cs, Exwork Loendersloot, on Floor
+Luce Brunello di Montalcino 75cl
+Luce della Vite Luce 75cl
+Luce Lucente 75cl
+Dal Forno Romano Amarone della Valpolicella 75cl (historical box)
+Dal Forno Romano della Valpolicella 75cl
+Braida Bricco Dell’Uccelone 75cl
 
-1200 cs Glenlivet Founder’s Reserve 6x70cl GBX, RF, T2@ € 92 cs, Exwork Loendersloot, 3-4 weeks after deposit
 
 """
 

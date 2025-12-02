@@ -1,6 +1,12 @@
 # utils/regular_expressions.py
 import re
 
+RX_CURRENCY_MARKER = re.compile(
+     r'(?:\b(?:eur|euro|usd|gbp|chf|aed)\b|[¥₽£€\$])',
+     re.I,
+ )
+
+
 # Цена за бутылку
 RX_BOTTLE = [
     re.compile(r'price\s+per\s*bottle\s+([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
@@ -17,18 +23,53 @@ RX_BOTTLE = [
 # Цена за кейс
 RX_CASE = [
         re.compile(r'(?:eur|euro|€|usd|gbp)\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:per\s*case|case|cs)\b', re.I),
-    re.compile(r'([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\s*(?:per\s*case|case|cs)\b', re.I),
-    re.compile(r'price\s+per\s*case\s+([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
-    # 👇 новый универсальный вариант, чтобы ловить 'at 37.15 USD'
-    re.compile(r'at\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
-    # 👇 короткие варианты вроде "— $131.95" или "€307.34"
-    re.compile(r'[$€]\s*([0-9]+(?:[.,][0-9]+)?)\b', re.I),
-    re.compile(r'[$€]\s*([0-9]{1,3}(?:[,.\s][0-9]{3})*(?:[.,][0-9]+)?)\b', re.I),
-    # 👇 Price(USD)/Box или Price(EUR)/Case
-    re.compile(r'price\s*\(?(usd|eur|euro|€|gbp)?\)?\s*/\s*(?:box|case)\b', re.I),
+        re.compile(r'([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\s*(?:per\s*case|case|cs)\b', re.I),
+        re.compile(r'price\s+per\s*case\s+([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
+        # 👇 новый универсальный вариант, чтобы ловить 'at 37.15 USD'
+        re.compile(r'at\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
+        # 👇 короткие варианты вроде "— $131.95" или "€307.34"
+        re.compile(r'[$€]\s*([0-9]+(?:[.,][0-9]+)?)\b', re.I),
+        re.compile(r'[$€]\s*([0-9]{1,3}(?:[,.\s][0-9]{3})*(?:[.,][0-9]+)?)\b', re.I),
+        # 👇 Price(USD)/Box или Price(EUR)/Case
+        re.compile(r'price\s*\(?(usd|eur|euro|€|gbp)?\)?\s*/\s*(?:box|case)\b', re.I),
+        ]
 
-
+# контекстные регексы лексические
+RX_BOTTLE_LEFT = [
+    re.compile(r'(?:/|per\s+)?btl\b', re.I),
+    re.compile(r'\bper\s+bottle\b', re.I),
+    re.compile(r'\bbottle\b', re.I),
 ]
+
+RX_BOTTLE_RIGHT = [
+    re.compile(r'\b(?:/|per\s+)?btl\b', re.I),
+    re.compile(r'\bper\s+bottle\b', re.I),
+    re.compile(r'\bbottle\b', re.I),
+]
+RX_CASE_LEFT = [
+    re.compile(r'\bcase\b', re.I),
+    re.compile(r'\bcs\b', re.I),
+    re.compile(r'\bbox\b', re.I),
+    re.compile(r'\bper\s+case\b', re.I),
+]
+
+RX_CASE_RIGHT = [
+    re.compile(r'\bcase\b', re.I),
+    re.compile(r'\bcs\b', re.I),
+    re.compile(r'\bbox\b', re.I),
+    re.compile(r'\bper\s+case\b', re.I),
+]
+
+#pattern for prices in float format
+RX_NUMBER = re.compile(
+    r"""
+    \d{1,3}                # первая группа (1–3 цифры)
+    (?:[.,\s]\d{3})*       # группы тысяч (,048 .048  048)
+    (?:[.,]\d+)?           # дробная часть
+    """,
+    re.X
+)
+
 
 # Bottles-per-case (6x75, 12×70 и т.п.)
 RX_BPC = re.compile(r'(\d{1,2})\s*[x×]\s*\d{1,3}', re.I)
@@ -36,6 +77,13 @@ RX_BPC = re.compile(r'(\d{1,2})\s*[x×]\s*\d{1,3}', re.I)
 RX_BPC_STAR = re.compile(
     r'(?i)(?:\bcs\s*\*|\*)\s*(?P<cases>\d{1,2})\s*(?:btl|btls|bottle)s?\b'
 )
+RX_BPC_DASH = re.compile(r'(?i)[—\-–]\s*(?P<cases>\d{1,2})\s*[—\-–]')
+
+#6/70/43
+RX_BPC_TRIPLE = re.compile(
+    r'(?P<bpc>\d{1,2})\s*[x×/]\s*\d{2,3}\s*[x×/]\s*\d{1,2}'
+)
+
 
 # --- регексы для признаков продукта ---
 # Объём вида 50ml, 75cl, 1L, 37.5cl

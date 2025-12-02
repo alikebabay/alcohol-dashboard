@@ -10,7 +10,6 @@ import logging
 from collections import Counter
 
 from utils.logger import setup_logging
-from libraries.regular_expressions import RX_CASE
 from libraries.patterns import PATS
 
 logger = logging.getLogger("core.parser")
