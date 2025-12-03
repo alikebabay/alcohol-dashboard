@@ -105,16 +105,6 @@ driver = GraphDatabase.driver(URI, auth=(USER, PASS))
 async_driver = AsyncGraphDatabase.driver(URI, auth=(USER, PASS))
 
 
-#Silence pandas warning about column types
-pd.set_option('future.no_silent_downcasting', True)
-
-#silence xml in xlsx warning
-warnings.filterwarnings(
-    "ignore",
-    message="Unknown extension is not supported and will be removed",
-    module="openpyxl.worksheet._reader"
-)
-
 # ==========================================================
 # 🌐 Admin API base URL (used by MiniApp)
 # ==========================================================
@@ -127,9 +117,24 @@ else:
 #Separate mode for admin secrets
 IS_ADMIN = os.environ.get("ADMIN_MODE") == "1"
 
-if not IS_ADMIN:
-    TOKEN = get_from_vault("app", "bot_token")
-    GOOGLE_CREDS = get_from_vault("app", "google_credentials")
-else:
+if IS_ADMIN:
+    # Admin frontend does NOT need Telegram or Google creds
     TOKEN = None
     GOOGLE_CREDS = None
+else:
+    # Full system mode — existing behaviour, do NOT change
+    TOKEN = get_from_vault("app", "bot_token")
+    GOOGLE_CREDS = get_from_vault("app", "google_credentials")
+
+
+
+
+#Silence pandas warning about column types
+pd.set_option('future.no_silent_downcasting', True)
+
+#silence xml in xlsx warning
+warnings.filterwarnings(
+    "ignore",
+    message="Unknown extension is not supported and will be removed",
+    module="openpyxl.worksheet._reader"
+)

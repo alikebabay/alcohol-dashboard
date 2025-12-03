@@ -11,6 +11,9 @@ import os
 
 from pydantic import BaseModel
 
+from config import async_driver as GLOBAL_DRIVER, MODE
+
+
 #requests for user input
 class SupplierName(BaseModel):
     name: str
@@ -25,7 +28,6 @@ class CanonicalRequest(BaseModel):
 setup_logging()
 logger = logging.getLogger(__name__)
 
-from config import async_driver as GLOBAL_DRIVER, MODE
 
 logger.debug(f"[Neo4j] driver object type: {type(GLOBAL_DRIVER)}")
 logger.info(f"[Neo4j] Using shared driver (mode={MODE})")
