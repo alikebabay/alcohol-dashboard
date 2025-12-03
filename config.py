@@ -7,6 +7,7 @@ from neo4j import GraphDatabase, AsyncGraphDatabase
 import logging
 import pandas as pd
 import warnings
+import socket
 
 
 logger = logging.getLogger(__name__)
@@ -109,6 +110,10 @@ async_driver = AsyncGraphDatabase.driver(URI, auth=(USER, PASS))
 # ==========================================================
 # 🌐 Admin API base URL (used by MiniApp)
 # ==========================================================
+
+IP = socket.gethostbyname(socket.gethostname())
+ADMIN_API_BASE = f"http://{IP}:8001/admin"
+
 # ==========================================================
 # Separate mode for admin (no bot, no Google creds)
 # ==========================================================
@@ -128,8 +133,6 @@ else:
     # Main backend in prod → load from Vault
     TOKEN = get_from_vault("app", "bot_token")
     GOOGLE_CREDS = get_from_vault("app", "google_credentials")
-
-
 
 
 #Silence pandas warning about column types
