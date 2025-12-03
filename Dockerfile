@@ -30,5 +30,5 @@ CMD ["bash", "-c", "\
   export GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/google_credentials.json && \
   echo 'Secrets loaded. Starting app...' && \
   exec uvicorn main_api:app --host 0.0.0.0 --port 8080 & \
-  exec uvicorn admin.admin_api:app --host 0.0.0.0 --port 8001
+  exec uvicorn admin.admin_api:app --host 0.0.0.0 --port 8001 \
 "]
