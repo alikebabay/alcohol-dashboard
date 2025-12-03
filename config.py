@@ -8,6 +8,7 @@ import logging
 import pandas as pd
 import warnings
 
+
 logger = logging.getLogger(__name__)
 
 load_dotenv("neo4j.env")
@@ -108,21 +109,23 @@ async_driver = AsyncGraphDatabase.driver(URI, auth=(USER, PASS))
 # ==========================================================
 # 🌐 Admin API base URL (used by MiniApp)
 # ==========================================================
-#
-if MODE == "prod":
-    ADMIN_API_BASE = "http://localhost:8001/admin"
-else:
-    ADMIN_API_BASE = "http://localhost:8001/admin"
-
-#Separate mode for admin secrets
+# ==========================================================
+# Separate mode for admin (no bot, no Google creds)
+# ==========================================================
 IS_ADMIN = os.environ.get("ADMIN_MODE") == "1"
 
-if IS_ADMIN:
-    # Admin frontend does NOT need Telegram or Google creds
+if MODE != "prod":
+    # Local development
     TOKEN = None
     GOOGLE_CREDS = None
+
+elif IS_ADMIN:
+    # Admin in production → only needs Neo4j, nothing else
+    TOKEN = None
+    GOOGLE_CREDS = None
+
 else:
-    # Full system mode — existing behaviour, do NOT change
+    # Main backend in prod → load from Vault
     TOKEN = get_from_vault("app", "bot_token")
     GOOGLE_CREDS = get_from_vault("app", "google_credentials")
 
