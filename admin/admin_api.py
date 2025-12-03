@@ -11,7 +11,7 @@ import os
 
 from pydantic import BaseModel
 
-from config import async_driver as GLOBAL_DRIVER, MODE
+from config import async_driver as GLOBAL_DRIVER, MODE, ADMIN_API_BASE
 
 
 #requests for user input
@@ -61,8 +61,7 @@ app.mount("/static", StaticFiles(directory="frontend-miniapp/static"), name="sta
 
 #admin endpoint for url
 @app.get("/admin/config")
-async def admin_config():
-    from config import ADMIN_API_BASE, MODE
+async def admin_config():    
     return {"mode": MODE, "api_base": ADMIN_API_BASE}
 
 

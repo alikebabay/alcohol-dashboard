@@ -108,10 +108,13 @@ async_driver = AsyncGraphDatabase.driver(URI, auth=(USER, PASS))
 
 
 # ==========================================================
-# 🌐 Admin API base URL (used by MiniApp)
+# 🌐 Admin API base URL
 # ==========================================================
+try:
+    IP = socket.gethostbyname(socket.gethostname())
+except:
+    IP = "localhost"
 
-IP = socket.gethostbyname(socket.gethostname())
 ADMIN_API_BASE = f"http://{IP}:8001/admin"
 
 # ==========================================================
