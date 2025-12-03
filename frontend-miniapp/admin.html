@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Graph Admin</title>
+<link rel="stylesheet" href="/static/admin.css">
+</head>
+
+<body>
+
+<h2>Graph Admin</h2>
+
+<div class="container">
+    <div class="left">
+
+        <!-- SUPPLIERS -->
+        <div class="section-block">
+            <h3>Suppliers</h3>
+
+            <div id="supplier_grid"></div>
+
+            <div id="active_supplier"
+                 style="font-weight:bold; margin-top:10px; margin-bottom:10px;">
+            </div>
+
+            <div class="menu">
+                <div class="menu-item" onclick="loadSuppliers()">⟳ Reload Suppliers</div>
+                <div class="menu-item" onclick="listSuppliers()">📜 List Suppliers</div>
+
+                <div id="btn_change_supplier" class="menu-item"
+                     style="display:none;" onclick="resetState()">
+                    ❎ Change Supplier
+                </div>
+
+                <div id="btn_nodes" class="menu-item"
+                     style="display:none;" onclick="loadNodes()">
+                    🔍 Find Nodes
+                </div>
+
+                <div id="btn_remove" class="menu-item danger"
+                     style="display:none;" onclick="removeSupplier()">
+                    ❌ Remove Supplier
+                </div>
+
+                <div id="btn_dfout" class="menu-item danger"
+                     style="display:none;" onclick="deleteDfOut()">
+                    🗑 Delete all DfOut
+                </div>
+            </div>
+        </div>
+
+        <!-- DFOUT -->
+        <div class="section-block">
+            <h3>Blob ID / DfOut</h3>
+            <input id="dfout_id" placeholder="DfOut ID" />
+            <button onclick="markCanonical()">⭐ Mark Canonical</button>
+        </div>
+
+        <!-- BRAND -->
+        <div class="section-block">
+            <h3>Brand</h3>
+            <input id="brand" placeholder="Brand name" />
+            <button onclick="findBrand()">🔍 Find Brand</button>
+        </div>
+
+    </div>
+
+    <div class="right">
+        <!-- OUTPUT -->
+        <div class="section-block">
+            <h3>Output</h3>
+            <div id="output" class="result"></div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<script>
+
+//connection to api
+let API_BASE = null;
+let state = 0;              // 0 = idle, 1 = supplier selected, 2 = nodes view
+let activeSupplier = null;  // stored selected supplier
+let lastNodes = [];          // cached nodes for state 2
+
+async function loadConfig() {
+    try {
+        const res = await fetch("/admin/config");
+        const cfg = await res.json();
+        API_BASE = cfg.api_base;
+    } catch (e) {
+        // fallback for FILE:// usage
+        API_BASE = "http://localhost:8001/admin";
+    }
+}
+
+//populates supplier dropdown
+async function loadSuppliers() {
+    const data = await api("/list_suppliers", "GET", null, false);
+    const grid = document.getElementById("supplier_grid");
+
+    grid.innerHTML = "";
+
+    if (!Array.isArray(data)) {
+        grid.innerHTML = "<div>Error loading suppliers</div>";
+        return;
+    }
+
+    data.forEach(row => {
+        const div = document.createElement("div");
+        div.className = "supplier-item";
+        div.innerText = row.name;
+
+        div.onclick = () => {
+            activeSupplier = row.name;
+            state = 1;
+            renderState();
+            highlightActiveSupplier();
+        };
+
+        grid.appendChild(div);
+    });
+
+    highlightActiveSupplier();
+}
+
+function highlightActiveSupplier() {
+    document.querySelectorAll(".supplier-item").forEach(el => {
+        el.classList.toggle("active", el.innerText === activeSupplier);
+    });
+}
+
+
+
+// backend calls
+async function api(path, method="GET", body=null, updateOutput=true) {
+    let opts = { method, headers: {"Content-Type": "application/json"} };
+    if (body) opts.body = JSON.stringify(body);
+
+    const res = await fetch(API_BASE + path, opts);
+    const data = await res.json().catch(()=>({error:"Invalid JSON"}));
+    if (updateOutput)
+        document.getElementById("output").innerText = JSON.stringify(data, null, 2);
+    return data;
+}
+
+function listSuppliers(){
+    api("/list_suppliers", "GET");
+}
+
+function removeSupplier(){
+    if (!confirm("Remove supplier: " + activeSupplier + " ?")) return;
+    api("/remove_supplier", "POST", { name: activeSupplier });
+}
+
+function findNodes() {
+    loadNodes();
+}
+
+async function loadNodes() {
+    const data = await api(
+        "/find_nodes?supplier=" + encodeURIComponent(activeSupplier),
+        "GET",
+        null,
+        false
+    );
+    lastNodes = data;
+    state = 2;
+    renderState();
+}
+
+//removes DFOUt, returns user to state 2
+async function deleteDfOut() {
+    await api("/delete_dfout", "POST", { supplier: activeSupplier });
+
+    // Load nodes immediately → switches state to 2 inside loadNodes()
+    await loadNodes();
+}
+
+
+function markCanonical(){
+    const id = document.getElementById("dfout_id").value.trim();
+    api("/mark_canonical", "POST", { id });
+}
+
+function findBrand(){
+    const brand = document.getElementById("brand").value.trim();
+    api("/find_brand?name=" + encodeURIComponent(brand), "GET");
+}
+
+function resetState() {
+    if (state === 2) {
+        // go back only to supplier mode
+        state = 1;
+        renderState();
+        return;
+    }
+    activeSupplier = null;
+    state = 0;
+    
+    renderState();
+}
+
+function renderState() {
+    const s = state;
+    const lbl  = document.getElementById("active_supplier");
+    const btnC = document.getElementById("btn_change_supplier");
+    const rm   = document.getElementById("btn_remove");
+    const nd   = document.getElementById("btn_nodes");
+    const df   = document.getElementById("btn_dfout");
+
+    if (s === 0) { // idle state
+        lbl.innerText = "";
+        btnC.style.display = "none";
+        rm.style.display   = "none";
+        nd.style.display   = "none";
+        df.style.display   = "none";
+        document.getElementById("output").style.display = "block";
+        return;
+    }
+
+    if (s === 1) { // supplier selected state
+        lbl.innerText = "Active supplier: " + activeSupplier;
+        btnC.style.display = "block"; //change supplier
+        rm.style.display   = "block"; //remove supplier
+        nd.style.display   = "block"; //find all nodes for supplier
+        df.style.display   = "block"; //turns deletedf out button display
+        document.getElementById("output").style.display = "block";
+        return;
+    }
+
+    if (s === 2) {   // NODES VIEW
+        lbl.innerText = "Nodes for: " + activeSupplier;
+        btnC.style.display = "block";
+        rm.style.display   = "block";
+        nd.style.display   = "block";
+        df.style.display   = "block";
+
+        const out = document.getElementById("output");
+        out.style.display = "block";
+
+        // Render list
+        out.innerHTML = lastNodes.map(n => {
+            const name = n.name ? `<b>${n.name}</b>` : "";
+            const id = n.id || "?";
+
+            // pick css class by node type
+            let cls = "node-other";
+            const t = n.type.toLowerCase();
+
+            if (t === "offer") cls = "node-offer";
+            else if (t === "dfout") cls = "node-dfout";
+            else if (t === "dfraw") cls = "node-dfraw";
+            else if (t === "rawblob") cls = "node-rawblob";
+            else if (t === "brand") cls = "node-brand";
+
+            return `
+                <div class="node-item ${cls}">
+                    <div><b>${n.type}</b></div>
+                    <div>ID: <span class="copy-id" data-id="${id}">${id}</span></div>
+                    <div>${name}</div>
+                </div>
+            `;
+        }).join("");
+
+
+        // enable click to copy
+        document.querySelectorAll(".copy-id").forEach(el => {
+            el.onclick = () => {
+                navigator.clipboard.writeText(el.dataset.id);
+                el.style.color = "green";
+                setTimeout(() => el.style.color = "blue", 800);
+                showToast("Copied!");
+            };
+        });
+
+        return;
+    }
+}
+
+// Auto-connect to api when page loads
+window.onload = async () => {
+    await loadConfig();
+    await loadSuppliers();
+    renderState();
+};
+
+//helper to display copid when id is copied
+function showToast(msg) {
+    const t = document.createElement("div");
+    t.innerText = msg;
+    t.style.position = "fixed";
+    t.style.bottom = "20px";
+    t.style.right = "20px";
+    t.style.background = "black";
+    t.style.color = "white";
+    t.style.padding = "10px 16px";
+    t.style.borderRadius = "6px";
+    t.style.opacity = "0";
+    t.style.transition = "opacity 0.25s ease";
+    t.style.zIndex = 9999;
+
+    document.body.appendChild(t);
+
+    requestAnimationFrame(() => t.style.opacity = "1");
+
+    setTimeout(() => {
+        t.style.opacity = "0";
+        setTimeout(() => t.remove(), 250);
+    }, 900);
+}
+
+</script>
+</body>
+</html>

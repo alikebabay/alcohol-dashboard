@@ -7,3 +7,6 @@ google-auth==2.40.3
 python-dotenv==1.1.1
 neo4j==5.8.
 xlsxwriter==3.2.9
+fastapi==0.123.5
+uvicorn==0.38.0
+fastapi.middleware==0.2.1

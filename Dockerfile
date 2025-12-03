@@ -29,5 +29,6 @@ CMD ["bash", "-c", "\
   echo \"$data\" | jq -r '.data.data.GOOGLE_CREDENTIALS_JSON' > /run/secrets/google_credentials.json && \
   export GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/google_credentials.json && \
   echo 'Secrets loaded. Starting app...' && \
-  exec python main.py \
+  exec uvicorn main_api:app --host 0.0.0.0 --port 8080 & \
+  exec uvicorn admin.admin_api:app --host 0.0.0.0 --port 8001
 "]

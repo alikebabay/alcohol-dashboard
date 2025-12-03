@@ -1,8 +1,9 @@
+#config.py
 import os
 import json
 from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
-from neo4j import GraphDatabase
+from neo4j import GraphDatabase, AsyncGraphDatabase
 import logging
 import pandas as pd
 import warnings
@@ -96,7 +97,12 @@ else:
     USER = os.getenv("NEO4J_USER")
     PASS = os.getenv("NEO4J_PASS")
 
+# 🟢 Shared SYNC driver (used by workers, bot, normalizers, parsers)
 driver = GraphDatabase.driver(URI, auth=(USER, PASS))
+
+# 🟢 NEW: Shared ASYNC driver (used by admin API / FastAPI)
+
+async_driver = AsyncGraphDatabase.driver(URI, auth=(USER, PASS))
 
 
 #Silence pandas warning about column types
@@ -108,3 +114,12 @@ warnings.filterwarnings(
     message="Unknown extension is not supported and will be removed",
     module="openpyxl.worksheet._reader"
 )
+
+# ==========================================================
+# 🌐 Admin API base URL (used by MiniApp)
+# ==========================================================
+#
+if MODE == "prod":
+    ADMIN_API_BASE = os.getenv("ADMIN_API_BASE", "https://your-admin-domain/admin")
+else:
+    ADMIN_API_BASE = "http://localhost:8001/admin"

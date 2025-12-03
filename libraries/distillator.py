@@ -8,7 +8,8 @@ from typing import Optional
 import importlib
 import logging
 
-from libraries.regular_expressions import RX_VOLUME, _RX_CASEVOL, _RX_CASEVOL_ABV, RX_PACK_CASES_FLEX, RX_PACK_PCS, RX_ABV, RX_AGE, RX_VINTAGE
+from libraries.regular_expressions import CL, RX_PACK_CASES_FLEX, RX_PACK_PCS, RX_ABV, RX_AGE, RX_VINTAGE
+from libraries.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC, RX_BPC_TRIPLE
 from utils.logger import setup_logging
 
 setup_logging()
@@ -40,21 +41,21 @@ def _normalize_text(s: str) -> str:
 def _cl_from_text(text) -> Optional[float]:
      if not text: return None
      s = str(text).lower().replace('\xa0',' ')
-     m = _RX_CASEVOL.search(s)
+     m = CL.CASE.search(s)
      if not m:
          m = re.search(r'(\d{1,4}(?:[.,]\d{1,2})?)\s*(ml|cl|l)\b', s)
      if not m:
          return None
-     val = float(m.group(1 if m.re is not _RX_CASEVOL else 2).replace(',', '.'))
-     unit = m.group(2 if m.re is not _RX_CASEVOL else 3)
+     val = float(m.group(1 if m.re is not CL.CASE else 2).replace(',', '.'))
+     unit = m.group(2 if m.re is not CL.CASE else 3)
      if unit == 'ml': return round(val / 10, 2)   # 750ml -> 75.0
      if unit == 'l':  return round(val * 100, 2)  # 1l -> 100.0
      return val                                     # cl
 
 def _strip_casevol_tokens(s: str) -> str:
      if not isinstance(s, str): s = str(s or '')
-     s = _RX_CASEVOL.sub('', s)
-     s = RX_VOLUME.sub('', s)
+     s = CL.CASE.sub('', s)
+     s = CL.VOL.sub('', s)
      s = re.sub(r'\s{2,}', ' ', s).strip(' -,—–')
      return s
 
@@ -62,9 +63,9 @@ def _remove_volume_tokens(name: str) -> str:
     if not isinstance(name, str):
         return name
     # убираем кейс+объём: 6x75cl, 12x1L, 120x5cl
-    s = _RX_CASEVOL.sub("", name)
+    s = CL.CASE.sub("", name)
     # убираем одиночные объёмы: 75cl, 1L, 200ml
-    s = RX_VOLUME.sub("", s)
+    s = CL.VOL.sub("", s)
     return re.sub(r"\s{2,}", " ", s).strip(" -")
 
 
@@ -110,8 +111,13 @@ def _extract_volume(text: str):
     if not isinstance(text, str):
         return None
     s = text.lower().replace('\xa0',' ')
+    # 0) NEW: "6/70/40" → volume is middle value (cl)
+    m0 = CL.SLASH.search(s)
+    if m0:
+        return float(m0.group(1))   # already in cl
+    
     # 1) классика: 6x70cl, 12x1l — unit обязателен
-    m = _RX_CASEVOL.search(s)
+    m = CL.CASE.search(s)
     if m:
         val = float(m.group(2).replace(',', '.'))
         unit = m.group(3).lower()
@@ -120,12 +126,12 @@ def _extract_volume(text: str):
         return val
 
     # 2) особый случай: две 'x' и есть '%': 6x100x15% → берём второе число как объём (в cl)
-    m2 = _RX_CASEVOL_ABV.search(s)
+    m2 = CL.CASE_ABV.search(s)
     if m2:
         return float(m2.group(1).replace(',', '.'))
 
     # 3) одиночные форматы: 75cl / 1l / 50ml
-    m = RX_VOLUME.search(s)
+    m = CL.VOL.search(s)
     if not m:
         return None
     val_unit = m.group(0).replace(" ", "").lower()
@@ -206,3 +212,18 @@ def looks_like_category(name: str, row: pd.Series | None = None) -> bool:
                 return True
     return False
 
+
+#helper function for location and access
+
+def looks_like_product(s: str) -> bool:
+        # Используем ТВОИ рантайм-выражения из text_extractors.py
+        if RX_BPC.search(s):
+            return True
+        # NEW: triple pattern 6/70/40, 6/70/43
+        if RX_BPC_TRIPLE.search(s):
+            return True
+        if any(rx.search(s) for rx in RX_BOTTLE):
+            return True
+        if any(rx.search(s) for rx in RX_CASE):
+            return True
+        return False

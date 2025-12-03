@@ -54,8 +54,8 @@ def setup_logging(global_level=logging.INFO):
         "dispatcher": logging.ERROR,
         # инфраструктура
         "integrations.matrix_merger": logging.ERROR,
-        "core.graph_normalizer": logging.ERROR,
-        "core.graph_normalizer.canonical": logging.ERROR,
+        "core.graph_normalizer": logging.DEBUG,
+        "core.graph_normalizer.canonical": logging.DEBUG,
         "core.graph_normalizer.loader": logging.ERROR,
         "core.normalizer": logging.ERROR,
         "integrations.rules_typing": logging.ERROR,
@@ -69,12 +69,12 @@ def setup_logging(global_level=logging.INFO):
         "save_to_excel": logging.ERROR,
         "integrations.df_raw_to_graph": logging.ERROR,
         "core.gbx_detector": logging.ERROR,              
-        "core.text_parser": logging.DEBUG,
+        "core.text_parser": logging.ERROR,
         #workers
         "workers.excel_worker": logging.ERROR,
         # утилиты и извлекатели
         "utils.text_extractors": logging.ERROR,
-        "utils.text_extractors.prices": logging.DEBUG,
+        "utils.text_extractors.prices": logging.ERROR,
         "utils.text_extractors.access": logging.ERROR,
         "utils.text_extractors.location": logging.ERROR,
         "core.access_assistant": logging.ERROR,
@@ -89,7 +89,9 @@ def setup_logging(global_level=logging.INFO):
         "core.normalizer.access_location": logging.ERROR,
         "utils.verifier": logging.ERROR,
         "utils.verify_cols": logging.ERROR,
-        "core.volume_detector": logging.ERROR
+        "core.volume_detector": logging.ERROR,
+        # админка
+        "admin.admin_api": logging.DEBUG
 
     }
 
@@ -131,7 +133,8 @@ def setup_logging(global_level=logging.INFO):
         "utils.verify_cols": "verify_cols_debug.txt",
         "core.volume_detector": "volume_detector_debug.txt",
         "core.gbx_detector": "gbx_detector_debug.txt",
-        "core.graph_normalizer.loader": "graph_loader_debug.txt"
+        "core.graph_normalizer.loader": "graph_loader_debug.txt",
+        "admin.admin_api": "admin_api_debug.txt"
     }
 
     

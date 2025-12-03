@@ -84,8 +84,12 @@ RX_BPC_TRIPLE = re.compile(
     r'(?P<bpc>\d{1,2})\s*[x×/]\s*\d{2,3}\s*[x×/]\s*\d{1,2}'
 )
 
-
+#---------------------------------
 # --- регексы для признаков продукта ---
+#---------------------------------
+
+
+
 # Объём вида 50ml, 75cl, 1L, 37.5cl
 # Теперь после ml|cl|l может быть конец строки, пробел, запятая, %, или буква x
 RX_VOLUME = re.compile(
@@ -99,6 +103,19 @@ _RX_CASEVOL = re.compile(
 _RX_CASEVOL_ABV = re.compile(
     r'(?i)\b\d{1,3}\s*[x×]\s*(\d{1,4}(?:[.,]\d{1,2})?)\s*[x×]\s*\d{1,2}\s*%'
 )
+# /slash CASE COUNT / VOLUME(CL) / ABV(%)
+
+_RX_SLASH_CASEVOL = re.compile(
+    r'(?i)\b\d{1,3}\s*/\s*(\d{1,4})\s*/\s*\d{1,2}\b'
+)
+
+# shortening for imports
+class CL:
+    VOL   = RX_VOLUME
+    CASE  = _RX_CASEVOL
+    CASE_ABV = _RX_CASEVOL_ABV
+    SLASH = _RX_SLASH_CASEVOL
+
 
 
 # ABV: 40%, 46.3%, можно слепленные (70clx40%)

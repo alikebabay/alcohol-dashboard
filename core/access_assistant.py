@@ -3,7 +3,8 @@ import re
 from typing import Callable, Optional, List
 import logging
 
-from libraries.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC 
+from libraries.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC
+from libraries.distillator import looks_like_product
 import utils.text_extractors as te
 from utils.logger import setup_logging
 
@@ -28,16 +29,6 @@ class AccessAssistant:
         self._lines: List[str] = []
         self._final: List[Optional[str]] = []
 
-    def _looks_like_product(self, s: str) -> bool:
-        # Используем общие паттерны из text_extractors
-        if te.RX_BPC.search(s):
-            return True
-        if any(rx.search(s) for rx in te.RX_BOTTLE):
-            return True
-        if any(rx.search(s) for rx in te.RX_CASE):
-            return True
-        return False
-
     def prepare(self, raw_text: str) -> None:
         self._lines = raw_text.splitlines()
         n = len(self._lines)
@@ -50,7 +41,7 @@ class AccessAssistant:
 
         def is_blank(i): return not self._lines[i].strip()
         def is_signature(i): return bool(self.RX_SIGNATURE.search(self._lines[i]))
-        def is_product(i): return self._looks_like_product(self._lines[i])
+        def is_product(i): return looks_like_product(self._lines[i])
 
         def ctx_access(i) -> Optional[str]:
             """Контекстная строка: не продукт, не подпись, но содержит access"""

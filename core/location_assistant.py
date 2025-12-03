@@ -4,7 +4,7 @@ from typing import Callable, Optional, List
 import logging
 
 import utils.text_extractors as te
-from libraries.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC  # ← общий источник
+from libraries.distillator import looks_like_product
 from utils.logger import setup_logging
 
 # инициализация общего логгера
@@ -26,22 +26,14 @@ class LocationAssistant:
         self._extract_location = extract_location_fn
         self._single_message = single_message
         self._lines: List[str] = []
-        self._final: List[Optional[str]] = []
-
-    def _looks_like_product(self, s: str) -> bool:
-        # Используем ТВОИ рантайм-выражения из text_extractors.py
-        if te.RX_BPC.search(s):
-            return True
-        if any(rx.search(s) for rx in te.RX_BOTTLE):
-            return True
-        if any(rx.search(s) for rx in te.RX_CASE):
-            return True
-        return False
+        self._final: List[Optional[str]] = []    
 
     def prepare(self, raw_text: str) -> None:
         self._lines = raw_text.splitlines()
         n = len(self._lines)
         self._final = [None] * n
+
+        logger.debug(f"[loc] === prepare() START, {n} lines ===")
 
         header_hint: Optional[str] = None
         in_block = False
@@ -50,7 +42,7 @@ class LocationAssistant:
 
         def is_blank(i): return not self._lines[i].strip()
         def is_signature(i): return bool(self.RX_SIGNATURE.search(self._lines[i]))
-        def is_product(i): return self._looks_like_product(self._lines[i])
+        def is_product(i): return looks_like_product(self._lines[i])
 
         # контекстная строка = не продукт и не сигнатура, но extract_location её распознаёт
         def ctx_location(i) -> Optional[str]:
@@ -65,41 +57,54 @@ class LocationAssistant:
             j = end_idx_excl - 1
             while j >= (start_idx if start_idx is not None else 0):
                 if ctx_location(j):  # не перескакиваем другой контекст
+                    logger.debug(f"[loc]     footer_back STOP at {j} (ctx exists)")
                     break
                 if is_product(j) and self._final[j] is None:
+                    logger.debug(f"[loc]     footer_back APPLY '{loc}' → line {j}: {self._lines[j]!r}")
                     self._final[j] = loc  # footer перекрывает header, но НЕ inline
                 j -= 1
 
         for i, raw in enumerate(self._lines):
+            logger.debug(f"[loc] ▶ Line {i}: {raw!r}")
             s = raw.strip()
             if not s:
                 # закрываем текущий блок и запоминаем его границы
                if in_block and block_start is not None:
+                   logger.debug(f"[loc]   END block {block_start}–{i-1}")
                    last_block = (block_start, i - 1)
                    
                in_block = False
                block_start = None
                continue
             if is_signature(i):
+                logger.debug(f"[loc]   signature skipped")
                 continue
 
             # 1) inline на продуктовой строке — финальное и неперезаписываемое
-            if is_product(i):
+            is_prod = is_product(i)
+            logger.debug(f"[loc]   is_product={is_prod}")
+            if is_prod:
                 if not in_block:
                     in_block = True
                     block_start = i
+                    logger.debug(f"[loc]   START block at {i}")
                     
                 inline_loc = self._extract_location(self._lines[i])
+                logger.debug(f"[loc]     inline_loc={inline_loc!r}, header_hint={header_hint!r}")
+
                 if inline_loc:
                     self._final[i] = inline_loc   # ← inline-приоритет, футер не трогает
+                    logger.debug(f"[loc]     FINAL[{i}] = {inline_loc!r}  (inline)")
                     
                 elif header_hint and self._final[i] is None:
                     self._final[i] = header_hint  # временно, может перекрыться футером позже
+                    logger.debug(f"[loc]     FINAL[{i}] = {header_hint!r}  (header_hint)")
                     
                 continue
 
             # 2) контекст (header/footer)
             loc_ctx = ctx_location(i)
+            logger.debug(f"[loc]   ctx_location={loc_ctx!r}")
             if loc_ctx:
                 if in_block:
                     # FOOTER внутри текущего блока
@@ -121,6 +126,7 @@ class LocationAssistant:
                         continue
                     # иначе это реальный HEADER → вперёд
                     header_hint = loc_ctx
+                    logger.debug(f"[loc]   HEADER_HINT = {header_hint!r}")
                    
                 continue
             # остальное игнор

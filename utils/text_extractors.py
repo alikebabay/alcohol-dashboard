@@ -515,8 +515,6 @@ def extract_location(text: str):
             return expanded
         location_logger.debug(f"extract_location: Incoterm не найден, город не распознан → {s!r}")
         return None
-
-
    
 
     # выделяем часть ближе к концу строки

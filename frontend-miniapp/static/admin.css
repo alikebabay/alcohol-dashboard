@@ -1,0 +1,124 @@
+body {
+    font-family: sans-serif;
+    padding: 15px;
+    background: #525562;
+    color: #222;
+}
+
+.container {
+    display: flex;
+    gap: 20px;
+}
+
+.left { width: 40%; }
+.right { width: 60%; }
+
+/* … all your existing CSS unchanged … */
+
+/* Supplier bubbles */
+#supplier_grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.supplier-item {
+    padding: 10px 12px;
+    background: #b23535;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    text-align: center;
+    font-weight: 600;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.supplier-item:hover {
+    background: #dce5ff;
+    border-color: #4a72ff;
+}
+
+.supplier-item.active {
+    background: #4a72ff;
+    color: white;
+    border-color: #1f3bb3;
+}
+
+/* Node color coding */
+.node-item { padding: 6px 8px; margin-bottom: 5px; border-radius: 5px; cursor:pointer; font-family: monospace;}
+.node-offer  { background:#cfe3ff; }
+.node-dfout  { background:#ffe0b2; }
+.node-dfraw  { background:#e1c8ff; }
+.node-rawblob{ background:#c6f5c3; }
+.node-brand  { background:#fff4b3; }
+.node-other  { background:#e0e0e0; }
+.node-item:hover { outline: 2px solid #666; }
+
+.copy-id { color:#0044cc; font-weight:bold; cursor:pointer; }
+.copy-id:hover { text-decoration: underline; }
+
+.result {
+    margin-top: 10px;
+    padding: 10px;
+    background: #342f2f;
+    white-space: pre-wrap;
+    border: 10px solid #ccc;
+    border-radius: 4px;
+    height: 600px;
+    overflow-y: auto;
+}
+
+
+
+/* Sidebar menu styling */
+.menu {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.menu-item {
+    background: #2d3448;
+    color: #e8ecf3;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 15px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s ease, transform 0.1s ease;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.menu-item:hover {
+    background: #3a435c;
+    transform: translateX(3px);
+}
+
+.menu-item.danger {
+    background: #612626;
+    border-color: rgba(255,255,255,0.2);
+}
+
+.menu-item.danger:hover {
+    background: #7a2f2f;
+}
+
+
+
+/* Section wrappers */
+.section-block {
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 18px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.section-block h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
