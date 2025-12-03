@@ -110,7 +110,7 @@ async_driver = AsyncGraphDatabase.driver(URI, auth=(USER, PASS))
 # ==========================================================
 #
 if MODE == "prod":
-    ADMIN_API_BASE = os.getenv("ADMIN_API_BASE", "http://alcohol-dashboard")
+    ADMIN_API_BASE = "http://localhost:8001/admin"
 else:
     ADMIN_API_BASE = "http://localhost:8001/admin"
 
