@@ -62,7 +62,7 @@ app.mount("/static", StaticFiles(directory="frontend-miniapp/static"), name="sta
 #admin endpoint for url
 @app.get("/admin/config")
 async def admin_config():    
-    return {"mode": MODE, "api_base": ADMIN_API_BASE}
+    return {"mode": MODE, "api_base": "/admin"}
 
 
 #normalisation of node data
