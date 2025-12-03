@@ -110,7 +110,7 @@ async_driver = AsyncGraphDatabase.driver(URI, auth=(USER, PASS))
 # ==========================================================
 #
 if MODE == "prod":
-    ADMIN_API_BASE = os.getenv("ADMIN_API_BASE", "https://your-admin-domain/admin")
+    ADMIN_API_BASE = os.getenv("ADMIN_API_BASE", "http://46.62.240.187:8001/admin")
 else:
     ADMIN_API_BASE = "http://localhost:8001/admin"
 
