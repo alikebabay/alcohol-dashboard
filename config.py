@@ -123,3 +123,13 @@ if MODE == "prod":
     ADMIN_API_BASE = os.getenv("ADMIN_API_BASE", "https://your-admin-domain/admin")
 else:
     ADMIN_API_BASE = "http://localhost:8001/admin"
+
+#Separate mode for admin secrets
+IS_ADMIN = os.environ.get("ADMIN_MODE") == "1"
+
+if not IS_ADMIN:
+    TOKEN = get_from_vault("app", "bot_token")
+    GOOGLE_CREDS = get_from_vault("app", "google_credentials")
+else:
+    TOKEN = None
+    GOOGLE_CREDS = None
