@@ -10,7 +10,7 @@ from telegram.ext import (
 )
 import asyncio
 
-from config import TOKEN 
+
 from handler_userdata import handle_userdata
 from menu_states import SUPPLIER, INGEST
 from workers.blob_worker import init_worker as init_blob_worker
@@ -27,6 +27,11 @@ logging.basicConfig(
 )
 
 setup_logging()
+
+#to prevent console prints
+from config import TOKEN 
+
+
 logger = logging.getLogger(__name__)
 
 #будим работников

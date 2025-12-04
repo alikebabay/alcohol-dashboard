@@ -20,6 +20,7 @@ def setup_logging(global_level=logging.INFO):
     """
 
     root_logger = logging.getLogger()
+    
 
     # 🧠 не инициализируем повторно
     if getattr(root_logger, "_global_initialized", False):

@@ -11,7 +11,7 @@ import os
 
 from pydantic import BaseModel
 
-from config import async_driver as GLOBAL_DRIVER, MODE, ADMIN_API_BASE
+from config import MODE, USER, PASS, URI
 
 
 #requests for user input
@@ -29,7 +29,7 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 
-logger.debug(f"[Neo4j] driver object type: {type(GLOBAL_DRIVER)}")
+
 logger.info(f"[Neo4j] Using shared driver (mode={MODE})")
 
 app = FastAPI()
@@ -47,9 +47,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from config import USER, PASS
+# 🟢 NEW: Shared ASYNC driver (used by admin API / FastAPI)
+
+async_driver = AsyncGraphDatabase.driver(URI, auth=(USER, PASS))
+logger.debug(f"[Neo4j] driver object type: {type(async_driver)}")
+
 #communication with graph returns dict
 async def run_query(query: str, params: dict):
-    async with GLOBAL_DRIVER.session() as session:
+    async with async_driver.session() as session:
         result = await session.run(query, params)
         out = []
         async for record in result:

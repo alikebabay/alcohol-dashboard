@@ -3,14 +3,11 @@ import os
 import json
 from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
-from neo4j import GraphDatabase, AsyncGraphDatabase
-import logging
+from neo4j import GraphDatabase
 import pandas as pd
 import warnings
 import socket
 
-
-logger = logging.getLogger(__name__)
 
 load_dotenv("neo4j.env")
 
@@ -68,7 +65,7 @@ def get_gsheets_credentials(scopes=None):
     try:
         creds_json = get_from_vault("app", "GOOGLE_CREDENTIALS_JSON")
     except Exception as e:
-        logging.debug(f"[WARN] не удалось получить GOOGLE_CREDENTIALS_JSON из Vault: {e}")
+        print(f"[WARN] не удалось получить GOOGLE_CREDENTIALS_JSON из Vault: {e}")
         creds_json = None
 
     # 2. если удалось — используем его
@@ -77,34 +74,43 @@ def get_gsheets_credentials(scopes=None):
             creds_dict = json.loads(creds_json)
             return Credentials.from_service_account_info(creds_dict, scopes=scopes)
         except Exception as e:
-            logging.error(f"[WARN] не удалось распарсить GOOGLE_CREDENTIALS_JSON: {e}")
+            print(f"[WARN] не удалось распарсить GOOGLE_CREDENTIALS_JSON: {e}")
 
     # 3. fallback — локальный файл service_account.json
     if os.path.exists("alcohol-service-agent.json"):
-        logging.info("[INFO] Используем локальный alcohol-service-agent.json")
+        print("[INFO] Используем локальный alcohol-service-agent.json")
         return Credentials.from_service_account_file("alcohol-service-agent.json", scopes=scopes)
 
     # 4. если ничего не нашли
     raise RuntimeError("Google service account credentials not found (Vault и локальный файл недоступны)")
 
+IS_ADMIN = os.environ.get("ADMIN_MODE") == "1"
+
 # ==========================================================
 # 🕸 Настройки Neo4j
 # ==========================================================
-if MODE == "prod":
-    URI  = "bolt://neo4j:7687"
-    USER = "neo4j"
-    PASS = get_from_vault("app", "neo4j_password")
-else:
+if MODE == "dev":
+    # local dev
     URI  = os.getenv("NEO4J_URI")
     USER = os.getenv("NEO4J_USER")
     PASS = os.getenv("NEO4J_PASS")
 
+elif IS_ADMIN:
+    # admin container in prod
+    URI  = "bolt://neo4j:7687"
+    USER = "neo4j"
+    PASS = get_from_vault("app", "neo4j_password")
+
+else:
+    # main backend in prod
+    URI  = "bolt://neo4j:7687"
+    USER = "neo4j"
+    PASS = get_from_vault("app", "neo4j_password")
+
 # 🟢 Shared SYNC driver (used by workers, bot, normalizers, parsers)
 driver = GraphDatabase.driver(URI, auth=(USER, PASS))
 
-# 🟢 NEW: Shared ASYNC driver (used by admin API / FastAPI)
 
-async_driver = AsyncGraphDatabase.driver(URI, auth=(USER, PASS))
 
 
 # ==========================================================
@@ -117,26 +123,23 @@ except:
 
 ADMIN_API_BASE = f"http://{IP}:8001/admin"
 
-# ==========================================================
-# Separate mode for admin (no bot, no Google creds)
-# ==========================================================
-IS_ADMIN = os.environ.get("ADMIN_MODE") == "1"
-
 if MODE == "dev":
-    # local dev
+    # local dev: use .env token, google from local file
     TOKEN = TOKEN or os.getenv("bot_token")
-    GOOGLE_CREDS = None
+    try:
+        GOOGLE_CREDS = get_gsheets_credentials()
+    except Exception:
+        GOOGLE_CREDS = None
 
 elif IS_ADMIN:
-    # admin in production → no bot, no google
+    # admin mode: no bot/google
     TOKEN = None
     GOOGLE_CREDS = None
 
 else:
-    # main backend in production
+    # prod backend
     TOKEN = get_from_vault("app", "bot_token")
     GOOGLE_CREDS = get_from_vault("app", "google_credentials")
-
 
 
 #Silence pandas warning about column types

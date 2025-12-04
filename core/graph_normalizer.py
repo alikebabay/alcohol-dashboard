@@ -43,9 +43,6 @@ def tokenize(raw: str) -> list[str]:
     # Merge French-style prefixes like L' or D' (before capital letter)
     raw = re.sub(r"\b([A-Za-z])['’]\s*(?=[A-Z])", r"\1’", raw)
 
-    # Merge dotted abbreviations: V.S.O.P → VSOP, X.O. → XO
-    raw = re.sub(r"\b([A-Z])(?:\.([A-Z]))+(?:\.)?", lambda m: m.group(0).replace(".", ""), raw)
-
     # Extract tokens, keeping apostrophes and dots inside
     return re.findall(r"[A-Za-z0-9.'&%+]+", raw)
 
