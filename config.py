@@ -122,20 +122,21 @@ ADMIN_API_BASE = f"http://{IP}:8001/admin"
 # ==========================================================
 IS_ADMIN = os.environ.get("ADMIN_MODE") == "1"
 
-if MODE != "prod":
-    # Local development
-    TOKEN = None
+if MODE == "dev":
+    # local dev
+    TOKEN = TOKEN or os.getenv("bot_token")
     GOOGLE_CREDS = None
 
 elif IS_ADMIN:
-    # Admin in production → only needs Neo4j, nothing else
+    # admin in production → no bot, no google
     TOKEN = None
     GOOGLE_CREDS = None
 
 else:
-    # Main backend in prod → load from Vault
+    # main backend in production
     TOKEN = get_from_vault("app", "bot_token")
     GOOGLE_CREDS = get_from_vault("app", "google_credentials")
+
 
 
 #Silence pandas warning about column types
