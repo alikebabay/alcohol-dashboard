@@ -13,6 +13,8 @@ WINE_KEYWORDS = [
     "anejo",
     "vsop",
     "v.s.o.p",
+    "vs",
+    "v.s",
     "silver",
     "Single Barrel",
     "Year Old",

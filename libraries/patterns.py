@@ -24,9 +24,6 @@ valid_numerical = {
     ]
 }
 
-short_series_whitelist = {"vs", "vsop", "xo", "x.o", "v.s", "v.s.o.p"}
-
-
 class _PATS:
     pass
 

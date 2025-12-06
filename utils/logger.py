@@ -55,9 +55,9 @@ def setup_logging(global_level=logging.INFO):
         "dispatcher": logging.ERROR,
         # инфраструктура
         "integrations.matrix_merger": logging.ERROR,
-        "core.graph_normalizer": logging.DEBUG,
-        "core.graph_normalizer.canonical": logging.DEBUG,
-        "core.graph_normalizer.loader": logging.DEBUG,
+        "core.graph_normalizer": logging.ERROR,
+        "core.graph_normalizer.canonical": logging.ERROR,
+        "core.graph_normalizer.loader": logging.ERROR,
         "core.normalizer": logging.ERROR,
         "integrations.rules_typing": logging.ERROR,
         "integrations.graph_offers": logging.ERROR,
@@ -91,9 +91,9 @@ def setup_logging(global_level=logging.INFO):
         "utils.verifier": logging.ERROR,
         "utils.verify_cols": logging.ERROR,
         "core.volume_detector": logging.ERROR,
-        "utils.wine_guard": logging.DEBUG,
+        "utils.wine_guard": logging.ERROR,
         # админка
-        "admin.admin_api": logging.DEBUG
+        "admin.admin_api": logging.ERROR
 
     }
 

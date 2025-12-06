@@ -2,9 +2,11 @@
 import re
 
 RX_CURRENCY_MARKER = re.compile(
-     r'(?:\b(?:eur|euro|usd|gbp|chf|aed)\b|[¥₽£€\$])',
-     re.I,
- )
+    r'(?:\b(?:eur|euro|usd|gbp|chf|aed)\b'   # normal currency words
+    r'|[¥₽£€\$]'                             # currency symbols
+    r'|\bE(?=\s*\d))',                       # NEW: "E" only if followed by a number (E 52.00 / E52.00)
+    re.I,
+)
 
 
 # Цена за бутылку

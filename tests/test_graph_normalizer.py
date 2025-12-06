@@ -10,23 +10,12 @@ from utils.abbreviations_helper import convert_abbreviation
 
 # 🧾 Just paste your text here — no need for quotes or commas
 text = """
-Dom Perignon vintage naked 6 x 75cl at 143 USD 
-Dom Perignon Rose GBX 6 x 75cl at 242.60 USD 
-
-Moet & Chandon Imperial Brut Naked 6 x 75cl at 31.50 USD
-Rose Imperial GBX 6 x 75cl at 38.80 USD
-Ice Imperial Naked 6 x 75cl at 37.15 USD 
-Ice Imperial Rose naked 6 x 75cl at 37.15 USD 
-Nectar Imperial naked 6 x 75cl at 34.32 USD
-Nectar Imperial Rose naked 6 x 75cl at 39 USD
-
-Veuve Clicquot YL Naked 6 x 75cl at 34.95 USD
-
-DAP Loendersloot
-MOQ 10 pallets, can be mixed
-4/5 weeks lead time after deposit 
-
-Kai
+Armand de Brignac Rosé Velvet Bag 75cl — 6 — $1,423.81 
+Hennessy VS 1L N.GBX — 12 — $153.24
+Hennessy VS 75cl GBX — 12 — $224.33  
+Hennessy VS 75cl N.GBX — 12 — $224.33 
+Hennessy V.S.O.P 1L GBX — 12 — $306.93 
+Hennessy V.S.O.P 1L N.GBX — 12 — $306.93  
 """
 
 # 🧩 Convert each non-empty line into a row

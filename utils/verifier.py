@@ -112,8 +112,7 @@ def verify_graph_canonical(df: pd.DataFrame, messages: list):
         messages.append("[GRAPH] No 'name' column. Skipped.")
         return df
 
-    try:
-        
+    try:        
         # просто обновляем колонку 'name' внутри того же df
         normalize_dataframe(df, col_name="name")
         messages.append(f"[GRAPH] canonical_name replaced in column 'name' (in-place).")

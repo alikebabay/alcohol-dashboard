@@ -7,7 +7,7 @@ import logging
 from utils.logger import setup_logging
 from utils.normalize import normalize as _normalize
 from utils.wine_guard import looks_like_new_wine
-from libraries.patterns import valid_numerical, short_series_whitelist
+from libraries.patterns import valid_numerical
 from utils.series_number_extractor import _extract_label_number
 
 
@@ -735,10 +735,7 @@ class BrandSeriesExtractor:
                             series_lookup[(k, num)] = s
 
                     for i, t in enumerate(after_tokens):
-                        t_norm = _normalize(t)
-                        if t_norm in short_series_whitelist:
-                            match = t
-                            break
+                        t_norm = _normalize(t)                        
                         if t.isdigit() and i > 0:
                             prev = after_tokens[i - 1]
                             lbl = _normalize(prev)[:3]

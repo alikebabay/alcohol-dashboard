@@ -202,8 +202,8 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     # === DEBUG: RAW INPUT PREVIEW ===
     try:
         logger.debug(
-            "\n=== RAW DF (first 10 rows) ===\n" +
-            df.head(10).to_string()
+            "\n=== RAW DF (first 50 rows) ===\n" +
+            df.head(50).to_string()
         )
     except Exception as e:
         logger.debug(f"[ERROR] cannot preview RAW DF: {e}")
@@ -249,6 +249,20 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     else:
         out["name"] = None
         logger.warning("normalize_alcohol_df: не найдены колонки с именами товаров")
+    
+    # ---------------------------------------------------------
+    # 🔥 REMOVE DUPLICATED LEADING TOKENS IN NAME
+    # e.g. "Hennessy Hennessy VS 1L ..." → "Hennessy VS 1L ..."
+    # ---------------------------------------------------------
+    def _remove_duplicate_start(s: str) -> str:
+        if not s or not isinstance(s, str):
+            return s
+        parts = s.split()
+        if len(parts) >= 2 and parts[0] == parts[1]:
+            return " ".join([parts[0]] + parts[2:])
+        return s
+
+    out["name"] = out["name"].map(_remove_duplicate_start)
 
     # --- Винтаж ---
     if vintage_cols:        
@@ -274,9 +288,6 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
             out["bottles_per_case"] = series.map(parse_bpc_loose)
         else:
             out["bottles_per_case"] = None
-
-
-
 
     # --- Цена за кейс ---
     if price_cols:
@@ -337,8 +348,8 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     # === DEBUG: NORMALIZED DF PREVIEW ===
     try:
         logger.debug(
-            "\n=== NORMALIZED DF (first 5 rows) ===\n" +
-            out.head(5).to_string()
+            "\n=== NORMALIZED DF (first 50 rows) ===\n" +
+            out.head(50).to_string()
         )
     except Exception as e:
         logger.debug(f"[ERROR] cannot preview NORMALIZED DF: {e}")
