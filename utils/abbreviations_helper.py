@@ -4,10 +4,9 @@ import re
 
 # 🧩 Карта опечаток поставщиков, словарь замены
 ABBREVIATIONS = {
-    #"yl": "Yellow Label",
-    "moët": "Moet & Chandon",
-    "moet": "Moet & Chandon",
-    "Moët": "Moet",
+    #"moët": "Moet & Chandon",
+    #"moet": "Moet & Chandon",
+    #"Moët": "Moet",
     "imperial brut": "Brut Imperial",
     "yo": "Year Old",    
     "Grey Goose Blue": "Grey Goose",

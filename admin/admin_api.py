@@ -28,11 +28,21 @@ class CanonicalRequest(BaseModel):
 setup_logging()
 logger = logging.getLogger(__name__)
 
-
-
 logger.info(f"[Neo4j] Using shared driver (mode={MODE})")
 
 app = FastAPI()
+
+#logging events for admin user
+EVENT_LOG = []
+MAX_LOG = 200   # keep last 200 events
+
+def log_event(text: str):
+    EVENT_LOG.append(text)
+    if len(EVENT_LOG) > MAX_LOG:
+        EVENT_LOG.pop(0)
+    logger.info("[ADMIN EVENT] " + text)
+
+
 
 #FastAPI route for admin.html
 @app.get("/admin")
@@ -123,6 +133,7 @@ async def list_suppliers():
 # ❌ Remove Supplier + all its offers
 @app.post("/admin/remove_supplier")
 async def remove_supplier(req: SupplierName):
+    log_event(f"Removed supplier: {req.name}")
     query = """
     MATCH (s:Supplier {name: $name})-[r:HAS_OFFER]-(o)
     DETACH DELETE s, o
@@ -155,6 +166,7 @@ async def find_nodes(supplier: str):
 # 🗑 Delete all DfOut for supplier
 @app.post("/admin/delete_dfout")
 async def delete_dfout(req: SupplierRequest):
+    log_event(f"Deleted all DfOut for supplier: {req.supplier}")
     query = """
     MATCH (d:DfOut)
     WHERE d.supplier = $supplier
@@ -167,6 +179,7 @@ async def delete_dfout(req: SupplierRequest):
 # ⭐ Mark DfOut as canonical
 @app.post("/admin/mark_canonical")
 async def mark_canonical(req: CanonicalRequest):
+    log_event(f"Marked DfOut as canonical: {req.id}")
     query = """
     MATCH (d:DfOut {id: $id})
     SET d.canonical = true
@@ -182,3 +195,8 @@ async def find_brand(name: str):
     RETURN b
     """
     return await run_query(query, {"name": name})
+
+#event log
+@app.get("/admin/event_log")
+async def event_log():
+    return {"events": EVENT_LOG[-50:]}  # latest 50 events

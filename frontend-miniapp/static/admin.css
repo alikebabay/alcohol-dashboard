@@ -122,3 +122,10 @@ body {
     margin-top: 0;
     margin-bottom: 10px;
 }
+
+.event-item {
+    padding: 4px 6px;
+    border-bottom: 1px solid #555;
+    font-family: monospace;
+    color: #ccc;
+}

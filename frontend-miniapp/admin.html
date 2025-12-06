@@ -24,8 +24,7 @@
             </div>
 
             <div class="menu">
-                <div class="menu-item" onclick="loadSuppliers()">⟳ Reload Suppliers</div>
-                <div class="menu-item" onclick="listSuppliers()">📜 List Suppliers</div>
+                <div class="menu-item" onclick="loadSuppliers()">⟳ Reload Suppliers</div>                
 
                 <div id="btn_change_supplier" class="menu-item"
                      style="display:none;" onclick="resetState()">
@@ -50,7 +49,7 @@
         </div>
 
         <!-- DFOUT -->
-        <div class="section-block">
+        <div class="section-block" id="dfout_block">
             <h3>Blob ID / DfOut</h3>
             <input id="dfout_id" placeholder="DfOut ID" />
             <button onclick="markCanonical()">⭐ Mark Canonical</button>
@@ -203,6 +202,23 @@ function resetState() {
     renderState();
 }
 
+//adds event log for user
+async function loadEventLog() {
+    const res = await api("/event_log", "GET", null, false);
+    const out = document.getElementById("output");
+
+    if (!res.events) {
+        out.innerText = "No logs.";
+        return;
+    }
+
+    out.innerHTML = res.events
+        .map(ev => `<div class="event-item">${ev}</div>`)
+        .join("");
+}
+
+
+
 function renderState() {
     const s = state;
     const lbl  = document.getElementById("active_supplier");
@@ -210,16 +226,27 @@ function renderState() {
     const rm   = document.getElementById("btn_remove");
     const nd   = document.getElementById("btn_nodes");
     const df   = document.getElementById("btn_dfout");
+    const dfoutBlock = document.getElementById("dfout_block");
 
-    if (s === 0) { // idle state
-        lbl.innerText = "";
-        btnC.style.display = "none";
-        rm.style.display   = "none";
-        nd.style.display   = "none";
-        df.style.display   = "none";
-        document.getElementById("output").style.display = "block";
-        return;
+
+    if (s === 0) { 
+    lbl.innerText = "Event Log";
+
+    btnC.style.display = "none";
+    rm.style.display   = "none";
+    nd.style.display   = "none";
+    df.style.display   = "none";
+
+    // hide DFOUT tools in idle
+    dfoutBlock.style.display = "none";
+
+    // show event log
+    const out = document.getElementById("output");
+    out.style.display = "block";
+    loadEventLog();
+    return;
     }
+
 
     if (s === 1) { // supplier selected state
         lbl.innerText = "Active supplier: " + activeSupplier;
@@ -227,6 +254,9 @@ function renderState() {
         rm.style.display   = "block"; //remove supplier
         nd.style.display   = "block"; //find all nodes for supplier
         df.style.display   = "block"; //turns deletedf out button display
+
+        dfoutBlock.style.display = "block";
+
         document.getElementById("output").style.display = "block";
         return;
     }
@@ -237,6 +267,8 @@ function renderState() {
         rm.style.display   = "block";
         nd.style.display   = "block";
         df.style.display   = "block";
+
+        dfoutBlock.style.display = "block";
 
         const out = document.getElementById("output");
         out.style.display = "block";
