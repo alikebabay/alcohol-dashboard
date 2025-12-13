@@ -31,6 +31,12 @@ PATS = _PATS()
 
 
 #availability
+RX_MONTH = (
+    r"Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|"
+    r"Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|"
+    r"Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?"
+)
+
 PATS.ACCESS = [
         re.compile(r'\b(T[12]|TBO)\b', re.I),
         # strict ON-THE-FLOOR + safe ON FLOOR (no digits after) + stock/available/ready
@@ -41,21 +47,22 @@ PATS.ACCESS = [
             re.I,
         ),
         re.compile(
-            r'\b\d+(?:[\/\-–]\d+)?\s*(?:d|day|days|w|wk|wks|week|weeks)\b'
-            r'(?:\s*after\s*deposit(?:\s*\w+)?)?(?=\b|[.,;]|$)',
+            r'\b\d+(?:[.,]\d+)?(?:[\/\-–]\d+(?:[.,]\d+)?)?\s*'
+            r'(?:d|day|days|w|wk|wks|week|weeks)\b'
+            r'(?:\s*after\s*deposit(?:\s*\w+)?)?',
             re.I,
         ),
-        re.compile(r'\b\d+(?:[/-]\d+)?\s*(?:d|day|days|w|wk|wks|week|weeks)\b(?:\s*after\s*deposit(?:\s*\w+)?)?', re.I),
         # Availability ETA phrases (verb) [optional helper] (time indicator)
         # like "Stock arriving end Oct", "delivery mid Nov", "ETA week 42"
         re.compile(
-            r'\b(?:arriving|expected|delivery|shipping|ready|landing|ETA)\b'
-            r'(?:\s+(?:in|on|at|around|about|towards|by))?\s*'
-            r'(?:end|mid|early)?\s*'
-            r'(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|'
-            r'Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?|week\s*\d{1,2})',
+            rf'\b(?:arriving|expected|delivery|shipping|ready|landing|ETA)\b'
+            rf'(?:\s+(?:in|on|at|around|about|towards|by))?\s*'
+            rf'(?:end|mid|early)?\s*'
+            rf'(?:{RX_MONTH}|\bweek\s*\d{{1,2}}\b)'
+            rf'(?:\s*\d{{4}})?\b',
             re.I,
         ),
+
     ]
 
 RX_FLOOR = re.compile(

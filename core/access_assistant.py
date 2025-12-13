@@ -14,6 +14,21 @@ from core.header_detector import detect_headers
 setup_logging()
 logger = logging.getLogger(__name__)
 
+#for cases where access is both inline and in footer
+def _merge_access(a: Optional[str], b: Optional[str]) -> Optional[str]:
+    if not a:
+        return b
+    if not b:
+        return a
+
+    parts = []
+    for src in (a, b):
+        for p in re.split(r'\s*,\s*', src):
+            if p and p not in parts:
+                parts.append(p)
+
+    return ", ".join(parts) if parts else None
+
 
 class AccessAssistant:
     """
@@ -68,8 +83,8 @@ class AccessAssistant:
             while j >= (start_idx if start_idx is not None else 0):
                 if ctx_access(j):  # не перескакиваем другой контекст
                     break
-                if is_product(j) and self._final[j] is None:
-                    self._final[j] = access_val  # footer перекрывает header
+                if is_product(j):
+                    self._final[j] = _merge_access(self._final[j], access_val) # footer перекрывает header, merge with inline 
                 j -= 1
 
         for i, raw in enumerate(self._lines):
@@ -119,7 +134,7 @@ class AccessAssistant:
                     logger.debug(f"[DEBUG access] 🔻 Footer внутри блока {block_start}–{i}: {acc_ctx}")
  
                 
-                # Если FOOTER единственный в тектсе
+                # Если FOOTER единственный в тексте
                 if last_block is not None:
                     start, end_incl = last_block                    
                     apply_footer_back(start, end_incl + 1, acc_ctx)

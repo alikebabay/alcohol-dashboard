@@ -510,6 +510,13 @@ def extract_location(text: str):
         m = re.search(r'\b(?:in|at|from)\s+([A-ZА-Я][A-Za-zА-Яа-я\-]+)\b', s, re.I)
         if m:
             city = m.group(1)
+            # 🚫 regulatory / sales-scope phrases → not a location
+            if re.search(r'\b(not\s+for\s+sales?|sales?|sale)\b', s, re.I):
+                location_logger.debug(
+                    f"extract_location: 'in {city}' is sales restriction, not location → ignore"
+                )
+                return None
+
             expanded = CITY_ALIASES.get(city.lower()[:4], city)
             location_logger.debug(f"extract_location: без Incoterm, найден город {expanded!r}")
             return expanded

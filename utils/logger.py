@@ -76,9 +76,9 @@ def setup_logging(global_level=logging.INFO):
         # утилиты и извлекатели
         "utils.text_extractors": logging.ERROR,
         "utils.text_extractors.prices": logging.ERROR,
-        "utils.text_extractors.access": logging.ERROR,
+        "utils.text_extractors.access": logging.DEBUG,
         "utils.text_extractors.location": logging.ERROR,
-        "core.access_assistant": logging.ERROR,
+        "core.access_assistant": logging.DEBUG,
         "core.location_assistant": logging.ERROR,  
         "integrations.raw_to_graph": logging.ERROR,
         "workers.blob_worker": logging.ERROR,

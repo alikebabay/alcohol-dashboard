@@ -6,63 +6,38 @@ from utils.text_extractors import extract_access
 
 # тестовый текст, как в твоих price-тестах
 text = """
-WHISKY STOCK OFFER EX LOENDERSLOOT
+1848 cs Finlandia 12/50/40 REF @ EUR 30,60 (EUR 2,55 p/btl) — T2
+2400 cs Finlandia 6/70/40 REF @ EUR 22,44 (EUR 3,74 p/btl) —T2
+850 cs Finlandia 12/100/40 NRF @ EUR 53,28 (EUR 4,44 p/btl) — T1 not for sales in EU/EEA
+EXW Loendersloot, Revera or Newcorp / Lead time about 2-3 weeks / Final quantities may vary
+132 Dom Perignon Brut 2015 6/75/12,5 GB @ EUR 726 (121 p/btl)
+EXW Newcorp / In stock / T1
 
-40CS BOWMORE 15YRS GOLDEN & ELEGANT 6/100/43 @ EURO 190.00
-T2 / CODED / REFILL / GBX / EAN CODE 5010496004548
+100 cs Dom Perignon Brut 2013 6/75/12,5 NGB @ EUR 726 (121 p/btl)
+EXW Loenderloot / In stock / T2
 
-40CS BOWMORE 18YRS DEEP & COMPLEX 6/70/43 @ EURO 340.00
-T2 / CODED / REFILL / GBX / EAN CODE 5010496004555
+115 cs Auchentoshan Three Wood 6/70/43 REF GB @ EUR 117,60 (19,60 p/btl)
+EXW Loendersloot / About 1,5 week lead time / T2
+40 cs Bowmore 15yo Golden & Elegant 6/100/43 @ EUR 205 (34,17 p/btl)
+40 cs Bowmore 18yo Deep & Complex 6/70/43 @ EUR 365 (60,83 p/btl)
+200 cs Bulleit Rye 6/70/45 REF UKDS @ EUR 79,75 (13,29 p/btl)
+2584 cs Bushmills Original 6/70/40 REF @ EUR 33,50 (5,58 p/btl) – for a smaller QTY we may have to adjust the price
+150 cs Hakushu Distiller's Reserve 6/70/43 REF GB @ EUR 356 (59,33 p/btl)
+75 cs Longmorn 16yo 3/70/48 @ EUR 263 (87,67 p/btl)
+EXW Loendersloot / T2 / In stock / No need to take the full offered quantities per line
 
-100CS AUCHENTOSHAN AMERICAN OAK 12/100/40 @ EURO 204.00
-T2 / CODED / REFILL / EAN CODE 5010496005378
+1200 cs William Lawson's 12/100/40 NRF @ EUR 56 (4,66 p/btl)
+EXW Loendersloot / T1 not for EU/EEA / 6 weeks lead time
+At a similar price we can also ship straight to sea ports.
+187 cs Glenfarclas 10yo 6/70/40 GB @ EUR 100,00 (p/btl EUR 16,67)
+1 cs Glenfarclas Heritage 6/70/40 GB @ EUR 51,00 (p/btl EUR 8,50)
+112 cs Glengoyne 10yo 6/70/40 GB @ EUR 101,75 (p/btl EUR 16,96)
+EXW Loendersloot / T2 / In stock
 
-36CS DEWAR’S 12YRS 6/70/40 @ EURO 75.00
-T2 / CODED / REFILL / GBX / EAN CODE 5000277002450
+400 cs Hibiki Japanese Harmony 6/70/43 REF GB @ EUR 305 (50,83 p/btl)
+EXW Loendersloot / T2 / About 3 weeks lead time
 
-39CS GLEN SCOTIA DOUBLE CASK CLASSIC CAMPBELTOWN 6/70/46 @ EURO 120.00
-T2 / CODED / REFILL / GBX / EAN CODE 5016840151210
-
-94CS LONGMORN 16YRS 3/70/48 @ EURO 244.00
-T2 / CODED / REFILL / GBX / EAN CODE 5000299607152
-EX LOENDERSLOOT
-
-For larger orders, prices can be discussed
-
-140CS BALLANTINE’S 12/100/40 @ EURO 86.00
-T2 / CODED / REFILL / EAN CODE 5010106111956 / ON THE FLOOR
-
-600CS BEEFEATER 12/50/40 @ E 52.00
-T2 / CODED / REFILL / EAN CODE 5000299605981 / ON THE FLOOR
-
-486CS ABSOLUT 24/20/40 @ E 54.00
-T2 / CODED / REFILL / EAN CODE 7312040017201 / 2 WEEKS LEADTIME
-
-120CS ABSOLUT 6/70/40 @ EURO 32.00
-T2 / CODED / REFILL / EAN CODE 7312040017683 / ON THE FLOOR
-
-1000CS ABSOLUT 24/35/40 @ EURO 84.00
-T2 / CODED / REFILL / EAN CODE 7312040017355 / ON THE FLOOR
-
-1000CS ABSOLUT 12/35/40 @ EURO 42.00
-T2 / CODED / REFILL / EAN CODE 7312040017355 / ON THE FLOOR
-
-500CS GLENLIVET FOUNDERS RESERVE 6/70/40 @ E 95.00
-T2 / CODED / REFILL / GBX / EAN CODE 500299609347 / ON THE FLOOR
-
-1686CS JAMESON 6/100/40 @ EURO 61.00
-T2 / CODED / REFILL / EAN CODE 5011007003227 / ON THE FLOOR
-
-40CS ABERLOUR 16YRS DOUBLE CASK MATURED 3/70/40 @ EURO 134.00
-T2 / CODED / REFILL / GBX / EAN CODE 500299298022 / ON THE FLOOR
-
-244CS ABERLOUR 14YRS DOUBLE CASK MATURED 3/70/40 @ EURO 90.00
-T2 / CODED / REFILL / EAN CODE 500299620915 / ON THE FLOOR
-If intrested we can also send you our full stock offer ex Loendersloot / Newcorp
-We can offer many more items on request (Spirits/Waters/Wines/Beers)
-Based on your request we can offer ex warehouse Holland or CNF port of destination
-+31 6 29701510
-wilfred@liquidsupply.nl
+Daan
 """
 
 print("[TEST] AccessAssistant demo run\n")
