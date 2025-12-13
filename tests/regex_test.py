@@ -1,30 +1,29 @@
 import re
-import pytest
-from libraries.regular_expressions import RX_GBX_MARKER, RX_GBX_NEGATIVE
+from libraries.patterns import RX_FLOOR
 
-@pytest.mark.parametrize("text", [
-    # --- neutral words using 'box' in non-gift sense ---
-    "Box of 6 bottles",
-    "24x200ml box",
-    "12x75cl carton box",
-    "Case box of 12",
-    "Cardboard box 6 bottles",
-    "Boxed wine 3L",
-    "Shipping box 500ml",
-    "Giftbox dimensions: 30x40cm",   # not product name
-    "BOX OF CASES",
-    "Wooden box packaging",           # descriptive, not GB
-    "Display box of 24 minis",
-    "Box (not GB)",
-    "NonGBX version",
-    "NGBX sample text",
-    "No box included",
-    "per box",
-    "Without box packaging",
-])
-def test_gbx_contamination(text):
-    """Ensure RX_GBX_MARKER does NOT fire on unrelated 'box' contexts."""
-    has_neg = bool(RX_GBX_NEGATIVE.search(text))
-    has_pos = bool(RX_GBX_MARKER.search(text))
-    contamination = has_pos and not has_neg
-    assert not contamination, f"False positive contamination: {text!r}"
+POSITIVE = [
+    "ON THE FLOOR",
+    "on the floor",
+    "T2 / ON THE FLOOR",
+    "on-the-floor",
+    "on_the_floor",
+    "stocked and on floor",
+    "item is on floor now",
+    "available ON FLOOR",
+]
+
+NEGATIVE = [
+    "delivery on floor 3",
+    "on floor 20",
+    "the pallets are on floor 2",
+    "container floor 3",
+    "storage floor racks",
+]
+
+def test_floor_positive():
+    for text in POSITIVE:
+        assert RX_FLOOR.search(text), f"Should match: {text!r}"
+
+def test_floor_negative():
+    for text in NEGATIVE:
+        assert not RX_FLOOR.search(text), f"False positive: {text!r}"

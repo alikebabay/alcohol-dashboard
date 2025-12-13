@@ -33,7 +33,13 @@ PATS = _PATS()
 #availability
 PATS.ACCESS = [
         re.compile(r'\b(T[12]|TBO)\b', re.I),
-        re.compile(r'\b(on\s*(?:stock|floor)|in\s*stock|available|ready)\b', re.I),
+        # strict ON-THE-FLOOR + safe ON FLOOR (no digits after) + stock/available/ready
+        re.compile(
+            r"(?:\bon[\s\-_]*the[\s\-_]*floor\b)"
+            r"|(?:\bon[\s\-_]*floor\b(?!\s*\d))"
+            r"|\bon\s*stock\b|\bin\s*stock\b|\bavailable\b|\bready\b",
+            re.I,
+        ),
         re.compile(
             r'\b\d+(?:[\/\-–]\d+)?\s*(?:d|day|days|w|wk|wks|week|weeks)\b'
             r'(?:\s*after\s*deposit(?:\s*\w+)?)?(?=\b|[.,;]|$)',
@@ -51,6 +57,11 @@ PATS.ACCESS = [
             re.I,
         ),
     ]
+
+RX_FLOOR = re.compile(
+    r"(?:(?:\bon[\s\-_]*the[\s\-_]*floor\b)|(?:\bon[\s\-_]*floor\b(?!\s*\d)))",
+    re.I,
+)
 
 
 # --- Паттерны для excel пайплайна - поиск в названиях колонок-

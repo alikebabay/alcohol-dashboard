@@ -6,6 +6,8 @@ import sys
 
 from utils.logger import setup_logging
 from libraries.regular_expressions import RX_GBX_MARKER, RX_GBX_NEGATIVE
+from libraries.distillator import looks_like_product
+
 
 # инициализация общего логгера
 setup_logging()
@@ -49,6 +51,36 @@ def detect_gbx_in_row(row: pd.Series) -> str | None:
             return "GBX"
 
     return None
+
+def _detect_gbx_by_blocks(df: pd.DataFrame) -> pd.Series:
+    """
+    Block-based GBX detection:
+    If GBX appears in a non-product row,
+    it applies to the nearest preceding product row.
+    """
+    gb_flag = pd.Series(False, index=df.index)
+
+    last_product_idx = None
+
+    for idx, row in df.iterrows():
+        row_text = " ".join(map(str, row.values))
+
+        if looks_like_product(row_text):
+            last_product_idx = idx
+            continue
+
+        if last_product_idx is None:
+            continue
+
+        s = _normalize_punct(row_text.lower())
+
+        if RX_GBX_NEGATIVE.search(s):
+            continue
+
+        if RX_GBX_MARKER.search(s):
+            gb_flag.at[last_product_idx] = True
+
+    return gb_flag
 
 def _detect_gbx_column(df: pd.DataFrame) -> str | None:
     """
@@ -101,10 +133,37 @@ def detect_gbx(df_raw: pd.DataFrame) -> pd.DataFrame:
     N = len(df_raw)
     logger.debug(f"[GBX] ====== GBX DETECTOR START ====== rows={N}")
 
-    # 1) Текстовый поиск
+    # 1) Inline search
     logger.debug("[GBX/TEXT] scanning rows for textual GBX markers...")
     gb_type = df_raw.apply(detect_gbx_in_row, axis=1)
     gb_flag = gb_type.notna()
+
+    #remapping in case of footers
+    if gb_flag.any():
+        logger.debug("[GBX/TEXT] found GBX markers → checking for footer rows")
+
+        gb_flag_final = gb_flag.copy()
+
+        last_product_idx = None
+
+        for idx, row in df_raw.iterrows():
+            row_text = " ".join(map(str, row.values))
+
+            if looks_like_product(row_text):
+                last_product_idx = idx
+                continue
+
+            # 👇 only remap if this GBX hit is in a footer row
+            if gb_flag.at[idx] and not looks_like_product(row_text):
+                if last_product_idx is not None:
+                    gb_flag_final.at[last_product_idx] = True
+                    gb_flag_final.at[idx] = False
+
+        if gb_flag_final.any():
+            gb_type = gb_flag_final.map(lambda x: "GBX" if x else None)
+            logger.debug("[GBX] ====== GBX DETECTOR DONE (text+footer remap) ======")
+            return pd.DataFrame({"gb_flag": gb_flag_final, "gb_type": gb_type})
+
     count_text = int(gb_flag.sum())
 
     if count_text > 0:
@@ -117,7 +176,23 @@ def detect_gbx(df_raw: pd.DataFrame) -> pd.DataFrame:
 
     logger.debug("[GBX/TEXT] no textual GBX detected → trying checkbox fallback")
 
-    # 2) Поиск колонки с чекбоксами
+    # 2) Block search
+
+    logger.debug("[GBX/BLOCK] trying block-based footer detection...")
+
+    gb_flag_block = _detect_gbx_by_blocks(df_raw)
+    count_block = int(gb_flag_block.sum())
+
+    if count_block > 0:
+        logger.debug(
+            f"[GBX/BLOCK] detected {count_block} GBX rows via footer blocks"
+        )
+        gb_type = gb_flag_block.map(lambda x: "GBX" if x else None)
+        logger.debug("[GBX] ====== GBX DETECTOR DONE (block mode) ======")
+        return pd.DataFrame({"gb_flag": gb_flag_block, "gb_type": gb_type})
+
+
+    # 3) Checkbox search
     col = _detect_gbx_column(df_raw)
 
     if col:

@@ -213,10 +213,10 @@ def looks_like_category(name: str, row: pd.Series | None = None) -> bool:
     return False
 
 
-#helper function for location and access
+#helper function to determine products in text pipeline
 
 def looks_like_product(s: str) -> bool:
-        # Используем ТВОИ рантайм-выражения из text_extractors.py
+        # Требует любого совпадения по регексам количества бутылок и цен за бутылку
         if RX_BPC.search(s):
             return True
         # NEW: triple pattern 6/70/40, 6/70/43

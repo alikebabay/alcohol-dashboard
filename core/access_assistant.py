@@ -7,10 +7,13 @@ from libraries.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC
 from libraries.distillator import looks_like_product
 import utils.text_extractors as te
 from utils.logger import setup_logging
+from core.header_detector import detect_headers
+
 
 # инициализация общего логгера
 setup_logging()
 logger = logging.getLogger(__name__)
+
 
 class AccessAssistant:
     """
@@ -34,7 +37,14 @@ class AccessAssistant:
         n = len(self._lines)
         self._final = [None] * n
 
+        # Structural header detection
+        header_end, header_lines = detect_headers(self._lines)
+
+        def is_header_region(idx):
+            return idx < header_end
+
         header_hint: Optional[str] = None
+
         in_block = False
         block_start: Optional[int] = None
         last_block: Optional[tuple[int, int]] = None
@@ -93,10 +103,21 @@ class AccessAssistant:
             # 2️⃣ Контекстная строка (header/footer)
             acc_ctx = ctx_access(i)
             if acc_ctx:
+                # -----------------------------
+                # HEADER (верхняя часть письма)
+                # -----------------------------
+                if is_header_region(i):
+                    header_hint = acc_ctx
+                    logger.debug(f"[DEBUG access] ⬆ HEADER detected (line {i}): {acc_ctx}")
+                    continue
+
+                # --------------------------------
+                # FOOTER (после product-блоков)
+                # --------------------------------
                 if in_block:
-                    # FOOTER внутри блока
                     apply_footer_back(block_start, i, acc_ctx)
                     logger.debug(f"[DEBUG access] 🔻 Footer внутри блока {block_start}–{i}: {acc_ctx}")
+ 
                 
                 # Если FOOTER единственный в тектсе
                 if last_block is not None:
@@ -107,12 +128,9 @@ class AccessAssistant:
                     logger.debug(f"[DEBUG access] 🔙 Footer после блока {start}–{end_incl}: {acc_ctx}")
                     last_block = None
                     continue
-                # иначе это HEADER
-                header_hint = acc_ctx
-                logger.debug(f"[DEBUG access] ⬆ Header установлен: {acc_ctx}")
+                
                 continue
             # остальное игнор
-
     def resolve_access(self) -> List[Optional[str]]:
         return self._final
 

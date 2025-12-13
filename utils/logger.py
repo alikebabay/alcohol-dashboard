@@ -92,6 +92,7 @@ def setup_logging(global_level=logging.INFO):
         "utils.verify_cols": logging.ERROR,
         "core.volume_detector": logging.ERROR,
         "utils.wine_guard": logging.ERROR,
+        "core.header_detector": logging.ERROR,
         # админка
         "admin.admin_api": logging.ERROR
 
@@ -137,7 +138,8 @@ def setup_logging(global_level=logging.INFO):
         "core.gbx_detector": "gbx_detector_debug.txt",
         "core.graph_normalizer.loader": "graph_loader_debug.txt",
         "admin.admin_api": "admin_api_debug.txt",
-        "utils.wine_guard": "wine_guard_debug.txt"
+        "utils.wine_guard": "wine_guard_debug.txt",
+        "core.header_detector": "header_detector_debug.txt"
     }
 
     
