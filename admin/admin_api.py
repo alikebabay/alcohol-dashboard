@@ -276,7 +276,7 @@ async def delete_node(req: DeleteByIdRequest):
 
 
 
-# ⭐ Mark DfOut as canonical
+# Mark DfOut as canonical
 @app.post("/admin/mark_canonical")
 async def mark_canonical(req: CanonicalRequest):
     log_event(f"Marked DfOut as canonical: {req.id}")
