@@ -287,7 +287,7 @@ async def mark_canonical(req: CanonicalRequest):
     """
     return await run_query(query, {"id": req.id})
 
-# 🔍 Find Brand by name
+# Find Brand by name
 @app.get("/admin/find_brand")
 async def find_brand(name: str):
     query = """
