@@ -15,8 +15,8 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 # символы чекбоксов для fallback-детектора по колонке
-CHECK_POSITIVE = {"☑", "✓", "✔"}
-CHECK_NEGATIVE = {"⮽", "✗", "x", "X"}
+CHECK_POSITIVE = {"☑", "✓", "✔", "yes", "YES"}
+CHECK_NEGATIVE = {"⮽", "✗", "x", "X", "no", "NO"}
 
 def _cell_to_str(v):
     try:
@@ -105,6 +105,9 @@ def _detect_gbx_column(df: pd.DataFrame) -> str | None:
         )
 
         if len(vals) <= 4:
+            header = str(col).lower()
+            if not any(k in header for k in ["gb", "box", "gift"]):
+                continue
             svals = set(vals)
             if svals & CHECK_POSITIVE or svals & CHECK_NEGATIVE:
                 logger.debug(f"[GBX] fallback: detected checkbox column {col!r} values={svals}")

@@ -1,16 +1,18 @@
 from neo4j import GraphDatabase
 import argparse
-import os
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import logging
+from neo4j import GraphDatabase
 
 logger = logging.getLogger(__name__)
 
-# 🔹 Локальное подключение (отдельно от онлайн)
-LOCAL_URI = "bolt://localhost:7687"
-LOCAL_USER = "neo4j"
-LOCAL_PASS = "testing123"
 
-local_driver = GraphDatabase.driver(LOCAL_URI, auth=(LOCAL_USER, LOCAL_PASS))
+from config import USER, PASS, URI
+# Shared driver (used by admin API / FastAPI)
+
+driver = GraphDatabase.driver(URI, auth=(USER, PASS))
+logger.debug(f"[Neo4j] driver object type: {type(driver)}")
 
 # 📂 Папка, куда всё будет сохраняться
 PROCESSED_DIR = os.path.join(os.getcwd(), "processed")
@@ -21,7 +23,7 @@ def export_node(record_id: str):
     Универсальный экспортер: автоматически определяет тип ноды (RawBlob или DfOut)
     и сохраняет соответствующий файл локально.
     """
-    with local_driver.session() as sess:
+    with driver.session() as sess:
         rec = sess.run("""
             MATCH (n)
             WHERE n.id = $id
@@ -75,7 +77,7 @@ def export_node(record_id: str):
     # 🟡 DfRaw (JSON DataFrame)
     elif "DfRaw" in labels:
         # DfRaw не содержит blob — данные хранятся в свойстве json
-        with local_driver.session() as sess:
+        with driver.session() as sess:
             raw_rec = sess.run("""
                 MATCH (n:DfRaw {id:$id})
                 RETURN n.json AS json, n.supplier AS supplier

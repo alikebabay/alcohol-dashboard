@@ -45,8 +45,12 @@ def get_all_offers() -> pd.DataFrame:
     with driver.session() as session:
         records = session.run("""
         MATCH (s:Supplier)-[:HAS_OFFER]->(o:Offer)
+        WHERE coalesce(s.admin_excluded, false) = false
         RETURN s.name AS supplier, properties(o) AS props
         """).data()
+    logger.info(
+    "Sheets export excludes suppliers with admin_excluded=true"
+    )
 
     if not records:
         logger.warning("⚠️ Нет офферов в графе.")

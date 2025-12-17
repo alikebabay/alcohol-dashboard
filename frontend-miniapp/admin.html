@@ -33,6 +33,19 @@
                     ❎ Change Supplier
                 </div>
 
+                <div id="btn_toggle_excluded"
+                    class="menu-item warning"
+                    style="display:none;"
+                    onclick="toggleExcluded()">
+                    🚫 Exclude from pivot
+                </div>
+
+                <div id="btn_rebuild_sheets"
+                    class="menu-item warning"
+                    onclick="rebuildSheets()">
+                    🔄 Rebuild Sheets
+                </div>
+
                 <div id="btn_nodes" class="menu-item"
                      style="display:none;" onclick="loadNodes()">
                     🔍 Find Nodes
@@ -93,6 +106,8 @@ let activeSupplier = null;  // stored selected supplier
 let lastNodes = [];          // cached nodes for state 2
 let lastOffers = [];        // cached offers
 let canonicalIds = new Set();  //cached canonicals for state 2
+let supplierExcluded = false; //managing states for suppliers
+
 
 
 async function loadConfig() {
@@ -121,14 +136,25 @@ async function loadSuppliers() {
     data.forEach(row => {
         const div = document.createElement("div");
         div.className = "supplier-item";
-        div.innerText = row.name;
-
+        div.innerText = row.name + (row.admin_excluded ? " 🚫" : "");
+        //reloads supplier data on active supplier switch
         div.onclick = () => {
+            if (activeSupplier !== row.name) {
+                // supplier context changed → invalidate output
+                lastNodes = [];
+                lastOffers = [];
+                document.getElementById("output").innerHTML = "";
+                viewMode = "nodes";
+            }
+
             activeSupplier = row.name;
+            supplierExcluded = !!row.admin_excluded;
             state = 1;
+
             renderState();
             highlightActiveSupplier();
         };
+
 
         grid.appendChild(div);
     });
@@ -142,7 +168,53 @@ function highlightActiveSupplier() {
     });
 }
 
+//manages suppliers
+async function toggleExcluded() {
+    if (!activeSupplier) return;
 
+    const newState = !supplierExcluded;
+
+    await api(
+        "/set_supplier_excluded",
+        "POST",
+        {
+            supplier: activeSupplier,
+            excluded: newState
+        }
+    );
+
+    supplierExcluded = newState;
+
+    showToast(
+        newState
+            ? "Supplier excluded from pivot"
+            : "Supplier included in pivot"
+    );
+
+    await loadSuppliers();   // refresh 🚫 badge
+    renderState();
+}
+
+async function rebuildSheets() {
+    if (!confirm("Rebuild Google Sheets master?\nThis may take some time.")) {
+        return;
+    }
+
+    showToast("Rebuilding Sheets...");
+
+    const res = await api(
+        "/rebuild_sheets",
+        "POST",
+        null,
+        true   // show result in output
+    );
+
+    if (res && res.ok) {
+        showToast(`Sheets rebuilt (${res.rows} rows)`);
+    } else {
+        showToast("Sheets rebuild finished (check output)");
+    }
+}
 
 // backend calls
 async function api(path, method="GET", body=null, updateOutput=true) {
@@ -282,6 +354,21 @@ document.addEventListener("click", async (e) => {
     else await loadNodes();
 });
 
+//event handler for download button
+document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".node-download");
+    if (!btn) return;
+
+    const card = btn.closest("[data-id]");
+    if (!card) return;
+
+    const id = card.dataset.id;
+    if (!id) return;
+
+    // trigger browser download
+    window.location = API_BASE + "/download/" + encodeURIComponent(id);
+});
+
 
 function renderState() {
     const s = state;
@@ -304,6 +391,9 @@ function renderState() {
 
     // hide DFOUT tools in idle
     dfoutBlock.style.display = "none";
+    
+    //manage suppliers
+    document.getElementById("btn_toggle_excluded").style.display = "none";
 
     // show event log
     const out = document.getElementById("output");
@@ -323,6 +413,13 @@ function renderState() {
         dfoutBlock.style.display = "block";
         document.getElementById("btn_offers").style.display = "block";
         document.getElementById("output").style.display = "block";
+        //manage suppliers
+        const ex = document.getElementById("btn_toggle_excluded");
+        ex.style.display = "block";
+        ex.innerText = supplierExcluded
+            ? "✅ Include in pivot"
+            : "🚫 Exclude from pivot";
+
         return;
     }
 
@@ -337,6 +434,13 @@ function renderState() {
 
         const out = document.getElementById("output");
         out.style.display = "block";
+
+        //manage suppliers
+        const ex = document.getElementById("btn_toggle_excluded");
+        ex.style.display = "block";
+        ex.innerText = supplierExcluded
+            ? "✅ Include in pivot"
+            : "🚫 Exclude from pivot";
 
         // OFFERS VIEW
         if (viewMode === "offers") {
@@ -381,7 +485,7 @@ function renderState() {
                 <div>
                     <b>${name}</b>
                 </div>
-
+                <button class="node-download" title="Download">⬇</button>
                 <button class="node-delete" title="Delete">🗑</button>
             </div>
 

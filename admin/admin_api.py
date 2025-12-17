@@ -3,15 +3,23 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse, Response
+from io import BytesIO
 
 from neo4j import AsyncGraphDatabase
 import logging
 from utils.logger import setup_logging
 import os
-
 from pydantic import BaseModel
 
 from config import MODE, USER, PASS, URI
+
+from admin.sheets_export import rebuild_master_sheet
+from admin.supplier_state import (
+    list_suppliers as list_suppliers_state,
+    set_excluded as set_supplier_excluded,
+)
+
 
 
 #requests for user input
@@ -71,6 +79,24 @@ async def run_query(query: str, params: dict):
         async for record in result:
            out.append(record.data())   # ← convert to dict
         return out
+
+#function to download blobs
+async def load_node_for_download(node_id: str):
+    query = """
+    MATCH (n)
+    WHERE elementId(n) = $id OR n.id = $id
+    RETURN labels(n) AS labels,
+           n.blob AS blob,
+           n.json AS json,
+           n.fileName AS fileName,
+           n.ext AS ext,
+           n.type AS type,
+           n.supplier AS supplier
+    LIMIT 1
+    """
+    rows = await run_query(query, {"id": node_id})
+    return rows[0] if rows else None
+
 
 #mounting styles for admin
 app.mount("/static", StaticFiles(directory="frontend-miniapp/static"), name="static")
@@ -137,13 +163,22 @@ async def load_canonicals():
 # ============================================================
 @app.get("/admin/list_suppliers")
 async def list_suppliers():
-    query = """
-    MATCH (s:Supplier)
-    RETURN s.name AS name
-    ORDER BY name
-    """
-    return await run_query(query, {})
+    return await list_suppliers_state(run_query)
 
+class SupplierExcludeRequest(BaseModel):
+    supplier: str
+    excluded: bool
+
+@app.post("/admin/set_supplier_excluded")
+async def set_supplier_excluded_api(req: SupplierExcludeRequest):
+    log_event(
+        f"Supplier '{req.supplier}' admin_excluded={req.excluded}"
+    )
+    return await set_supplier_excluded(
+        run_query,
+        supplier=req.supplier,
+        excluded=req.excluded,
+    )
 
 # ❌ Remove Supplier + all its offers
 @app.post("/admin/remove_supplier")
@@ -295,6 +330,65 @@ async def find_brand(name: str):
     RETURN b
     """
     return await run_query(query, {"name": name})
+
+#manage pivot table
+@app.post("/admin/rebuild_sheets")
+async def rebuild_sheets():
+    log_event("Rebuilding Google Sheets master...")
+    try:
+        result = rebuild_master_sheet(max_pairs=12)
+        log_event(f"Sheets rebuild OK: {result['rows']} rows")
+        return result
+    except Exception as e:
+        log_event(f"Sheets rebuild FAILED: {repr(e)}")
+        raise
+    
+#download endpoint
+@app.get("/admin/download/{node_id}")
+async def download_node(node_id: str):
+    node = await load_node_for_download(node_id)
+    if not node:
+        return Response("Node not found", status_code=404)
+
+    labels = node["labels"]
+    file_name = node.get("fileName") or f"node_{node_id}"
+    ext = node.get("ext") or ""
+
+    # 🟣 DfOut / RawBlob (binary)
+    if node.get("blob") is not None:
+        data = node["blob"]
+        if ext and not file_name.endswith(ext):
+            file_name += ext
+
+        return StreamingResponse(
+            BytesIO(data),
+            media_type="application/octet-stream",
+            headers={
+                "Content-Disposition": f'attachment; filename="{file_name}"'
+            }
+        )
+
+    # 🟡 DfRaw (JSON stored as text)
+    if "DfRaw" in labels and node.get("json"):
+        supplier = node.get("supplier") or "dfraw"
+        safe_supplier = supplier.replace("/", "_").replace("\\", "_")
+        file_name = f"{safe_supplier}.json"
+
+        text = node["json"]
+        if isinstance(text, dict):
+            import json
+            text = json.dumps(text, ensure_ascii=False, indent=2)
+
+        return StreamingResponse(
+            BytesIO(text.encode("utf-8")),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f'attachment; filename="{file_name}"'
+            }
+        )
+
+    return Response("Unsupported node type", status_code=400)
+
 
 #event log
 @app.get("/admin/event_log")
