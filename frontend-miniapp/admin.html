@@ -4,6 +4,8 @@
 <meta charset="utf-8" />
 <title>Graph Admin</title>
 <link rel="stylesheet" href="/static/admin.css">
+<link rel="stylesheet" href="/static/offer.css">
+<script src="/static/render_offer.js"></script>
 </head>
 
 <body>
@@ -36,6 +38,11 @@
                     🔍 Find Nodes
                 </div>
 
+                <div id="btn_offers" class="menu-item"
+                     style="display:none;" onclick="loadOffers()">
+                    📦 View Offers
+                </div>
+
                 <div id="btn_remove" class="menu-item danger"
                      style="display:none;" onclick="removeSupplier()">
                     ❌ Remove Supplier
@@ -48,7 +55,7 @@
             </div>
         </div>
 
-        <!-- DFOUT -->
+        <!-- Mark DfOut as canonical -->
         <div class="section-block" id="dfout_block">
             <h3>Blob ID / DfOut</h3>
             <input id="dfout_id" placeholder="DfOut ID" />
@@ -81,8 +88,12 @@
 //connection to api
 let API_BASE = null;
 let state = 0;              // 0 = idle, 1 = supplier selected, 2 = nodes view
+let viewMode = "nodes";    // nodes | offers
 let activeSupplier = null;  // stored selected supplier
 let lastNodes = [];          // cached nodes for state 2
+let lastOffers = [];        // cached offers
+let canonicalIds = new Set();  //cached canonicals for state 2
+
 
 async function loadConfig() {
     try {
@@ -159,6 +170,8 @@ function findNodes() {
 }
 
 async function loadNodes() {
+    viewMode = "nodes";
+    await loadCanonicals();
     const data = await api(
         "/find_nodes?supplier=" + encodeURIComponent(activeSupplier),
         "GET",
@@ -166,6 +179,20 @@ async function loadNodes() {
         false
     );
     lastNodes = data;
+    state = 2;
+    renderState();
+}
+
+// loads supplier offers
+async function loadOffers() {
+    const data = await api(
+        "/list_offers?supplier=" + encodeURIComponent(activeSupplier),
+        "GET",
+        null,
+        false
+    );
+    lastOffers = data;
+    viewMode = "offers";
     state = 2;
     renderState();
 }
@@ -178,11 +205,27 @@ async function deleteDfOut() {
     await loadNodes();
 }
 
+//removes nodes by provided id
+function deleteById() {
+    const id = document.getElementById("dfout_id").value.trim();
+    if (!id) return;
+
+    if (!confirm("Delete node with id:\n" + id + " ?")) return;
+
+    api("/delete_node", "POST", { id });
+}
+
 
 function markCanonical(){
     const id = document.getElementById("dfout_id").value.trim();
     api("/mark_canonical", "POST", { id });
 }
+
+async function loadCanonicals() {
+    const data = await api("/list_canonicals", "GET", null, false);
+    canonicalIds = new Set(Array.isArray(data) ? data : []);
+}
+
 
 function findBrand(){
     const brand = document.getElementById("brand").value.trim();
@@ -217,6 +260,27 @@ async function loadEventLog() {
         .join("");
 }
 
+//event handler for delete button
+
+document.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".node-delete");
+    if (!btn) return;
+
+    // works for BOTH .node-item and .offer-card
+    const card = btn.closest("[data-id]");
+    if (!card) return;
+
+    const id = card.dataset.id;
+    if (!id) return;
+
+    if (!confirm("Delete node?\n" + id)) return;
+
+    await api("/delete_node", "POST", { id }, false);
+
+    // refresh current view (offers stay offers)
+    if (viewMode === "offers") await loadOffers();
+    else await loadNodes();
+});
 
 
 function renderState() {
@@ -236,6 +300,7 @@ function renderState() {
     rm.style.display   = "none";
     nd.style.display   = "none";
     df.style.display   = "none";
+    document.getElementById("btn_offers").style.display = "none";
 
     // hide DFOUT tools in idle
     dfoutBlock.style.display = "none";
@@ -256,7 +321,7 @@ function renderState() {
         df.style.display   = "block"; //turns deletedf out button display
 
         dfoutBlock.style.display = "block";
-
+        document.getElementById("btn_offers").style.display = "block";
         document.getElementById("output").style.display = "block";
         return;
     }
@@ -273,40 +338,66 @@ function renderState() {
         const out = document.getElementById("output");
         out.style.display = "block";
 
-        // Render list
-        out.innerHTML = lastNodes.map(n => {
-            const name = n.name ? `<b>${n.name}</b>` : "";
-            const id = n.id || "?";
+        // OFFERS VIEW
+        if (viewMode === "offers") {
+            out.innerHTML = lastOffers
+                .filter(o => o.type === "Offer")
+                .map(o => window.renderOfferCard(o))
+                .join("");
+            return;
+        }
 
-            // pick css class by node type
-            let cls = "node-other";
-            const t = n.type.toLowerCase();
+    // Render NODES (separate pipeline)
+    out.innerHTML = lastNodes.map(n => {
+        const id = n.id || "?";
+        const name = n.name || "";
 
-            if (t === "offer") cls = "node-offer";
-            else if (t === "dfout") cls = "node-dfout";
-            else if (t === "dfraw") cls = "node-dfraw";
-            else if (t === "rawblob") cls = "node-rawblob";
-            else if (t === "brand") cls = "node-brand";
+        let cls = "node-other";
+        const t = (n.type || "").toLowerCase();
 
-            return `
-                <div class="node-item ${cls}">
-                    <div><b>${n.type}</b></div>
-                    <div>ID: <span class="copy-id" data-id="${id}">${id}</span></div>
-                    <div>${name}</div>
+        if (t === "offer") cls = "node-offer";
+        else if (t === "dfout") cls = "node-dfout";
+        else if (t === "dfraw") cls = "node-dfraw";
+        else if (t === "rawblob") cls = "node-rawblob";
+        else if (t === "brand") cls = "node-brand";
+
+        const isCanonical =
+            t === "dfout" && canonicalIds.has(id);
+
+        const badge = isCanonical
+            ? `<div class="badge-canonical">⭐ canonical</div>`
+            : "";
+
+        return `
+            <div class="node-item ${cls}" data-id="${id}">
+                <div>
+                    <b>${n.type}</b>${badge}
                 </div>
-            `;
-        }).join("");
 
+                <div>
+                    ID: <span class="copy-id" data-id="${id}">${id}</span>
+                </div>
 
-        // enable click to copy
-        document.querySelectorAll(".copy-id").forEach(el => {
-            el.onclick = () => {
-                navigator.clipboard.writeText(el.dataset.id);
-                el.style.color = "green";
-                setTimeout(() => el.style.color = "blue", 800);
-                showToast("Copied!");
-            };
-        });
+                <div>
+                    <b>${name}</b>
+                </div>
+
+                <button class="node-delete" title="Delete">🗑</button>
+            </div>
+
+        `;
+    }).join("");
+
+    // enable click to copy (nodes only)
+    document.querySelectorAll(".copy-id").forEach(el => {
+        el.onclick = () => {
+            navigator.clipboard.writeText(el.dataset.id);
+            el.style.color = "green";
+            setTimeout(() => el.style.color = "blue", 800);
+            showToast("Copied!");
+        };
+    });
+
 
         return;
     }

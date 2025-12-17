@@ -46,20 +46,96 @@ body {
     color: white;
     border-color: #1f3bb3;
 }
+/* =========================
+   Node cards (edit here)
+   ========================= */
 
-/* Node color coding */
-.node-item { padding: 6px 8px; margin-bottom: 5px; border-radius: 5px; cursor:pointer; font-family: monospace;}
-.node-offer  { background:#cfe3ff; }
-.node-dfout  { background:#ffe0b2; }
-.node-dfraw  { background:#e1c8ff; }
-.node-rawblob{ background:#c6f5c3; }
-.node-brand  { background:#fff4b3; }
-.node-other  { background:#e0e0e0; }
-.node-item:hover { outline: 2px solid #666; }
+/* Base node card */
+.node-item {
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: monospace;
 
-.copy-id { color:#0044cc; font-weight:bold; cursor:pointer; }
-.copy-id:hover { text-decoration: underline; }
+    height: 160px;              /* 🔒 card size is FIXED */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;           /* nothing escapes */
+}
 
+
+
+/* Hover */
+.node-item:hover {
+    outline: 2px solid #666;
+}
+
+/* Node types (background only) */
+.node-offer   { background:#cfe3ff; }
+.node-dfout   { background:#ffe0b2; }
+.node-dfraw   { background:#e1c8ff; }
+.node-rawblob { background:#c6f5c3; }
+.node-brand   { background:#fff4b3; }
+.node-other   { background:#e0e0e0; }
+
+/* First line: node type + badge */
+.node-item > div:first-child {
+    font-size: 40px;             /* DfOut bigger */
+    font-weight: 700;
+    margin-bottom: 6px;
+
+    flex-grow: 1;               /* 🔑 THIS GROWS */
+    flex-shrink: 0;             /* 🔑 NEVER SHRINK */
+    display: flex;
+    align-items: center;
+}
+
+/* Canonical badge */
+.badge-canonical {
+    margin-left: 10px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #2ecc71;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+/* ID line */
+.node-item > div:nth-child(2) {
+    font-size: 15px;             /* ID bigger */
+    margin-bottom: 8px;
+
+    flex-shrink: 1;              /* 🔻 dies first */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Copyable ID */
+.copy-id {
+    color: #0044cc;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.copy-id:hover {
+    text-decoration: underline;
+}
+
+/* Filename / name line */
+.node-item > div:nth-child(3) {
+    font-size: 17px;             /* filename biggest */
+    font-weight: 700;
+
+    flex-shrink: 1;              /* 🔻 dies first */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Output wrapper (unchanged, grouped here for clarity) */
 .result {
     margin-top: 10px;
     padding: 10px;
@@ -71,6 +147,31 @@ body {
     overflow-y: auto;
 }
 
+.node-item {
+    position: relative;
+}
+
+/* delete button */
+.node-delete {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+
+    background: transparent;
+    border: none;
+    cursor: pointer;
+
+    font-size: 16px;
+    opacity: 0.3;
+}
+
+.node-item:hover .node-delete {
+    opacity: 1;
+}
+
+.node-delete:hover {
+    color: red;
+}
 
 
 /* Sidebar menu styling */

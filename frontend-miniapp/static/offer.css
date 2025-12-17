@@ -1,0 +1,71 @@
+/* =========================
+   OFFER CARDS ONLY
+   ========================= */
+
+.offer-card {
+    background: #d8e9ff;
+    border-radius: 12px;
+    padding: 8px;
+    margin-bottom: 14px;
+
+    font-family: monospace;
+
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    position: relative;
+}
+
+/* delete button (reuse existing behavior) */
+.offer-card .node-delete {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}
+
+/* title */
+.offer-title {
+    font-size: 18px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* middle two-column layout */
+.offer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(3, auto);
+    column-gap: 10px;
+    row-gap: 2px;
+}
+
+
+/* rows */
+.offer-row {
+    font-size: 18px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.offer-row.price {
+    font-weight: 700;
+}
+
+.offer-row.currency {
+    opacity: 0.9;
+}
+
+/* access line pinned to bottom */
+.offer-access {
+    margin-top: auto;
+    padding-top: 1px;
+    border-top: 1px dashed rgba(0,0,0,0.15);
+    font-size: 14px;
+    opacity: 0.85;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

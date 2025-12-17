@@ -110,8 +110,23 @@ def normalize_node(node_props: dict, labels: list):
         "id": props.get("id"),
         "type": node_type,
         "name": name,
+        "price_bottle": props.get("price_bottle"),
+        "price_case": props.get("price_case"),
+        "currency": props.get("currency"),
+        "location": props.get("location"),
+        "access": props.get("access"),
     }
 
+
+#helper functions
+async def load_canonicals():
+    query = """
+    MATCH (n)
+    WHERE n.canonical = true
+    RETURN n.id AS id, n.supplier AS supplier
+    """
+    rows = await run_query(query, {})
+    return {row["id"] for row in rows}
 
 
 # ============================================================
@@ -148,19 +163,85 @@ async def find_nodes(supplier: str):
     query = """
     MATCH (c)
     WHERE c.supplier = $supplier
+    AND (
+        c:DfRaw
+        OR c:DfOut
+        OR c:RawBlob
+    )
     RETURN c, labels(c) AS labels
     LIMIT 200
+
     """
     raw = await run_query(query, {"supplier": supplier})
+
+    canonical_ids = await load_canonicals()
 
     result = []
     for row in raw:
         node_props = row.get("c")
         labels = row.get("labels") or []
-        if node_props:
-            result.append(normalize_node(node_props, labels))
+
+        if not node_props:
+            continue
+
+        node = normalize_node(node_props, labels)
+
+        # ⭐ backend marks canonical
+        if node["type"] == "DfOut":
+            node["isCanonical"] = node["id"] in canonical_ids
+
+        result.append(node)
 
     return result
+
+#find offers for supplier
+@app.get("/admin/list_offers")
+async def list_offers(supplier: str):
+    query = """
+    MATCH (o:Offer)
+    WHERE o.supplier = $supplier
+    RETURN
+        elementId(o) AS id,
+        labels(o) AS labels,
+        properties(o) AS props
+    LIMIT 200
+    """
+    rows = await run_query(query, {"supplier": supplier})
+    out = []
+    for r in rows:
+        p = r["props"]
+        out.append({
+            "id": r["id"],
+            "type": r["labels"][0] if r["labels"] else "Offer",
+            "name": p.get("Наименование"),
+            "cl": p.get("cl"),
+            # support BOTH schemas: "шт / кор" and "шт_кор"
+            "bottles_per_case": (
+                p.get("шт / кор")
+                if p.get("шт / кор") not in (None, "")
+                else p.get("шт_кор")
+            ),
+            "price_bottle": p.get(f"цена за бутылку {supplier}"),
+            "price_case": p.get(f"цена за кейс {supplier}"),
+            "currency": p.get(f"currency {supplier}"),
+            "location": p.get(f"Место загрузки {supplier}"),
+            "access": p.get(f"Доступ {supplier}"),
+            "date_int": p.get("date_int"),
+        })
+
+    return out
+
+
+#find canonical nodes
+@app.get("/admin/list_canonicals")
+async def list_canonicals():
+    query = """
+    MATCH (n)
+    WHERE n.canonical = true
+    RETURN n.id AS id
+    """
+    rows = await run_query(query, {})
+    return [r["id"] for r in rows]
 
 
 # 🗑 Delete all DfOut for supplier
@@ -174,6 +255,25 @@ async def delete_dfout(req: SupplierRequest):
     RETURN count(d) AS deleted
     """
     return await run_query(query, {"supplier": req.supplier})
+
+
+#delete node by id
+class DeleteByIdRequest(BaseModel):
+    id: str
+
+
+@app.post("/admin/delete_node")
+async def delete_node(req: DeleteByIdRequest):
+    log_event(f"Deleted node: {req.id}")
+    query = """
+    MATCH (n)
+    WHERE elementId(n) = $id OR n.id = $id
+    WITH collect(n) AS nodes
+    FOREACH (x IN nodes | DETACH DELETE x)
+    RETURN size(nodes) AS deleted
+    """
+    return await run_query(query, {"id": req.id})
+
 
 
 # ⭐ Mark DfOut as canonical
