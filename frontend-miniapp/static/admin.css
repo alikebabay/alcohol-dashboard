@@ -135,18 +135,6 @@ body {
     text-overflow: ellipsis;
 }
 
-/* Output wrapper (unchanged, grouped here for clarity) */
-.result {
-    margin-top: 10px;
-    padding: 10px;
-    background: #342f2f;
-    white-space: pre-wrap;
-    border: 10px solid #ccc;
-    border-radius: 4px;
-    height: 600px;
-    overflow-y: auto;
-}
-
 .node-item {
     position: relative;
 }

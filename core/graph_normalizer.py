@@ -416,7 +416,7 @@ class BrandSeriesExtractor:
             # определяем категорию из метаданных
             meta = self.brands_meta.get(brand, {})
             category = meta.get("category", "").lower()
-            if category in ("beer", "wine"):
+            if category in ("beer", "wine", "cider"):
                 self.context_type = "beer"  # используем ту же ветку
             else:
                 self.context_type = "common"

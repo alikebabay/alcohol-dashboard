@@ -1,0 +1,44 @@
+
+/* Output wrapper (unchanged, grouped here for clarity) */
+.result {
+    margin-top: 10px;
+    padding: 10px;
+    background: #1e1e1e;
+    color: #ddd;
+    white-space: pre-wrap;
+    border: 10px solid #ccc;
+    border-radius: 4px;
+    height: 600px;
+    overflow-y: auto;
+}
+.result .raw {
+    color: #ff6b6b;   /* красный */
+}
+
+.result .norm {
+    color: #4cd964;   /* зелёный */
+}
+
+.result .unchanged {
+    color: #888;
+}
+
+/* compact diff rows */
+.diff-row {
+    margin-bottom: 4px;
+    line-height: 1.25;
+}
+
+.diff-row .raw {
+    margin-bottom: 2px;
+}
+
+.diff-row .unchanged,
+.diff-row .norm {
+    margin-left: 12px;
+}
+
+/* override pre-wrap spacing */
+.result {
+    white-space: normal;   /* 🔑 */
+}

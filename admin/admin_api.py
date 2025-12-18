@@ -19,6 +19,7 @@ from admin.supplier_state import (
     list_suppliers as list_suppliers_state,
     set_excluded as set_supplier_excluded,
 )
+from admin.test_graph import router as test_graph_router
 
 
 
@@ -39,6 +40,7 @@ logger = logging.getLogger(__name__)
 logger.info(f"[Neo4j] Using shared driver (mode={MODE})")
 
 app = FastAPI()
+app.include_router(test_graph_router, prefix="/admin")
 
 #logging events for admin user
 EVENT_LOG = []
@@ -325,8 +327,13 @@ async def mark_canonical(req: CanonicalRequest):
 # Find Brand by name
 @app.get("/admin/find_brand")
 async def find_brand(name: str):
+    print("DEBUG find_brand name =", name)
+
     query = """
-    MATCH (b:Brand {name: $name})
+    MATCH (b:Brand)
+    WHERE toLower(b.name) CONTAINS toLower($name)
+       OR ANY(a IN coalesce(b.brand_alias, [])
+              WHERE toLower(a) CONTAINS toLower($name))
     RETURN b
     """
     return await run_query(query, {"name": name})
@@ -342,7 +349,7 @@ async def rebuild_sheets():
     except Exception as e:
         log_event(f"Sheets rebuild FAILED: {repr(e)}")
         raise
-    
+
 #download endpoint
 @app.get("/admin/download/{node_id}")
 async def download_node(node_id: str):

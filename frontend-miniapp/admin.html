@@ -5,7 +5,9 @@
 <title>Graph Admin</title>
 <link rel="stylesheet" href="/static/admin.css">
 <link rel="stylesheet" href="/static/offer.css">
+<link rel="stylesheet" href="/static/output.css">
 <script src="/static/render_offer.js"></script>
+<script src="/static/events.js"></script>
 </head>
 
 <body>
@@ -15,6 +17,7 @@
 <div class="container">
     <div class="left">
 
+        <div id="admin_panel">
         <!-- SUPPLIERS -->
         <div class="section-block">
             <h3>Suppliers</h3>
@@ -26,7 +29,8 @@
             </div>
 
             <div class="menu">
-                <div class="menu-item" onclick="loadSuppliers()">⟳ Reload Suppliers</div>                
+                <div class="menu-item" onclick="loadSuppliers()">⟳ Reload Suppliers</div>
+                <div class="menu-item" onclick="enterTestMode()">🧪 TEST</div>            
 
                 <div id="btn_change_supplier" class="menu-item"
                      style="display:none;" onclick="resetState()">
@@ -81,7 +85,28 @@
             <input id="brand" placeholder="Brand name" />
             <button onclick="findBrand()">🔍 Find Brand</button>
         </div>
+            </div><!-- /admin_panel -->
 
+            <!-- TEST MODE PANEL -->
+        <div class="section-block" id="test_panel" style="display:none;">
+            <h3>Test input</h3>
+
+            <textarea
+                id="test_input"
+                placeholder="Paste raw text here..."
+                style="width:100%; height:220px;"
+            ></textarea>
+
+            <div class="menu" style="margin-top:10px;">
+                <div class="menu-item" onclick="runGraphTest()">▶ Test graph</div>
+                <div class="menu-item" onclick="testGBX()">▶ Test GBX</div>
+                <div class="menu-item" onclick="testPrice()">▶ Test price</div>
+
+                <div class="menu-item danger" onclick="exitTestMode()">
+                    ← Return to menu
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="right">
@@ -100,7 +125,7 @@
 
 //connection to api
 let API_BASE = null;
-let state = 0;              // 0 = idle, 1 = supplier selected, 2 = nodes view
+window.state = 0;              // 0 = idle, 1 = supplier selected, 2 = nodes view, 3 = test mode
 let viewMode = "nodes";    // nodes | offers
 let activeSupplier = null;  // stored selected supplier
 let lastNodes = [];          // cached nodes for state 2
@@ -108,6 +133,13 @@ let lastOffers = [];        // cached offers
 let canonicalIds = new Set();  //cached canonicals for state 2
 let supplierExcluded = false; //managing states for suppliers
 
+//mouse position
+let lastMouse = { x: 0, y: 0 };
+
+document.addEventListener("mousemove", e => {
+    lastMouse.x = e.clientX;
+    lastMouse.y = e.clientY;
+});
 
 
 async function loadConfig() {
@@ -142,8 +174,7 @@ async function loadSuppliers() {
             if (activeSupplier !== row.name) {
                 // supplier context changed → invalidate output
                 lastNodes = [];
-                lastOffers = [];
-                document.getElementById("output").innerHTML = "";
+                lastOffers = [];                
                 viewMode = "nodes";
             }
 
@@ -174,14 +205,18 @@ async function toggleExcluded() {
 
     const newState = !supplierExcluded;
 
-    await api(
+    const res = await api(
         "/set_supplier_excluded",
         "POST",
-        {
-            supplier: activeSupplier,
-            excluded: newState
-        }
+        { supplier: activeSupplier, excluded: newState },
+        false
     );
+
+    if (res?.error) {
+        showToast("Failed to update supplier");
+        logEvent("Supplier exclude toggle failed", "error");
+        return;
+    }
 
     supplierExcluded = newState;
 
@@ -191,30 +226,35 @@ async function toggleExcluded() {
             : "Supplier included in pivot"
     );
 
+    logEvent(
+       newState
+           ? `Supplier excluded from pivot: ${activeSupplier}`
+           : `Supplier included in pivot: ${activeSupplier}`,
+       "ok"
+   );
+
     await loadSuppliers();   // refresh 🚫 badge
     renderState();
 }
 
 async function rebuildSheets() {
-    if (!confirm("Rebuild Google Sheets master?\nThis may take some time.")) {
+    if (!confirm("Rebuild Google Sheets master?")) return;
+
+    showToast("Rebuilding sheets…");
+    logEvent("Rebuild sheets started");
+
+    const res = await api("/rebuild_sheets", "POST", null, false);
+
+    if (res?.error) {
+        showToast("Rebuild failed");
+        logEvent("Rebuild failed", "error");
         return;
     }
 
-    showToast("Rebuilding Sheets...");
-
-    const res = await api(
-        "/rebuild_sheets",
-        "POST",
-        null,
-        true   // show result in output
-    );
-
-    if (res && res.ok) {
-        showToast(`Sheets rebuilt (${res.rows} rows)`);
-    } else {
-        showToast("Sheets rebuild finished (check output)");
-    }
+    showToast("Sheets rebuilt");
+    logEvent(`Sheets rebuilt (${res.rows || "?"} rows)`, "ok");
 }
+
 
 // backend calls
 async function api(path, method="GET", body=null, updateOutput=true) {
@@ -232,9 +272,16 @@ function listSuppliers(){
     api("/list_suppliers", "GET");
 }
 
-function removeSupplier(){
+async function removeSupplier(){
     if (!confirm("Remove supplier: " + activeSupplier + " ?")) return;
-    api("/remove_supplier", "POST", { name: activeSupplier });
+    const res = await api("/remove_supplier", "POST", { name: activeSupplier }, false);
+    if (res?.error) {
+        showToast("Remove failed");
+        logEvent(`Remove supplier failed: ${activeSupplier}`, "error");
+        return;
+    }
+    showToast("Supplier removed");
+    logEvent(`Supplier removed: ${activeSupplier}`, "ok");
 }
 
 function findNodes() {
@@ -271,26 +318,62 @@ async function loadOffers() {
 
 //removes DFOUt, returns user to state 2
 async function deleteDfOut() {
-    await api("/delete_dfout", "POST", { supplier: activeSupplier });
+    const res = await api(
+        "/delete_dfout",
+        "POST",
+        { supplier: activeSupplier },
+        false
+    );
+
+    if (res?.error) {
+        showToast("DfOut delete failed");
+        logEvent("DfOut delete failed", "error");
+        return;
+    }
+
+    showToast("DfOut deleted");
+    logEvent(`DfOut deleted for ${activeSupplier}`, "ok");
+    state = 1;
+    renderState();
 
     // Load nodes immediately → switches state to 2 inside loadNodes()
     await loadNodes();
 }
 
 //removes nodes by provided id
-function deleteById() {
+async function deleteById() {
+    console.log("DELETE: function entered");
     const id = document.getElementById("dfout_id").value.trim();
+    console.log("DELETE: id =", id);
     if (!id) return;
+    if (!confirm("Delete node?\n" + id)) return;
 
-    if (!confirm("Delete node with id:\n" + id + " ?")) return;
+    const res = await api("/delete_node", "POST", { id }, false);
 
-    api("/delete_node", "POST", { id });
+    if (res?.error) {
+        showToast("Delete failed");
+        logEvent(`Delete failed: ${id}`, "error");
+        return;
+    }
+
+    showToast("Node deleted");
+    logEvent(`Node deleted: ${id}`, "ok"); // сохранит в EventStore
+    state = 0;
+    renderState(); // state 0 -> renderEvents() покажет
 }
 
 
-function markCanonical(){
+
+async function markCanonical(){
     const id = document.getElementById("dfout_id").value.trim();
-    api("/mark_canonical", "POST", { id });
+    const res = await api("/mark_canonical", "POST", { id }, false);
+    if (res?.error) {
+        showToast("Mark canonical failed");
+        logEvent(`Mark canonical failed: ${id}`, "error");
+        return;
+    }
+    showToast("Marked as canonical");
+    logEvent(`Marked canonical: ${id}`, "ok");
 }
 
 async function loadCanonicals() {
@@ -315,22 +398,68 @@ function resetState() {
     state = 0;
     
     renderState();
+    renderEvents();
 }
 
-//adds event log for user
-async function loadEventLog() {
-    const res = await api("/event_log", "GET", null, false);
-    const out = document.getElementById("output");
+//takes user to test mode
+function enterTestMode() {
+    state = 3;
+    renderState();
+}
 
-    if (!res.events) {
-        out.innerText = "No logs.";
+function exitTestMode() {
+    state = 0;
+    renderState();
+}
+
+// =========================
+// TEST MODE 
+// =========================
+
+async function runGraphTest() {
+    const text = document.getElementById("test_input").value;
+
+    if (!text.trim()) {
+        showToast("No input text");
         return;
     }
 
-    out.innerHTML = res.events
-        .map(ev => `<div class="event-item">${ev}</div>`)
-        .join("");
+    const out = document.getElementById("output");
+    out.innerHTML = `<div class="event-item">▶ running graph test…</div>`;
+
+    const res = await api(
+        "/test/graph",
+        "POST",
+        { text },
+        false
+    );
+
+    if (!res.ok) {
+        out.innerText = res.error || "Test failed";
+        return;
+    }
+
+    out.innerHTML = res.data.map(r => {
+        if (!r.changed) {
+            return `
+                <div class="diff-row unchanged">
+                    <div class="raw">${r.raw}</div>
+                    <div class="unchanged">→ (no change)</div>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="diff-row changed">
+                <div class="raw">${r.raw}</div>
+                <div class="norm">→ ${r.norm}</div>
+            </div>
+        `;
+
+    }).join("");
 }
+
+
 
 //event handler for delete button
 
@@ -338,7 +467,6 @@ document.addEventListener("click", async (e) => {
     const btn = e.target.closest(".node-delete");
     if (!btn) return;
 
-    // works for BOTH .node-item and .offer-card
     const card = btn.closest("[data-id]");
     if (!card) return;
 
@@ -347,12 +475,28 @@ document.addEventListener("click", async (e) => {
 
     if (!confirm("Delete node?\n" + id)) return;
 
-    await api("/delete_node", "POST", { id }, false);
+    const res = await api("/delete_node", "POST", { id }, false);
 
-    // refresh current view (offers stay offers)
-    if (viewMode === "offers") await loadOffers();
-    else await loadNodes();
+    if (res?.error) {
+        showToastAt(lastMouse.x, lastMouse.y, "Delete failed");
+        logEvent(`Delete failed: ${id}`, "error");
+        return;
+    }
+
+    // ✅ 1. лог пишем ВСЕГДА
+    logEvent(`Node deleted: ${id}`, "ok");
+
+    // ✅ 2. toast у мыши
+    showToastAt(lastMouse.x, lastMouse.y, "Node deleted");
+
+    // ✅ 3. остаёмся в текущем view
+    if (viewMode === "offers") {
+        await loadOffers();
+    } else {
+        await loadNodes();
+    }
 });
+
 
 //event handler for download button
 document.addEventListener("click", (e) => {
@@ -378,6 +522,39 @@ function renderState() {
     const nd   = document.getElementById("btn_nodes");
     const df   = document.getElementById("btn_dfout");
     const dfoutBlock = document.getElementById("dfout_block");
+    const adminPanel = document.getElementById("admin_panel");
+    const testPanel  = document.getElementById("test_panel");
+
+    //default visibility
+    adminPanel.style.display = "block";
+    testPanel.style.display  = "none";
+
+    // =====================
+    // STATE 3: TEST MODE
+    // =====================
+    if (s === 3) {
+        lbl.innerText = "TEST MODE";
+
+        // hide ALL admin UI
+        adminPanel.style.display = "none";
+
+        btnC.style.display = "none";
+        rm.style.display   = "none";
+        nd.style.display   = "none";
+        df.style.display   = "none";
+        document.getElementById("btn_offers").style.display = "none";
+        document.getElementById("btn_toggle_excluded").style.display = "none";
+
+        // show test UI
+        testPanel.style.display = "block";
+
+        // output stays visible and generic
+        const out = document.getElementById("output");
+        out.style.display = "block";
+        out.innerHTML = "<em>Paste text on the left and run a test.</em>";
+
+        return;
+    }
 
 
     if (s === 0) { 
@@ -398,9 +575,10 @@ function renderState() {
     // show event log
     const out = document.getElementById("output");
     out.style.display = "block";
-    loadEventLog();
+    renderEvents();
     return;
     }
+    
 
 
     if (s === 1) { // supplier selected state
@@ -419,7 +597,7 @@ function renderState() {
         ex.innerText = supplierExcluded
             ? "✅ Include in pivot"
             : "🚫 Exclude from pivot";
-
+        renderEvents();
         return;
     }
 
@@ -514,12 +692,12 @@ window.onload = async () => {
     renderState();
 };
 
-//helper to display copid when id is copied
+//helper to display copy id when id is copied
 function showToast(msg) {
     const t = document.createElement("div");
     t.innerText = msg;
-    t.style.position = "fixed";
-    t.style.bottom = "20px";
+    t.style.position = "absolute";
+    t.style.top = "20px";
     t.style.right = "20px";
     t.style.background = "black";
     t.style.color = "white";
@@ -528,7 +706,6 @@ function showToast(msg) {
     t.style.opacity = "0";
     t.style.transition = "opacity 0.25s ease";
     t.style.zIndex = 9999;
-
     document.body.appendChild(t);
 
     requestAnimationFrame(() => t.style.opacity = "1");
@@ -538,6 +715,9 @@ function showToast(msg) {
         setTimeout(() => t.remove(), 250);
     }, 900);
 }
+
+
+
 
 </script>
 </body>
