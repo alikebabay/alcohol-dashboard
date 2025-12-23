@@ -13,39 +13,6 @@ from core.gbx_detector import detect_gbx
 
 logger = logging.getLogger(__name__)
 
-def _clean_name_extras(s: str) -> str:
-    """
-    Очищает поле 'name' от всего, что не относится к названию товара.
-    Убирает:
-      - логистику (FTL, EXW, DAP, lead time, on floor и т.п.)
-      - валюты и цены (eur, usd, per bottle/case, price)
-      - упаковку и статусы (cases, bottles, coded, GBX, NRF, etc.)
-    """
-    if not isinstance(s, str):
-        return s
-
-    original = s
-    s = s.strip()
-
-    # убираем FTL., EXW. и всё после @
-    s = re.sub(r'^(FTL\.?|EXW\.?)\s*', '', s, flags=re.I)
-    s = re.sub(r'@.*', '', s)
-
-    # убираем служебные и торговые маркеры
-    s = re.sub(
-        r'\b(?:coded?|gbx|nogbx|nrf|rf|ftl|exw|dap|loendersloot|riga|niderland|deposit|confirm|'
-        r'lead\s*time|on\s*floor|price|per\s*bottle|per\s*case|eur|usd|\$|€|t\d|weeks?|days?|cases?|bottles?)\b',
-        '',
-        s,
-        flags=re.I,
-    )
-
-    # чистим дублирующиеся запятые и пробелы
-    s = re.sub(r'[,\s]+', ' ', s).strip()
-    s = re.sub(r'\s{2,}', ' ', s)
-    
-
-    return s
 
 
 def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataFrame | None = None) -> pd.DataFrame:
@@ -130,9 +97,6 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
 
     df["gb_flag"] = gbx_df["gb_flag"].values
     df["gb_type"] = gbx_df["gb_type"].values
-
-    # дополнительно чистим от лишних слов и хвостов
-    df[col_name] = df[col_name].map(_clean_name_extras)
 
     df[col_name] = df[col_name].map(convert_abbreviation)
     logger.debug("normalize_alcohol_df: применяется convert_abbreviation к наименованиям")

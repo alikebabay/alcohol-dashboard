@@ -8,29 +8,56 @@ from core.location_assistant import LocationAssistant
 from core.access_assistant import AccessAssistant
 
 from utils.logger import setup_logging
+from config import MIN_PRODUCT_LEN
+from libraries.regular_expressions import RX_BOTTLE, RX_BPC, RX_BPC_TRIPLE, RX_CASE
+from libraries.distillator import looks_like_product
+from core.product_detector import detect_product_without_price
 
 # --- Initialize logging once ---
 setup_logging(logging.DEBUG)
 logger = logging.getLogger("core.text_parser")
 
-def _merge_short_headers(lines, max_words=3):
+#helper funcion for merge
+def has_price(s: str) -> bool:
+    return any(rx.search(s) for rx in RX_BOTTLE) or any(rx.search(s) for rx in RX_CASE)
+
+
+#для случаев "Magners"
+#           "cider bottle 24x330ml"
+
+def _merge_short_headers(lines):
     merged = []
     skip_next = False
+
     for i, line in enumerate(lines):
         if skip_next:
             skip_next = False
             continue
 
-        words = line.strip().split()
-        if 0 < len(words) <= max_words and i + 1 < len(lines):
-            # merge this short header with the next non-empty line
+        s = line.strip()
+
+        # ---------- STAGE 1: короткие строки ----------
+        if 0 < len(s) < MIN_PRODUCT_LEN and i + 1 < len(lines):
             next_line = lines[i + 1].strip()
-            merged_line = f"{line.strip()} {next_line}"
-            merged.append(merged_line)
+            merged.append(f"{s} {next_line}")
             skip_next = True
-        else:
-            merged.append(line)
+            continue
+
+        # ---------- STAGE 2: продукт БЕЗ инлайн-цены ----------
+        if (
+            detect_product_without_price(s)
+            and i + 1 < len(lines)
+            and has_price(lines[i + 1])
+        ):
+            next_line = lines[i + 1].strip()
+            merged.append(f"{s} {next_line}")
+            skip_next = True
+            continue
+
+        merged.append(line)
+
     return merged
+
 
 
 def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:

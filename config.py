@@ -8,6 +8,8 @@ import pandas as pd
 import warnings
 import socket
 
+#минимальная длина продуктовой строки
+MIN_PRODUCT_LEN = 32
 
 load_dotenv("neo4j.env")
 

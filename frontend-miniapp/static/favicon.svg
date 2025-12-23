@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+
+  <!-- background -->
+  <rect width="64" height="64" rx="12" fill="#1e3a8a"/>
+
+  <!-- glass: wide bowl → long thin stem → oval base (single shape) -->
+  <path d="
+    M10 14
+    L54 14
+    L36 36
+
+    C34 38 34 44 34 52
+    C34 54 38 56 42 56
+    L22 56
+    C26 56 30 54 30 52
+    C30 44 30 38 28 36
+    Z"
+    fill="#dc2626"/>
+
+  <!-- dollar sign -->
+  <text x="32" y="27"
+        text-anchor="middle"
+        dominant-baseline="middle"
+        font-size="24"
+        font-weight="900"
+        fill="#22c55e">$</text>
+
+</svg>
