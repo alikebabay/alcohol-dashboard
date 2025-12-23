@@ -24,10 +24,12 @@ try:
         _loc_data = json.load(f)
         CITY_ALIASES = {k.lower(): v for k, v in _loc_data.get("cities", {}).items()}
         INCOTERM_ALIASES = {k.lower(): v for k, v in _loc_data.get("incoterms", {}).items()}
+        WAREHOUSE_ALIASES = {k.lower(): v for k, v in _loc_data.get("warehouse", {}).items()}
 except Exception as e:
     logger.error(f"[LOCATION] failed to load location_aliases.json: {e}")
     CITY_ALIASES = {}
     INCOTERM_ALIASES = {}
+    WAREHOUSE_ALIASES = {}
 
 
 def extract_volume(text: str):
@@ -505,24 +507,33 @@ def extract_location(text: str):
             incoterm = val.upper()
             break
 
-    # если нет инкотерма, ищем конструкцию "in/at/from <city>"
+    # если нет инкотерма
     if not incoterm:
+        # 1️⃣ пробуем city через in/at/from
         m = re.search(r'\b(?:in|at|from)\s+([A-ZА-Я][A-Za-zА-Яа-я\-]+)\b', s, re.I)
         if m:
             city = m.group(1)
-            # 🚫 regulatory / sales-scope phrases → not a location
             if re.search(r'\b(not\s+for\s+sales?|sales?|sale)\b', s, re.I):
-                location_logger.debug(
-                    f"extract_location: 'in {city}' is sales restriction, not location → ignore"
-                )
                 return None
-
             expanded = CITY_ALIASES.get(city.lower()[:4], city)
-            location_logger.debug(f"extract_location: без Incoterm, найден город {expanded!r}")
+            location_logger.debug(
+                f"extract_location: no incoterm, city found → {expanded!r}"
+            )
             return expanded
-        location_logger.debug(f"extract_location: Incoterm не найден, город не распознан → {s!r}")
-        return None
-   
+
+        # 2️⃣ FALLBACK: warehouse без incoterm
+        tail = s[-100:]
+        for alias, wh in WAREHOUSE_ALIASES.items():
+            if re.search(rf'\b{re.escape(alias)}\b', tail, re.I):
+                location_logger.debug(
+                    f"extract_location: no incoterm, fallback to warehouse → {wh}"
+                )
+                return wh   # ← ВАЖНО: без incoterm
+
+        location_logger.debug(
+            f"extract_location: no incoterm, no city, no warehouse → {s!r}"
+        )
+        return None   
 
     # выделяем часть ближе к концу строки
     tail = s[-100:]  # последние 100 символов чаще всего содержат локацию

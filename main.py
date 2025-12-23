@@ -16,6 +16,7 @@ from menu_states import SUPPLIER, INGEST
 from workers.blob_worker import init_worker as init_blob_worker
 from workers.reference_worker import init_worker as init_reference_worker
 from workers.excel_worker import init_worker as init_excel_worker
+from workers.telegram_notifier import init_worker as init_telegram_notifier
 from utils.logger import setup_logging
 
 
@@ -33,12 +34,6 @@ from config import TOKEN
 
 
 logger = logging.getLogger(__name__)
-
-#будим работников
-init_blob_worker()
-init_reference_worker()
-init_excel_worker()
-logger.info("[BUS] Работники разбужены: init_blob_worker, init_reference_worker, init_excel_worker")
 
 
 # /start
@@ -122,6 +117,13 @@ def main():
     print("Бот запускается...")
 
     app = (Application.builder().token(TOKEN).concurrent_updates(False).read_timeout(60).write_timeout(60).build())
+    
+    #будим работников
+    init_blob_worker()
+    init_reference_worker()
+    init_excel_worker()
+    init_telegram_notifier(app.bot)
+    logger.info("[BUS] Работники разбужены: init_blob_worker, init_reference_worker, init_excel_worker, telegram_notifier")
 
     # --- Диалог ---
     conv_handler = ConversationHandler(

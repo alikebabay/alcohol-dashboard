@@ -60,12 +60,26 @@ async def dispatch_excel(update, context, supplier_choice=None):
     supplier_sm.ready()
     supplier_name = supplier_sm.get_name()
 
-    # проверка перед отдачей пользователю
-    verifier.set_state("logic")
-    df_distilled = verifier.run(df_distilled)
-    print(verifier.report())
+    # проверка логики перед отдачей пользователю
+    try:
+        verifier.set_state("logic")
+        df_distilled = verifier.run(df_distilled)        
+    except ValueError as e:
+        if str(e) == "NO_PRICE_COLUMNS":
+            await publish("ingest.failed", {
+                "chat_id": update.effective_chat.id,
+                "reason": "NO_PRICE",
+            })
+            return None
 
-    
+        if str(e) == "NO_PRICE_VALUES":
+            await publish("ingest.failed", {
+                "chat_id": update.effective_chat.id,
+                "reason": "NO_PRICE",
+            })
+            return None
+
+        raise
     # ⚡️ финальная типизация теперь всегда
     verifier.set_state("typing")
     verifier.run(df_distilled)

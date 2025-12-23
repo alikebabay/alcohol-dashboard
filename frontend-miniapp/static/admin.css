@@ -57,7 +57,7 @@ body {
     border-radius: 8px;
     cursor: pointer;
     font-family: monospace;
-
+    color: rgb(35 23 23);        /*font color for dfout*/
     height: 160px;              /* 🔒 card size is FIXED */
     display: flex;
     flex-direction: column;
@@ -84,7 +84,7 @@ body {
     font-size: 40px;             /* DfOut bigger */
     font-weight: 700;
     margin-bottom: 6px;
-
+    color: rgb(35 23 23);        /*font color for dfout*/
     flex-grow: 1;               /* 🔑 THIS GROWS */
     flex-shrink: 0;             /* 🔑 NEVER SHRINK */
     display: flex;
@@ -106,7 +106,7 @@ body {
 .node-item > div:nth-child(2) {
     font-size: 15px;             /* ID bigger */
     margin-bottom: 8px;
-
+    color: rgb(35 23 23);        /*font color for dfout*/
     flex-shrink: 1;              /* 🔻 dies first */
     white-space: nowrap;
     overflow: hidden;

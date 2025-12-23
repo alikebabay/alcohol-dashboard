@@ -244,5 +244,14 @@
     "Ware-": "WAREHOUSE",
     "at warehouse": "WAREHOUSE",
     "origin": "ORIGIN"
+  },
+
+  "warehouse": {
+    "loendersloot": "Loendersloot",
+    "revera": "Revera",
+    "streamlog": "Streamlog",
+    "van de mark": "Van de Mark",
+    "scan cargo": "Scan Cargo"
   }
+
 }
