@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 
 #separate logging for canonical lookups
 canon_logger = logging.getLogger("core.graph_normalizer.canonical")
-
 loader_logger = logging.getLogger("core.graph_normalizer.loader")
+brand_logger = logging.getLogger("core.graph_normalizer.brand")
 
 
 # ==========================================================
@@ -313,12 +313,8 @@ def score_brand(raw, brand_norm):
             continue
         if token == brand_norm:
             score += 1.0
-        elif token in brand_norm and len(token) >= 4:
-            score += 0.75
-
-        # prefix/suffix partials
-        if brand_norm.startswith(token):
-            score += 0.25
+        elif len(token) >= 4 and brand_norm.startswith(token):
+           score += 0.75
 
     # 2️⃣ multi-token sequence
     joined = " ".join(tokens[:3])
@@ -459,14 +455,12 @@ class BrandSeriesExtractor:
             logger.debug(f"[CTX] beer → {self.context_type} ({detected_brand})")
             return detected_brand, detected_series
 
-        # 3️⃣ бренд не найден → сбрасываем контекст
-        
-        logger.debug("[BEER] no brand in line → reset INIT")
+        # 3️⃣ бренд не найден → сбрасываем контекст и ПЕРЕПРОБУЕМ INIT на этой же строке
+        logger.debug("[BEER] no brand in line → reset INIT + retry init on same line")
         self.state = "INIT"
         self.last_brand = None
         self.context_type = "common"
-        return None, None
-
+        return self._handle_init(raw, raw_norm)
     
     def _handle_common(self, raw, raw_norm):
         brand = self.last_brand
@@ -625,18 +619,15 @@ class BrandSeriesExtractor:
     # ==========================================================
     
     def _extract_brand_series(self, raw: str):
-        """Оригинальная версия без FSM-ограничений (мягкий скоринг, полное сканирование)."""
-        logger.debug(
-            "[BRAND RAW CP] raw=%r → %s" %
-            (raw, " ".join(hex(ord(ch)) for ch in raw))
-        )
+        """Оригинальная версия без FSM-ограничений (мягкий скоринг, полное сканирование)."""        
         tokens = [t for t in tokenize(raw)]
-        logger.debug(f"[TOKENS] {tokens}")
+        
         scores = {}
-        logger.debug(f"[SCORES] {scores}")
         raw_norm_full = _normalize(raw)
+        brand_logger.debug("[BRAND ENTER] raw=%r", raw)
         for token in tokens[:4]:  # ограничиваем первые токены
-            t_norm = _normalize(token)
+            
+            t_norm = _normalize(token)            
             
             # ✅ allow numeric brands (e.g. 1792, 1800, 19 Crimes, 7 Deadly Zins)
             if len(t_norm) < 3:
@@ -646,7 +637,8 @@ class BrandSeriesExtractor:
                     continue
 
             for b_norm, b_orig in self.brands.items():
-                sc = score_brand_series(raw, b_norm)
+                sc = score_brand_series(raw, b_norm)               
+
                 b_tokens = b_norm.split()
                 # ----------------------------------------------------
                 # BRAND ALIAS SUPPORT (перед обычными матчами)
@@ -664,28 +656,60 @@ class BrandSeriesExtractor:
 
                     # ✅ quick boost если этот вариант буквально есть в raw
                     if v_norm in raw_norm_full:
+                        brand_logger.debug(
+                            "[BRAND BOOST][LITERAL] brand=%r v_norm=%r +1.0",
+                            b_orig, v_norm
+                        )
                         sc += 1.0
 
                     # прямые совпадения
                     if t_norm in b_tokens or t_norm == v_norm:
+                        brand_logger.debug(
+                            "[BRAND BOOST][TOKEN_EQ] brand=%r token=%r b_tokens=%s +1.0",
+                            b_orig, t_norm, b_tokens
+                        )
                         sc += 1
 
-                    elif len(t_norm) >= 4 and any(t_norm in bt for bt in b_tokens):
+                    elif len(t_norm) >= 4 and any(bt.startswith(t_norm) for bt in b_tokens):
+                        brand_logger.debug(
+                            "[BRAND BOOST][TOKEN_PART] brand=%r token=%r b_tokens=%s +0.25",
+                            b_orig, t_norm, b_tokens
+                        )
                         sc += 0.25
 
                     # ✅ исправленный plural-fix
                     for bt in b_tokens:
                         if t_norm.rstrip("s") == bt or bt.rstrip("s") == t_norm:
+                            brand_logger.debug(
+                                "[BRAND BOOST][PLURAL] brand=%r token=%r bt=%r +0.6",
+                                b_orig, t_norm, bt
+                            )
                             sc += 0.6
 
                         elif t_norm.endswith("es") and t_norm[:-2] == bt:
+                            brand_logger.debug(
+                                "[BRAND BOOST][ES] brand=%r token=%r bt=%r +0.5",
+                                b_orig, t_norm, bt
+                            )
                             sc += 0.5
 
                         elif t_norm.endswith("ies") and bt.endswith("y") and t_norm[:-3] + "y" == bt:
+                            brand_logger.debug(
+                                "[BRAND BOOST][IES] brand=%r token=%r bt=%r +0.5",
+                                b_orig, t_norm, bt
+                            )
                             sc += 0.5
 
                     if sc > 0:
                         # 👇 все варианты (бренд + алиасы) копят скор в одном ключе бренда
+                        brand_logger.debug(
+                            "[BRAND SCORE ADD] brand=%r v_norm=%r token=%r sc=%.3f total_before=%.3f",
+                            b_orig,
+                            v_norm,
+                            t_norm,
+                            sc,
+                            scores.get(b_orig, 0)
+                        )
                         scores[b_orig] = scores.get(b_orig, 0) + sc
 
         if not scores:
@@ -697,10 +721,21 @@ class BrandSeriesExtractor:
         logger.debug(f"[DEBUG SCORES] top={top}, all={list(scores.keys())[:10]}")
         #debug
 
-        brand = top[0]            
+        brand = top[0]  
+        brand_logger.debug(
+            "[BRAND SCORES FINAL] %s",
+            scores
+        )          
 
         # выбираем лучший по скору, при равенстве — по длине
         brand = sorted(scores.items(), key=lambda x: (-x[1], -len(x[0])))[0][0]
+        
+        brand_logger.debug(
+            "[BRAND PICK] brand=%r score=%.3f",
+            brand,
+            scores.get(brand)
+        )
+
 
         # извлекаем серию после бренда
         idx = _normalize(raw).find(_normalize(brand))
@@ -1041,7 +1076,12 @@ def normalize_dataframe(df: pd.DataFrame, col_name: str = "Наименован�
             continue
 
         brand, series = extractor.extract(raw)
+        canon_logger.debug(
+            "[ROW] i=%d raw=%r → brand=%r series=%r state=%s ctx=%s",
+            i, raw, brand, series, extractor.state, extractor.context_type
+        )
         if not brand:
+            canon_logger.debug("[ROW DROP] i=%d reason=no_brand raw=%r", i, raw)
             continue
 
         canon_logger.debug(f"[LOOKUP START] raw={raw!r} → brand={brand!r}, series={series!r}")

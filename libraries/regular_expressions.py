@@ -2,7 +2,7 @@
 import re
 
 RX_CURRENCY_MARKER = re.compile(
-    r'(?:\b(?:eur|euro|usd|gbp|chf|aed)\b'   # normal currency words
+    r'(?:\b(?:eur|euro|euros|usd|gbp|chf|aed)\b'   # normal currency words
     r'|[¥₽£€\$]'                             # currency symbols
     r'|\bE(?=\s*\d))',                       # NEW: "E" only if followed by a number (E 52.00 / E52.00)
     re.I,
@@ -11,29 +11,29 @@ RX_CURRENCY_MARKER = re.compile(
 
 # Цена за бутылку
 RX_BOTTLE = [
-    re.compile(r'price\s+per\s*bottle\s+([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
+    re.compile(r'price\s+per\s*bottle\s+([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|euros|€|usd|gbp)\b', re.I),
     # 👇 новый универсальный вариант, чтобы ловить 'at 37.15 USD'
-    re.compile(r'at\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
+    re.compile(r'at\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|euros|€|usd|gbp)\b', re.I),
     # Handles '@ €121.94/btl' or 'at €121.94/btl' | €26.50 /btl | 26,50€ /btl | 26.50 eur/btl | 
     re.compile(
-    r'[@\s-]*(?:at\s*)?(?:€|eur|euro|usd|gbp)?\s*-?\s*([0-9]+(?:[.,][0-9]+)?)\s*'
-    r'(?:€|eur|euro|usd|gbp)?\s*(?:/|per\s+)(?:btl|bottle)\b',
+    r'[@\s-]*(?:at\s*)?(?:€|eur|euro|euros|usd|gbp)?\s*-?\s*([0-9]+(?:[.,][0-9]+)?)\s*'
+    r'(?:€|eur|euro|euros|usd|gbp)?\s*(?:/|per\s+)(?:btl|bottle)\b',
     re.I,),
 
 ]
 
 # Цена за кейс
 RX_CASE = [
-        re.compile(r'(?:eur|euro|€|usd|gbp)\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:per\s*case|case|cs)\b', re.I),
-        re.compile(r'([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\s*(?:per\s*case|case|cs)\b', re.I),
-        re.compile(r'price\s+per\s*case\s+([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
+        re.compile(r'(?:eur|euro|euros|€|usd|gbp)\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:per\s*case|case|cs)\b', re.I),
+        re.compile(r'([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|euros|€|usd|gbp)\s*(?:per\s*case|case|cs)\b', re.I),
+        re.compile(r'price\s+per\s*case\s+([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|euros|€|usd|gbp)\b', re.I),
         # 👇 новый универсальный вариант, чтобы ловить 'at 37.15 USD'
-        re.compile(r'at\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|€|usd|gbp)\b', re.I),
+        re.compile(r'at\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|euros|€|usd|gbp)\b', re.I),
         # 👇 короткие варианты вроде "— $131.95" или "€307.34"
-        re.compile(r'[$€]\s*([0-9]+(?:[.,][0-9]+)?)\b', re.I),
-        re.compile(r'[$€]\s*([0-9]{1,3}(?:[,.\s][0-9]{3})*(?:[.,][0-9]+)?)\b', re.I),
+        re.compile(r'[$€£]\s*([0-9]+(?:[.,][0-9]+)?)\b', re.I),
+        re.compile(r'[$€£]\s*([0-9]{1,3}(?:[,.\s][0-9]{3})*(?:[.,][0-9]+)?)\b', re.I),
         # 👇 Price(USD)/Box или Price(EUR)/Case
-        re.compile(r'price\s*\(?(usd|eur|euro|€|gbp)?\)?\s*/\s*(?:box|case)\b', re.I),
+        re.compile(r'price\s*\(?(usd|eur|euro|euros|€|gbp)?\)?\s*/\s*(?:box|case)\b', re.I),
         ]
 
 # контекстные регексы лексические

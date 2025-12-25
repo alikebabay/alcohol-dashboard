@@ -131,4 +131,10 @@ CURRENCY_PATTERNS = {
         (r"\brub\b", True),
         (r"₽", False),
     ],
+    "GBP": [
+    (r"\bgbp\b", True),
+    (r"\bpound(s)?\b", True),
+    (r"£", False),
+    ],
+
 }

@@ -56,8 +56,9 @@ def setup_logging(global_level=logging.INFO):
         # инфраструктура
         "integrations.matrix_merger": logging.ERROR,
         "core.graph_normalizer": logging.ERROR,
-        "core.graph_normalizer.canonical": logging.ERROR,
+        "core.graph_normalizer.canonical": logging.DEBUG,
         "core.graph_normalizer.loader": logging.ERROR,
+        "core.graph_normalizer.brand": logging.ERROR,
         "core.normalizer": logging.ERROR,
         "integrations.rules_typing": logging.ERROR,
         "integrations.graph_offers": logging.ERROR,
@@ -70,7 +71,7 @@ def setup_logging(global_level=logging.INFO):
         "save_to_excel": logging.ERROR,
         "integrations.df_raw_to_graph": logging.ERROR,
         "core.gbx_detector": logging.ERROR,              
-        "core.text_parser": logging.ERROR,
+        "core.text_parser": logging.DEBUG,
         #workers
         "workers.excel_worker": logging.ERROR,
         # утилиты и извлекатели
@@ -93,6 +94,8 @@ def setup_logging(global_level=logging.INFO):
         "core.volume_detector": logging.ERROR,
         "utils.wine_guard": logging.ERROR,
         "core.header_detector": logging.ERROR,
+        "core.product_detector": logging.DEBUG,
+        "merge_headers": logging.DEBUG,
         # админка
         "admin.admin_api": logging.ERROR
 
@@ -139,7 +142,10 @@ def setup_logging(global_level=logging.INFO):
         "core.graph_normalizer.loader": "graph_loader_debug.txt",
         "admin.admin_api": "admin_api_debug.txt",
         "utils.wine_guard": "wine_guard_debug.txt",
-        "core.header_detector": "header_detector_debug.txt"
+        "core.header_detector": "header_detector_debug.txt",
+        "core.product_detector": "product_detector_debug.txt",
+        "merge_headers": "merge_headers_debug.txt",
+        "core.graph_normalizer.brand": "brand_debug.txt",
     }
 
     

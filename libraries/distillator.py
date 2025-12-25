@@ -22,7 +22,25 @@ CATEGORY_LEX = {
     'wines','wine','spirits','spirits/liquors','sparkling wines'
 }
 
+#чинит формат для первичного парсинга
+def preprocess_raw_text(s: str) -> str:
+    # 1) разлепляем число + валюту: 16.75Euros → 16.75 Euros
+    s = re.sub(
+        r'(\d)(?=(?:eur|euro|euros|usd|gbp|chf)\b)',
+        r'\1 ',
+        s,
+        flags=re.I
+    )
 
+    # 2) нормализуем @ без пробелов: Varietals@16.75 → Varietals @ 16.75
+    s = re.sub(r'(?<=\w)@(?=\d)', ' @ ', s)
+
+    # 3) схлопываем лишние пробелы
+    s = re.sub(r'[ \t]+', ' ', s)
+
+    return s
+
+#для графа
 def _normalize_token(s: str) -> str:
     s = str(s or "").lower()
     s = s.replace("×", "x").replace("х", "x")  # кириллица → латиница
@@ -31,6 +49,7 @@ def _normalize_token(s: str) -> str:
     s = re.sub(r"\s+", " ", s)
     return s.strip()
 
+#для графа
 def _normalize_text(s: str) -> str:
     s = str(s or "").strip().lower()
     s = s.replace("\n", " ").replace("\r", " ")
