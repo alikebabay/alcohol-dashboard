@@ -544,17 +544,29 @@ def extract_location(text: str):
         if re.search(rf'\b{re.escape(alias)}\b', tail, re.I):
             if canonical not in found_cities:
                 found_cities.append(canonical)
-
+    # ✅ дополнительно ищем склад в tail (после city-скана)
+    found_wh = []
+    for alias, wh in WAREHOUSE_ALIASES.items():
+        if re.search(rf'\b{re.escape(alias)}\b', tail, re.I):
+            if wh not in found_wh:
+                found_wh.append(wh)
     if not found_cities:
-        # нет географических совпадений — мусор
+        # ✅ если город не нашли — пробуем склад (incoterm уже есть)
+        if found_wh:
+            val = f"{incoterm} {found_wh[0]}".strip()
+            location_logger.debug(f"extract_location: no city, warehouse fallback → {val!r}")
+            return val
         location_logger.debug(f"extract_location: нет городов в '{tail}'")
         return None
-
     # нормализуем написание: соединяем города через " or " / "/" / "and"
     clean_parts = []
     for p in found_cities:
         p_clean = re.sub(r'\b(or|and|s)\b$', '', p, flags=re.I).strip(",. ")
         clean_parts.append(p_clean)
+    # ✅ если есть и города, и склад — добавляем склад в конец
+    for wh in found_wh:
+        if wh not in clean_parts:
+            clean_parts.append(wh)
     joined = re.sub(r'\s+', ' ', ' or '.join(clean_parts)).strip()
     # финальная сборка
     val = f"{incoterm} {joined}".strip()

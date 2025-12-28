@@ -71,16 +71,16 @@ def setup_logging(global_level=logging.INFO):
         "save_to_excel": logging.ERROR,
         "integrations.df_raw_to_graph": logging.ERROR,
         "core.gbx_detector": logging.ERROR,              
-        "core.text_parser": logging.DEBUG,
+        "core.text_parser": logging.ERROR,
         #workers
         "workers.excel_worker": logging.ERROR,
         # утилиты и извлекатели
         "utils.text_extractors": logging.ERROR,
         "utils.text_extractors.prices": logging.ERROR,
         "utils.text_extractors.access": logging.ERROR,
-        "utils.text_extractors.location": logging.ERROR,
+        "utils.text_extractors.location": logging.DEBUG,
         "core.access_assistant": logging.ERROR,
-        "core.location_assistant": logging.ERROR,  
+        "core.location_assistant": logging.DEBUG,  
         "integrations.raw_to_graph": logging.ERROR,
         "workers.blob_worker": logging.ERROR,
         "integrations.reference_to_graph": logging.ERROR,
@@ -95,7 +95,7 @@ def setup_logging(global_level=logging.INFO):
         "utils.wine_guard": logging.ERROR,
         "core.header_detector": logging.ERROR,
         "core.product_detector": logging.DEBUG,
-        "merge_headers": logging.DEBUG,
+        "merge_headers": logging.ERROR,
         # админка
         "admin.admin_api": logging.ERROR
 
