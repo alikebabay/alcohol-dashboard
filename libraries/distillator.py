@@ -9,7 +9,7 @@ import importlib
 import logging
 
 from libraries.regular_expressions import CL, RX_PACK_CASES_FLEX, RX_PACK_PCS, RX_ABV, RX_AGE, RX_VINTAGE
-from libraries.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC, RX_BPC_TRIPLE
+from libraries.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC, RX_BPC_TRIPLE, RX_VOLUME
 from utils.logger import setup_logging
 
 setup_logging()
@@ -244,5 +244,7 @@ def looks_like_product(s: str) -> bool:
         if any(rx.search(s) for rx in RX_BOTTLE):
             return True
         if any(rx.search(s) for rx in RX_CASE):
+            return True
+        if RX_VOLUME.search(s):
             return True
         return False

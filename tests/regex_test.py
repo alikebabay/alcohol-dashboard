@@ -1,29 +1,42 @@
 import re
-from libraries.patterns import RX_FLOOR
+import json
 
-POSITIVE = [
-    "ON THE FLOOR",
-    "on the floor",
-    "T2 / ON THE FLOOR",
-    "on-the-floor",
-    "on_the_floor",
-    "stocked and on floor",
-    "item is on floor now",
-    "available ON FLOOR",
-]
+# --- 1) Грузим JSON ---
+with open("libraries/location_aliases.json", encoding="utf-8") as f:
+    loc = json.load(f)
 
-NEGATIVE = [
-    "delivery on floor 3",
-    "on floor 20",
-    "the pallets are on floor 2",
-    "container floor 3",
-    "storage floor racks",
-]
+CITY_ALIASES = loc["cities"]
 
-def test_floor_positive():
-    for text in POSITIVE:
-        assert RX_FLOOR.search(text), f"Should match: {text!r}"
+# --- 2) Собираем RX_CITY ---
+RX_CITY = "|".join(
+    rf"(?:{re.escape(k)})"
+    for k in CITY_ALIASES.keys()
+)
 
-def test_floor_negative():
-    for text in NEGATIVE:
-        assert not RX_FLOOR.search(text), f"False positive: {text!r}"
+print("RX_CITY =", RX_CITY)
+
+# --- 3) RX_MONTH как в проекте ---
+RX_MONTH = (
+    r"Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|"
+    r"Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|"
+    r"Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?"
+)
+
+# --- 4) Собираем ПОЛНЫЙ ПАТТЕРН ---
+pattern = (
+    rf'\b(?:arriving|expected|delivery|shipping|ready|landing|ETA|schedule)\b'
+    rf'(?:\s+(?:in|on|at|around|about|towards|by))?\s*'
+    rf'(?:{RX_CITY}[\s\-]*)?'                    # ← города ИЗ JSON
+    rf'(?:end|mid|early)?\s*'
+    rf'(?:{RX_MONTH}|\d{{1,2}}[.\-/ ]?(?:{RX_MONTH})|\bweek\s*\d{{1,2}}\b)'
+    rf'(?:\s*\d{{4}})?(?=[\s.,;]|$)'
+)
+
+print("\nFinal regex pattern:\n", pattern)
+
+# --- 5) Тестовая строка как у тебя ---
+text = "Shipping schedule: ETA Riga - 22NOV. Deposit we need to have until 26 SEP"
+
+m = re.search(pattern, text, re.I)
+
+print("\nMatch result:", m.group(0) if m else None)

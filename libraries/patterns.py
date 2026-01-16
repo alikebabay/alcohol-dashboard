@@ -65,6 +65,21 @@ PATS.ACCESS = [
 
     ]
 
+#ловит даты в формате 22 NOV
+RX_DATE = re.compile(
+    r'\b(?:'
+    r'\d{1,2}\s*(?:\.|/|-|\s)?\s*'
+    r'(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)'
+    r'(?:\.|ember|uary|ch|il|ust)?'
+    r'|'
+    r'(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)'
+    r'(?:\.|ember|uary|ch|il|ust)?\s*'
+    r'\d{1,2}'
+    r')\b',
+    re.I
+)
+
+
 RX_FLOOR = re.compile(
     r"(?:(?:\bon[\s\-_]*the[\s\-_]*floor\b)|(?:\bon[\s\-_]*floor\b(?!\s*\d)))",
     re.I,

@@ -9,8 +9,10 @@ import json
 import logging
 
 from libraries.distillator import _extract_volume, _infer_bpc_from_name, RX_ABV
-from libraries.regular_expressions import RX_BOTTLE, RX_CASE, RX_BPC, RX_BPC_STAR, RX_CURRENCY_MARKER, RX_BOTTLE_LEFT, RX_BOTTLE_RIGHT, RX_CASE_LEFT, RX_CASE_RIGHT, RX_BPC_DASH, RX_NUMBER, RX_BPC_TRIPLE
-from libraries.patterns import PATS
+from utils.detect_bpc import detect_bpc
+from libraries.regular_expressions import RX_BOTTLE, RX_CASE, RX_CURRENCY_MARKER, RX_BOTTLE_LEFT, RX_BOTTLE_RIGHT, RX_CASE_LEFT, RX_CASE_RIGHT, RX_NUMBER
+from libraries.patterns import PATS, RX_DATE
+from core.bpc_detector import BPC_KNOWN
 
 logger = logging.getLogger(__name__)
 # отдельные логгеры для подгрупп
@@ -47,35 +49,6 @@ def extract_abv(text: str):
         return float(m.group(0).replace("%", "").replace(",", "."))
     return None
 
-#экстрактор BPC integer для расчетов
-def detect_bpc(s: str) -> int | None:
-    """
-    Найти bottles-per-case по локальной строке.
-    Работает ТОЛЬКО по текущему string контексту.
-    Возвращает int или None.
-    """
-    if not s:
-        return None
-    # 0) triple format: 6/70/40, 6/70/43 etc
-    m = RX_BPC_TRIPLE.search(s)
-    if m:
-        return int(m.group("bpc"))
-
-    # 1) классический вариант 6x75, 6×70, 12x750 etc
-    m = RX_BPC.search(s)
-    if m:
-        return int(m.group(1))
-
-    # 2) cs*6 btl, *12 btl/btls
-    m = RX_BPC_STAR.search(s)
-    if m:
-        return int(m.group("cases"))
-    # 3) dash-style: — 6 —
-    m = RX_BPC_DASH.search(s)
-    if m:
-        return int(m.group("cases"))
-
-    return None
 
 #normalizer for float prices 
 def normalize_number(num: str) -> float:
@@ -347,16 +320,32 @@ class PriceExtractor:
                 # и мы упали в дефолт CASE.
                 if " case" in global_left or " cases" in global_left:
                     scores["case"] += 0.5
+            # RULE: nearest Noun prhase wins
+            # If the NP immediately before the price contains a size → bottle bias
+            if re.search(r'\b\d+\s*(?:cl|ml|l)\b', t["left"].lower()):
+                scores["bottle"] += 1
+            
+            # ------------------------------------------
+            # CASE SIGNAL: dash-number-dash pattern
+            # must match BPC_known exactly
+            # ------------------------------------------
+            m = re.search(r'[-–—−]\s*(\d{1,2})\s*[-–—−]', t["left"])
+            if m:
+                n = int(m.group(1))
+                if n in BPC_KNOWN:
+                    scores["case"] += 1
+
 
             # 3) RIGHT: "<price> per bottle/btl"
              # RULE LOGIC — используем ТОЛЬКО t["right"]
             right_clean = t["right"].lower().lstrip()
             
-            if any(x in right_clean for x in ("per bottle", "per btl", "per-bottle", "per-btl")):
+            if any(x in right_clean for x in ("per bottle", "eur/btl", "per btl", "per-bottle", "per-btl")):
                  scores["bottle"] += 1.5
             
             if any(x in right_clean for x in ("per case", "per cs", "per-case", "per-case")):
                  scores["case"] += 1.5
+            
 
             # ALL TOKENS HERE ARE CANDIDATES,
             # потому что L1 уже отфильтровал неценовые числа
@@ -439,6 +428,19 @@ class PriceExtractor:
         self.price_bottle = val
         self.state = "bottle"
 
+#слова фильтры для доступа
+AVAIL_WORDS = {
+    "eta", "etd",
+    "shipping", "delivery",
+    "arriving", "arrival",
+    "available", "availability",
+    "ready", "landing",
+}
+
+BLOCK_WORDS = {
+    "deposit", "payment", "valid", "validity", "offer", "invoice"
+}
+
 
 def extract_access(text: str):
     """
@@ -452,6 +454,7 @@ def extract_access(text: str):
     s = str(text).strip()
 
     parts = []
+    s_l = s.lower()
     patterns = PATS.ACCESS
     for rx in patterns:
         # collect *all* matches for this regex, not just the first
@@ -459,6 +462,21 @@ def extract_access(text: str):
             match_val = m.group(0).strip()
             if match_val and match_val not in parts:
                 parts.append(match_val)
+        # 2) даты (ETA / shipping / deposit) - отсекаем лишние даты по контексту
+        for m in RX_DATE.finditer(s):
+            date_val = m.group(0).strip()
+            span_start = m.start()
+
+            # смотрим ТОЛЬКО влево от даты
+            left_ctx = s_l[max(0, span_start - 50): span_start]
+
+            has_avail = any(w in left_ctx for w in AVAIL_WORDS)
+            has_block  = any(w in left_ctx for w in BLOCK_WORDS)
+
+            # availability выигрывает, если она ближе
+            if has_avail and not has_block:
+                if date_val not in parts:
+                    parts.append(date_val)
 
     if parts:
         # фильтруем перекрытия: убираем более короткие, если входят в длинные
@@ -533,6 +551,15 @@ def extract_location(text: str):
         location_logger.debug(
             f"extract_location: no incoterm, no city, no warehouse → {s!r}"
         )
+        # 2.5 — EXTRA: detect standalone city when shipping context (ETA/ETD)
+        if re.search(r'\b(eta|etd|arrival|arrive|reach|departure)\b', s, re.I):
+            for alias, canonical in CITY_ALIASES.items():
+                if re.search(rf'\b{re.escape(alias)}\b', s, re.I):
+                    location_logger.debug(
+                        f"extract_location: no incoterm, but shipping-context city found → {canonical!r}"
+                    )
+                    return canonical
+
         return None   
 
     # выделяем часть ближе к концу строки

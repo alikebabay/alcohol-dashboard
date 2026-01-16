@@ -625,7 +625,8 @@ class BrandSeriesExtractor:
         scores = {}
         raw_norm_full = _normalize(raw)
         brand_logger.debug("[BRAND ENTER] raw=%r", raw)
-        for token in tokens[:4]:  # ограничиваем первые токены
+        for token in tokens[:8]:  # ограничиваем первые токены - 8 for cases 
+                                  # 2200 cs*6 btl Moët & Chandon Brut без ПУ - 25,80 eur/btl DAP Riga
             
             t_norm = _normalize(token)            
             

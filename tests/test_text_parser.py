@@ -8,9 +8,11 @@ from core.text_parser import parse_text
 setup_logging()
 
 SAMPLE_TEXT = """
-Bud Light 15 x 300ml ex Newcorp Logistics Holland
-1 load - 3185 cases (Apr) £4.46 and 175 cases (May) £4.48
-More loads  - (Apil expiry 2026 )@ £4.46 GBP
+
+1500 cases Hennessy VS 50cl x 12, 40% REF @ 13.5EUR
+No gbx 
+Shipping schedule: ETA Riga - 22NOV. Deposit we need to have until 26 SEP
+
 """
 
 if __name__ == "__main__":

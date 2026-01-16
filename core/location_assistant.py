@@ -17,7 +17,7 @@ class LocationAssistant:
       1) inline через extract_location(line)
       2) если нет — header → вперёд
       3) если после блока пришёл footer — назад, и перекрывает header
-    Ничего не трогает про access.
+    различает продуктовые и контекстные строки
     """
 
     RX_SIGNATURE = re.compile(r"(kind\s+regards|best\s+regards|www\.|@\w+\.\w+|mobile|whatsapp|phone)", re.I)

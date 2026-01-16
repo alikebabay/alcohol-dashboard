@@ -56,7 +56,7 @@ def setup_logging(global_level=logging.INFO):
         # инфраструктура
         "integrations.matrix_merger": logging.ERROR,
         "core.graph_normalizer": logging.ERROR,
-        "core.graph_normalizer.canonical": logging.DEBUG,
+        "core.graph_normalizer.canonical": logging.ERROR,
         "core.graph_normalizer.loader": logging.ERROR,
         "core.graph_normalizer.brand": logging.ERROR,
         "core.normalizer": logging.ERROR,
@@ -77,10 +77,10 @@ def setup_logging(global_level=logging.INFO):
         # утилиты и извлекатели
         "utils.text_extractors": logging.ERROR,
         "utils.text_extractors.prices": logging.ERROR,
-        "utils.text_extractors.access": logging.ERROR,
-        "utils.text_extractors.location": logging.DEBUG,
-        "core.access_assistant": logging.ERROR,
-        "core.location_assistant": logging.DEBUG,  
+        "utils.text_extractors.access": logging.DEBUG,
+        "utils.text_extractors.location": logging.ERROR,
+        "core.access_assistant": logging.DEBUG,
+        "core.location_assistant": logging.ERROR,  
         "integrations.raw_to_graph": logging.ERROR,
         "workers.blob_worker": logging.ERROR,
         "integrations.reference_to_graph": logging.ERROR,
@@ -94,7 +94,7 @@ def setup_logging(global_level=logging.INFO):
         "core.volume_detector": logging.ERROR,
         "utils.wine_guard": logging.ERROR,
         "core.header_detector": logging.ERROR,
-        "core.product_detector": logging.DEBUG,
+        "core.product_detector": logging.ERROR,
         "merge_headers": logging.ERROR,
         # админка
         "admin.admin_api": logging.ERROR
