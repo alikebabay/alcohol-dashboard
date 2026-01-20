@@ -3,8 +3,12 @@
 
 function renderOfferCard(n) {
     return `
-        <div class="offer-card" data-id="${n.id}">
+        <div class="offer-card" data-id="${n.id}">        
             <button class="node-delete" title="Delete">🗑</button>
+            <button
+                class="offer-edit"
+                title="Edit"
+                onclick="enterEditor('${n.id}')">✏️</button>
 
             <div class="offer-title">${n.name ?? ""}</div>
 

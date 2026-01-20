@@ -1,4 +1,4 @@
-
+/* output.css */
 /* Output wrapper (unchanged, grouped here for clarity) */
 .result {
     margin-top: 10px;
@@ -11,6 +11,13 @@
     height: 600px;
     overflow-y: auto;
 }
+
+/* ===== editor mode overrides (STATE 4) ===== */
+#output.editor-mode {
+    height: calc(100vh - 140px); /* подгони если надо */
+    overflow: hidden;            /* 🔑 убираем внешний scroll */
+}
+
 .result .raw {
     color: #ff6b6b;   /* красный */
 }

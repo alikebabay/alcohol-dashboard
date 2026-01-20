@@ -20,6 +20,7 @@ from admin.supplier_state import (
     set_excluded as set_supplier_excluded,
 )
 from admin.test_graph import router as test_graph_router
+from admin.editor import attach_editor_routes
 
 
 
@@ -81,6 +82,13 @@ async def run_query(query: str, params: dict):
         async for record in result:
            out.append(record.data())   # ← convert to dict
         return out
+
+
+#offer editor
+app.include_router(
+    attach_editor_routes(run_query),
+    prefix="/admin"
+)
 
 #function to download blobs
 async def load_node_for_download(node_id: str):

@@ -1,3 +1,5 @@
+/* editor.css*/
+
 /* =========================
    OFFER CARDS ONLY
    ========================= */
@@ -69,4 +71,113 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* offer.css */
+.offer-edit {
+    position: absolute;
+    top: 6px;
+    right: 36px;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+
+/* editor layout */
+
+.editor-layout {
+    display: flex;
+    height: 100%;
+}
+
+.editor-left {
+    width: 280px;
+    border-right: 1px solid #444;
+    overflow-y: auto;
+}
+
+.editor-right {
+    flex: 1;
+    padding: 12px;
+    height: 100%;
+    overflow: hidden; /* 🔑 запрет общего скролла */
+}
+
+/* =========================
+   OFFER EDITOR SPLIT VIEW
+   ========================= */
+
+.editor-card-split {
+    display: flex;
+    gap: 16px;
+    height: 100%;
+    align-items: stretch;
+}
+
+.editor-left-pane {
+    width: 360px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+}
+
+.editor-right-pane {
+    flex: 1;
+    max-height: calc(100vh - 140px); /* fits viewport */
+    overflow: hidden;
+    border-left: 1px solid #333;
+    padding-left: 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+.editor-originals {
+    flex: 1;
+    overflow-y: auto;
+    font-size: 13px;
+    padding-right: 6px;
+}
+
+.editor-original-row {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border: 1px solid #333;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #1b1b1b;
+    line-height: 1.35;
+}
+
+/* first line = primary signal */
+.editor-original-row strong {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+/* secondary info */
+.editor-original-row .muted {
+    opacity: 0.7;
+    font-size: 12px;
+}
+
+.editor-original-row:hover {
+    background: #252525;
+    border-color: #555;
+}
+
+.editor-offer-item {
+    padding: 8px 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #333;
+}
+
+.editor-offer-item.active {
+    background: #2b3550;
+}
+
+.editor-offer-item:hover {
+    background: #222;
 }
