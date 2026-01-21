@@ -12,12 +12,58 @@ router = APIRouter()
 # Models
 # ============================================================
 
-class OfferPriceEdit(BaseModel):
+class OfferEdit(BaseModel):
     id: str
+    name: str | None = None 
     price_bottle: float | None = None
     price_case: float | None = None
     currency: str | None = None
     bpc: int | None = None
+
+
+class CanonicalCreate(BaseModel):
+    brand: str
+    series: str | None = None
+    category: str | None = None
+    canonical_name: str   
+    brand_alias: list[str] | None = None
+    series_alias: list[str] | None = None
+
+
+
+# ============================================================
+# Brand helpers
+# ============================================================
+
+async def _find_brand(run_query, name: str):
+    rows = await run_query(
+        """
+        MATCH (b:Brand)
+        WHERE toLower(b.name) CONTAINS toLower($name)
+           OR ANY(a IN coalesce(b.brand_alias, [])
+                  WHERE toLower(a) CONTAINS toLower($name))
+        RETURN
+            b.name        AS name,
+            b.brand_alias AS brand_alias
+        ORDER BY b.name
+        LIMIT 20
+        """,
+        {"name": name}
+    )
+
+    if not rows:
+        return {
+            "found": False,
+            "message": "brand not found",
+            "brands": []
+        }
+
+    return {
+        "found": True,
+        "brands": rows
+    }
+
+
 
 
 # ============================================================
@@ -25,6 +71,14 @@ class OfferPriceEdit(BaseModel):
 # ============================================================
 
 def attach_editor_routes(run_query) -> APIRouter:
+
+    # --------------------------------------------------------
+    # FIND BRAND (ADMIN)
+    # --------------------------------------------------------
+    @router.get("/find_brand")
+    async def find_brand(name: str):
+        return await _find_brand(run_query, name)
+
 
     # --------------------------------------------------------
     # LOAD ORIGINAL ROWS (DfRaw ±3 rows, FUZZY by name)
@@ -137,26 +191,79 @@ def attach_editor_routes(run_query) -> APIRouter:
     # --------------------------------------------------------
     # UPDATE OFFER PRICE
     # --------------------------------------------------------
-    @router.post("/offer/price")
-    async def update_offer_price(req: OfferPriceEdit):
+    @router.post("/offer")
+    async def update_offer(req: OfferEdit):
         query = """
         MATCH (o:Offer)
         WHERE elementId(o) = $id
         WITH o,
-             o.supplier AS supplier,
-             'цена за бутылку ' + o.supplier AS k_btl,
-             'цена за кейс ' + o.supplier   AS k_case,
-             'currency ' + o.supplier       AS k_curr,
-             'шт_кор ' + o.supplier         AS k_bpc
+            o.supplier AS supplier,
+            'цена за бутылку ' + o.supplier AS k_btl,
+            'цена за кейс ' + o.supplier   AS k_case,
+            'currency ' + o.supplier       AS k_curr,
+            'шт_кор ' + o.supplier         AS k_bpc
         SET
+            // 🆕 NAME (GLOBAL)
+            o.`Наименование` =
+                COALESCE($name, o.`Наименование`),
+
+            // 💰 SUPPLIER-SCOPED FIELDS
             o[k_btl]  = COALESCE($price_bottle, o[k_btl]),
             o[k_case] = COALESCE($price_case,   o[k_case]),
             o[k_curr] = COALESCE($currency,     o[k_curr]),
             o[k_bpc]  = COALESCE($bpc,          o[k_bpc])
         RETURN true AS ok
 
+
         """
         await run_query(query, req.dict())
         return {"ok": True}
+    # --------------------------------------------------------
+    # ADD CANONICAL
+    # --------------------------------------------------------
+    @router.post("/editor/addcanonical")
+    async def add_canonical(req: CanonicalCreate):
+
+        query = """
+        // ---- CANONICAL ----
+        MERGE (c:Canonical {name: $canonical_name})
+        SET c.updatedAt = timestamp()
+        WITH c
+
+        // ---- BRAND ----
+        MERGE (b:Brand {name: $brand})
+        SET b.updatedAt = timestamp()
+
+        FOREACH (_ IN CASE WHEN $brand_alias IS NULL THEN [] ELSE [1] END |
+            SET b.alias = $brand_alias
+        )
+
+        // ---- CATEGORY ----
+        FOREACH (_ IN CASE WHEN $category IS NULL THEN [] ELSE [1] END |
+            MERGE (cat:Category {name: $category})
+            MERGE (b)-[:BELONGS_TO]->(cat)
+        )
+
+        MERGE (b)-[:HAS_CANONICAL]->(c)
+
+        // ---- SERIES (OPTIONAL) ----
+        FOREACH (s IN CASE WHEN $series IS NULL THEN [] ELSE [$series] END |
+            MERGE (ser:Series {name: s})
+            SET ser.updatedAt = timestamp()
+
+            FOREACH (_ IN CASE WHEN $series_alias IS NULL THEN [] ELSE [1] END |
+                SET ser.alias = $series_alias
+            )
+
+            MERGE (b)-[:HAS_SERIES]->(ser)
+            MERGE (ser)-[:HAS_CANONICAL]->(c)
+        )
+
+        RETURN c.name AS canonical
+        """
+
+        await run_query(query, req.dict())
+        return {"ok": True}
+
 
     return router

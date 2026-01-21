@@ -144,6 +144,15 @@ else:
     GOOGLE_CREDS = get_from_vault("app", "google_credentials")
 
 
+# prod google sheets
+SPREADSHEET_PROD = "1dISLvKdfi5DCTeYlQ5JXiBcyusrIlJkmikDvkWAcg60"
+SHEET_NAME_PROD = "master"   # имя листа в таблице
+# dev google sheets
+SPREADSHEET_DEV = "1Dyr2Uz3GLQ_cM4ZZVUMTV0GhHw9vbLdrq518NOVqOh4"
+SHEET_NAME_DEV = "master_test"
+
+
+
 #Silence pandas warning about column types
 pd.set_option('future.no_silent_downcasting', True)
 
@@ -153,3 +162,5 @@ warnings.filterwarnings(
     message="Unknown extension is not supported and will be removed",
     module="openpyxl.worksheet._reader"
 )
+
+

@@ -262,10 +262,6 @@ async function loadCanonicals() {
 }
 
 
-function findBrand(){
-    const brand = document.getElementById("brand").value.trim();
-    api("/find_brand?name=" + encodeURIComponent(brand), "GET");
-}
 
 
 
@@ -317,4 +313,12 @@ async function runGraphTest() {
     }).join("");
 }
 
-
+//opens pivot table
+async function openPivot() {
+    const res = await api("/pivot", "GET", null, false);
+    if (!res?.url) {
+        showToast("Pivot not available");
+        return;
+    }
+    window.open(res.url, "_blank");
+}

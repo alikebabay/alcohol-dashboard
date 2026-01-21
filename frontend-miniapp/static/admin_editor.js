@@ -7,7 +7,60 @@ function enterEditor(offerId) {
     renderState();
 }
 
+//global state for calculator
+let lastEditedField = null; // "case" | "bottle" | null
+//calculator
+function maybeRecalc() {
+    const caseEl = document.getElementById("edit_price_case");
+    const bottleEl = document.getElementById("edit_price_bottle");
+    const bpcEl = document.getElementById("edit_bottles_per_case");
 
+    if (!caseEl || !bottleEl || !bpcEl) return;
+
+    const casePrice = parseFloat(caseEl.value);
+    const bottlePrice = parseFloat(bottleEl.value);
+    const bpc = parseInt(bpcEl.value, 10);
+
+    if (!bpc || bpc <= 0) return;
+
+    // ─────────────────────────────
+    // CASE 1: пользователь правит CASE
+    // ─────────────────────────────
+    if (lastEditedField === "case" && casePrice) {
+        bottleEl.value = (casePrice / bpc).toFixed(4);
+        return;
+    }
+
+    // ─────────────────────────────
+    // CASE 2: пользователь правит BOTTLE
+    // ─────────────────────────────
+    if (lastEditedField === "bottle" && bottlePrice) {
+        caseEl.value = (bottlePrice * bpc).toFixed(2);
+        return;
+    }
+
+    // ─────────────────────────────
+    // CASE 3: BPC изменился, но пользователь ничего не правил
+    // ─────────────────────────────
+    // 👉 НИЧЕГО НЕ ДЕЛАЕМ
+}
+
+function onEditCase() {
+    lastEditedField = "case";
+    maybeRecalc();
+}
+
+function onEditBottle() {
+    lastEditedField = "bottle";
+    maybeRecalc();
+}
+
+function onEditBPC() {
+    maybeRecalc();
+}
+
+
+//search functions
 function getActiveOffer() {
     return lastOffers.find(o => o.id === activeOfferId) || null;
 }
@@ -29,6 +82,37 @@ async function loadEditorOriginals() {
     }
 
     renderOfferEditor();
+}
+
+async function findBrand() {
+    const q = document.getElementById("brand_search").value.trim();
+    const out = document.getElementById("brand_result");
+
+    if (!q) {
+        out.innerHTML = "<em>Enter brand name</em>";
+        return;
+    }
+
+    out.innerHTML = "Searching…";
+
+    const res = await api(
+        "/find_brand?name=" + encodeURIComponent(q),
+        "GET",
+        null,
+        false
+    );
+    if (!res || !res.found) {
+        out.innerHTML = "<em>Brand not found</em>";
+        return;
+    }
+    out.innerHTML = res.brands.map(b => `
+        <div style="padding:4px 0; border-bottom:1px dashed #444">
+            <b>${b.name}</b>
+            ${b.alias && b.alias.length
+                ? `<div style="opacity:0.7">aliases: ${b.alias.join(", ")}</div>`
+                : ""}
+        </div>
+    `).join("");
 }
 
 
@@ -122,6 +206,14 @@ function renderOfferEditor() {
                </div>
             </div>
             <hr />
+            <div class="editor-section">
+                <label>
+                    Name <br/>
+                    <input id="edit_name"
+                           type="text"
+                           value="${offer.name ?? ""}">
+                </label>
+            </div>
 
             <div class="editor-section">
                 <label>
@@ -129,7 +221,8 @@ function renderOfferEditor() {
                     <input id="edit_price_bottle"
                            type="number"
                            step="0.0001"
-                           value="${priceBottle}">
+                           value="${priceBottle}"
+                           oninput="onEditBottle()">
                 </label>
             </div>
 
@@ -139,7 +232,8 @@ function renderOfferEditor() {
                     <input id="edit_price_case"
                            type="number"
                            step="0.0001"
-                           value="${priceCase}">
+                           value="${priceCase}"
+                           oninput="onEditCase()">
                 </label>
             </div>
 
@@ -150,7 +244,8 @@ function renderOfferEditor() {
                            type="number"
                            step="1"
                            min="1"
-                           value="${offer.bottles_per_case ?? ""}">
+                           value="${offer.bottles_per_case ?? ""}"
+                           oninput="onEditBPC()">
                 </label>
             </div>
 
@@ -164,7 +259,7 @@ function renderOfferEditor() {
             </div>
 
             <div class="editor-actions">
-                <button onclick="saveOfferPrice()">💾 Save</button>
+                <button onclick="saveOffer()">💾 Save</button>
                 <button onclick="exitEditor()">✖ Cancel</button>
             </div>
 
@@ -226,8 +321,9 @@ function selectEditorOffer(offerId) {
     renderOfferEditor();   // обновляем правую панель
 }
 
-
-async function saveOfferPrice() {
+//функции редактирования
+async function saveOffer() {
+    const name   = document.getElementById("edit_name")?.value.trim();
     const bottle = document.getElementById("edit_price_bottle").value;
     const pack   = document.getElementById("edit_price_case").value;
     const curr   = document.getElementById("edit_currency").value;
@@ -235,20 +331,21 @@ async function saveOfferPrice() {
 
     const payload = {
         id: activeOfferId,
+        name: name === "" ? null : name,
         price_bottle: bottle === "" ? null : Number(bottle),
         price_case:   pack   === "" ? null : Number(pack),
         currency:     curr   === "" ? null : curr,
         bpc: bpcVal === "" || bpcVal == null ? null : parseInt(bpcVal, 10)
     };
 
-    const res = await api("/offer/price", "POST", payload, false);
+    const res = await api("/offer", "POST", payload, false);
 
     if (res?.error) {
         showToast("Save failed");
         return;
     }
 
-    showToast("Price updated");
+    showToast("Offer updated");
 
     // reload offers → pivot stays consistent
     await loadOffers();
@@ -263,3 +360,39 @@ function exitEditor() {
     state = 2;
     renderState();
 }
+
+
+
+async function addCanonicalFromUI() {
+    const brand = document.getElementById("canon_brand")?.value.trim();
+    const canonical = document.getElementById("canon_name")?.value.trim();
+    const series = document.getElementById("canon_series")?.value.trim();
+    const category = document.getElementById("canon_category")?.value.trim();
+
+    if (!brand || !canonical) {
+        showToast("Brand and Canonical name are required");
+        return;
+    }
+
+    const payload = {
+        brand,
+        canonical_name: canonical,
+        series: series || null,
+        category: category || null,
+    };
+
+    const res = await api(
+        "/editor/addcanonical",
+        "POST",
+        payload,
+        false
+    );
+
+    if (res?.error) {
+        showToast("Failed to create canonical");
+        return;
+    }
+
+    showToast("Canonical created");
+}
+

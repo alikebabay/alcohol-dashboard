@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.responses import StreamingResponse, Response
+from fastapi.responses import JSONResponse
 from io import BytesIO
 
 from neo4j import AsyncGraphDatabase
@@ -13,6 +14,10 @@ import os
 from pydantic import BaseModel
 
 from config import MODE, USER, PASS, URI
+from config import (
+    SPREADSHEET_DEV,
+    SPREADSHEET_PROD,
+)
 
 from admin.sheets_export import rebuild_master_sheet
 from admin.supplier_state import (
@@ -82,6 +87,7 @@ async def run_query(query: str, params: dict):
         async for record in result:
            out.append(record.data())   # ← convert to dict
         return out
+
 
 
 #offer editor
@@ -332,19 +338,7 @@ async def mark_canonical(req: CanonicalRequest):
     """
     return await run_query(query, {"id": req.id})
 
-# Find Brand by name
-@app.get("/admin/find_brand")
-async def find_brand(name: str):
-    print("DEBUG find_brand name =", name)
 
-    query = """
-    MATCH (b:Brand)
-    WHERE toLower(b.name) CONTAINS toLower($name)
-       OR ANY(a IN coalesce(b.brand_alias, [])
-              WHERE toLower(a) CONTAINS toLower($name))
-    RETURN b
-    """
-    return await run_query(query, {"name": name})
 
 #manage pivot table
 @app.post("/admin/rebuild_sheets")
@@ -409,3 +403,21 @@ async def download_node(node_id: str):
 @app.get("/admin/event_log")
 async def event_log():
     return {"events": EVENT_LOG[-50:]}  # latest 50 events
+
+#open pivot
+@app.get("/admin/pivot")
+async def get_pivot_url():
+    """
+    Return Google Sheets pivot URL depending on MODE
+    """
+    if MODE == "prod":
+        sheet_id = SPREADSHEET_PROD
+    else:
+        sheet_id = SPREADSHEET_DEV
+
+    url = f"https://docs.google.com/spreadsheets/d/{sheet_id}"
+
+    return {
+        "mode": MODE,
+        "url": url,
+    }

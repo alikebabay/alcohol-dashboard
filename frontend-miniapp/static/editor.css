@@ -1,0 +1,33 @@
+/* =========================
+   EDITOR MODE LAYOUT
+   ========================= */
+
+body.editor-mode .container {
+    align-items: stretch;
+}
+
+/* левая панель — узкая, вертикальная */
+body.editor-mode .left {
+    width: 220px;
+    min-width: 220px;
+}
+
+/* suppliers → список */
+body.editor-mode #supplier_grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* supplier bubble → строка */
+body.editor-mode .supplier-item {
+    text-align: left;
+    padding: 8px 10px;
+    font-size: 14px;
+}
+
+/* правая панель — всё остальное */
+body.editor-mode .right {
+    width: auto;
+    flex: 1;
+}

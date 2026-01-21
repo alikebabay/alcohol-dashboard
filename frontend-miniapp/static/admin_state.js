@@ -46,6 +46,8 @@ function exitTestMode() {
 
 function renderState() {
     const s = state;
+    // reset editor mode by default
+    document.body.classList.remove("editor-mode");
     const lbl  = document.getElementById("active_supplier");
     const btnC = document.getElementById("btn_change_supplier");
     const rm   = document.getElementById("btn_remove");
@@ -118,6 +120,12 @@ function renderState() {
 
         const out = document.getElementById("output");
         out.style.display = "block";
+        // 🆕 BRAND PANEL — только в offers
+        const brandPanel = document.getElementById("brand_panel");
+        if (brandPanel) {
+            brandPanel.style.display =
+                viewMode === "offers" ? "block" : "none";
+        }
 
         //manage suppliers
         const ex = document.getElementById("btn_toggle_excluded");
@@ -220,7 +228,9 @@ function renderState() {
     // STATE 4: OFFER EDITOR
     // =====================
     if (s === 4) {
-           
+        
+        // enable editor layout mode
+        document.body.classList.add("editor-mode");
         // === LEFT PANEL ===
         // suppliers остаются
         adminPanel.style.display = "block";
