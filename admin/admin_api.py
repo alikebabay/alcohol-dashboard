@@ -1,5 +1,7 @@
 #admin_api.py
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
+
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -45,7 +47,22 @@ logger = logging.getLogger(__name__)
 
 logger.info(f"[Neo4j] Using shared driver (mode={MODE})")
 
-app = FastAPI()
+#starting FastAPi and warming Neo4j driver
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("[Neo4j] Warming up driver...")
+    await async_driver.verify_connectivity()
+    logger.info("[Neo4j] Driver ready")
+
+    yield  # 👈 app is now serving requests
+
+    logger.info("[Neo4j] Closing driver...")
+    await async_driver.close()
+    logger.info("[Neo4j] Driver closed")
+
+
+app = FastAPI(lifespan=lifespan)
+
 app.include_router(test_graph_router, prefix="/admin")
 
 #logging events for admin user

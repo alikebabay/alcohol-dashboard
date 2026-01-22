@@ -61,6 +61,11 @@ function renderState() {
     adminPanel.style.display = "block";
     testPanel.style.display  = "none";
 
+    //main menu button
+    const btnMain = document.getElementById("btn_main_menu");
+    if (btnMain) {
+        btnMain.style.display = state === 0 ? "none" : "inline-block";
+    }
     
     // =====================
     // STATE 0: EVENT LOG

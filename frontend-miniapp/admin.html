@@ -19,6 +19,21 @@
 
 <div style="display:flex; align-items:center; gap:12px;">
     <h2 style="margin:0;">Graph Admin</h2>
+    <!-- MAIN MENU BUTTON -->
+    <button
+        id="btn_main_menu"
+        style="
+            display:none;
+            font-size:12px;
+            padding:4px 10px;
+            border-radius:6px;
+            cursor:pointer;
+        "
+        onclick="resetState()"
+        title="Return to main menu"
+    >
+        ⬅ Main menu
+    </button>
     <button
         id="btn_pivot"
         style="
@@ -157,6 +172,12 @@
                     placeholder="e.g. Moët & Chandon"
                     style="width:100%; margin-bottom:6px;"
                 />
+                <div style="font-size:12px; opacity:0.7; margin-bottom:4px;">Brand Alias</div>
+                <input
+                    id="brand_alias"
+                    placeholder="e.g. Moet Chandon"
+                    style="width:100%; margin-bottom:6px;"
+                />
 
                 <div style="font-size:12px; opacity:0.7; margin-bottom:4px;">Canonical name</div>
                 <input
@@ -169,6 +190,13 @@
                 <input
                     id="canon_series"
                     placeholder="e.g. Brut Impérial"
+                    style="width:100%; margin-bottom:6px;"
+                />
+
+                <div style="font-size:12px; opacity:0.7; margin-bottom:4px;">Series Alias</div>
+                <input
+                    id="series_alias"
+                    placeholder="e.g. Brut, Brut Imperial"
                     style="width:100%; margin-bottom:6px;"
                 />
 

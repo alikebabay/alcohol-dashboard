@@ -368,17 +368,30 @@ async function addCanonicalFromUI() {
     const canonical = document.getElementById("canon_name")?.value.trim();
     const series = document.getElementById("canon_series")?.value.trim();
     const category = document.getElementById("canon_category")?.value.trim();
+    const brandAliasRaw = document.getElementById("brand_alias")?.value.trim();
+    const seriesAliasRaw = document.getElementById("series_alias")?.value.trim();
+
 
     if (!brand || !canonical) {
         showToast("Brand and Canonical name are required");
         return;
     }
 
+    const brand_alias = brandAliasRaw
+        ? brandAliasRaw.split(",").map(s => s.trim()).filter(Boolean)
+        : null;
+
+    const series_alias = seriesAliasRaw
+        ? seriesAliasRaw.split(",").map(s => s.trim()).filter(Boolean)
+        : null;
+
     const payload = {
         brand,
         canonical_name: canonical,
         series: series || null,
         category: category || null,
+        brand_alias: brand_alias,
+        series_alias: series_alias,
     };
 
     const res = await api(
