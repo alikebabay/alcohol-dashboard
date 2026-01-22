@@ -1,14 +1,14 @@
 // render_offer.js
 // Pure UI renderer for Offer cards
 
-function renderOfferCard(n) {
+export function renderOfferCard(n) {
     return `
         <div class="offer-card" data-id="${n.id}">        
             <button class="node-delete" title="Delete">🗑</button>
             <button
                 class="offer-edit"
                 title="Edit"
-                onclick="enterEditor('${n.id}')">✏️</button>
+                data-action="edit">✏️</button>
 
             <div class="offer-title">${n.name ?? ""}</div>
 
@@ -36,6 +36,3 @@ function renderOfferCard(n) {
         </div>
     `;
 }
-
-// expose globally (important)
-window.renderOfferCard = renderOfferCard;

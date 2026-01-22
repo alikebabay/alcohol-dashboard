@@ -17,7 +17,7 @@ const EventStore = {
     }
 };
 
-function logEvent(msg, type = "info") {
+export function logEvent(msg, type = "info") {
     EventStore.push(msg, type);
 
     // РЕНДЕРИМ ТОЛЬКО КОГДА НА ЭКРАНЕ ИВЕНТОВ (0/1)
@@ -27,7 +27,7 @@ function logEvent(msg, type = "info") {
     }
 }
 
-function renderEvents() {
+export function renderEvents() {
     const out = document.getElementById("output");
     if (!out) return;
 
@@ -46,41 +46,4 @@ function renderEvents() {
 }
 
 
-// чтобы из консоли и из inline-скрипта точно были доступны
-window.EventStore = EventStore;
-window.logEvent = logEvent;
-window.renderEvents = renderEvents;
 
-
-function showToastAt(x, y, msg) {
-    const t = document.createElement("div");
-    t.innerText = msg;
-
-    t.style.position = "fixed";
-    t.style.left = (x + 12) + "px";   // смещение от курсора
-    t.style.top  = (y + 12) + "px";
-
-    t.style.background = "rgba(0,0,0,0.9)";
-    t.style.color = "white";
-    t.style.padding = "8px 14px";
-    t.style.borderRadius = "6px";
-    t.style.fontSize = "14px";
-    t.style.zIndex = 99999;
-
-    t.style.opacity = "0";
-    t.style.transition = "opacity 0.2s ease, transform 0.2s ease";
-    t.style.transform = "translateY(4px)";
-
-    document.body.appendChild(t);
-
-    requestAnimationFrame(() => {
-        t.style.opacity = "1";
-        t.style.transform = "translateY(0)";
-    });
-
-    setTimeout(() => {
-        t.style.opacity = "0";
-        t.style.transform = "translateY(4px)";
-        setTimeout(() => t.remove(), 200);
-    }, 900);
-}

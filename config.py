@@ -152,6 +152,13 @@ SPREADSHEET_DEV = "1Dyr2Uz3GLQ_cM4ZZVUMTV0GhHw9vbLdrq518NOVqOh4"
 SHEET_NAME_DEV = "master_test"
 
 
+# 🧩 Карта опечаток поставщиков, словарь замены
+ABBREVIATIONS = {
+    "yo": "Year Old",    
+    "Grey Goose Blue": "Grey Goose",
+    "PS": "Pagos Seleccionados",
+    "JW": "Johnnie Walker",
+}
 
 #Silence pandas warning about column types
 pd.set_option('future.no_silent_downcasting', True)

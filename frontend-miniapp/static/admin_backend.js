@@ -1,5 +1,9 @@
 //admin_backend.js
 
+import { resetState } from "./admin_state.js";
+import { logEvent } from "./events.js";
+import {showToastAt } from "./toast.js"
+
 //connection to api
 let API_BASE = null;
 
@@ -57,8 +61,8 @@ async function loadSuppliers() {
                 viewMode = "nodes";
             }
 
-            state = 1;
-            renderState();
+            viewMode = "nodes";
+            loadNodes();              // ⬅️ this sets state = 2 internally
             highlightActiveSupplier();
         };
 
@@ -137,7 +141,7 @@ async function rebuildSheets() {
 
 
 // backend calls
-async function api(path, method="GET", body=null, updateOutput=true) {
+export async function api(path, method="GET", body=null, updateOutput=true) {
     let opts = { method, headers: {"Content-Type": "application/json"} };
     if (body) opts.body = JSON.stringify(body);
 
@@ -242,6 +246,42 @@ async function deleteById() {
     renderState(); // state 0 -> renderEvents() покажет
 }
 
+//deletes nodes on click
+export function wireNodeDeleteHandler() {
+    document.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".node-delete");
+        if (!btn) return;
+
+        const card = btn.closest("[data-id]");
+        if (!card) return;
+
+        const id = card.dataset.id;
+        if (!id) return;
+
+        if (!confirm("Delete node?\n" + id)) return;
+
+        const res = await api("/delete_node", "POST", { id }, false);
+
+        if (res?.error) {
+            showToastAt(lastMouse.x, lastMouse.y, "Delete failed");
+            logEvent(`Delete failed: ${id}`, "error");
+            return;
+        }
+
+        // ✅ always log
+        logEvent(`Node deleted: ${id}`, "ok");
+
+        // ✅ toast near mouse
+        showToastAt(lastMouse.x, lastMouse.y, "Node deleted");
+
+        // ✅ reload current view
+        if (viewMode === "offers") {
+            await loadOffers();
+        } else {
+            await loadNodes();
+        }
+    });
+}
 
 
 async function markCanonical(){
@@ -263,56 +303,6 @@ async function loadCanonicals() {
 
 
 
-
-
-
-// =========================
-// TEST MODE 
-// =========================
-
-async function runGraphTest() {
-    const text = document.getElementById("test_input").value;
-
-    if (!text.trim()) {
-        showToast("No input text");
-        return;
-    }
-
-    const out = document.getElementById("output");
-    out.innerHTML = `<div class="event-item">▶ running graph test…</div>`;
-
-    const res = await api(
-        "/test/graph",
-        "POST",
-        { text },
-        false
-    );
-
-    if (!res.ok) {
-        out.innerText = res.error || "Test failed";
-        return;
-    }
-
-    out.innerHTML = res.data.map(r => {
-        if (!r.changed) {
-            return `
-                <div class="diff-row unchanged">
-                    <div class="raw">${r.raw}</div>
-                    <div class="unchanged">→ (no change)</div>
-                </div>
-            `;
-        }
-
-        return `
-            <div class="diff-row changed">
-                <div class="raw">${r.raw}</div>
-                <div class="norm">→ ${r.norm}</div>
-            </div>
-        `;
-
-    }).join("");
-}
-
 //opens pivot table
 async function openPivot() {
     const res = await api("/pivot", "GET", null, false);
@@ -321,4 +311,62 @@ async function openPivot() {
         return;
     }
     window.open(res.url, "_blank");
+}
+
+
+// expose to window for legacy code
+window.loadConfig = loadConfig;
+window.loadSuppliers = loadSuppliers;
+window.loadOffers = loadOffers;
+
+export function wireOfferButtons() {
+    const offers = document.getElementById("btn_offers");
+    const nodes  = document.getElementById("btn_nodes");
+
+    if (offers) offers.addEventListener("click", loadOffers);
+    if (nodes)  nodes.addEventListener("click", loadNodes);
+}
+
+export function wireSupplierMenu() {
+    const pivot = document.getElementById("btn_pivot");
+    if (pivot) pivot.addEventListener("click", openPivot);
+
+    const change = document.getElementById("btn_change_supplier");
+    if (change) change.addEventListener("click", resetState);
+
+    const toggle = document.getElementById("btn_toggle_excluded");
+    if (toggle) toggle.addEventListener("click", toggleExcluded);
+
+    const rebuild = document.getElementById("btn_rebuild_sheets");
+    if (rebuild) rebuild.addEventListener("click", rebuildSheets);
+
+    const reload = document.getElementById("btn_reload_suppliers");
+    if (reload) reload.addEventListener("click", loadSuppliers);
+
+    const remove = document.getElementById("btn_remove");
+    if (remove) remove.addEventListener("click", removeSupplier);
+
+    const dfout = document.getElementById("btn_dfout");
+    if (dfout) dfout.addEventListener("click", deleteDfOut);
+}
+
+
+export function wireAdminActions() {
+    document.getElementById("btn_mark_canonical")
+        ?.addEventListener("click", markCanonical);
+}
+
+export function wireOfferEditHandler() {
+    document.addEventListener("click", e => {
+        const btn = e.target.closest(".offer-edit");
+        if (!btn) return;
+
+        const card = btn.closest(".offer-card");
+        if (!card) return;
+
+        const id = card.dataset.id;
+        if (!id) return;
+
+        enterEditor(id);
+    });
 }

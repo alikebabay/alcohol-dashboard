@@ -1,5 +1,7 @@
 //admin_editor.js
 
+import { api } from "./admin_backend.js";
+
 function enterEditor(offerId) {
     activeOfferId = offerId;
     editorOriginals = null;
@@ -66,7 +68,7 @@ function getActiveOffer() {
 }
 
 //loads originals for supplier offers
-async function loadEditorOriginals() {
+export async function loadEditorOriginals() {
     if (editorOriginals !== null) return; // already loaded
 
     editorOriginals = [];
@@ -105,12 +107,26 @@ async function findBrand() {
         out.innerHTML = "<em>Brand not found</em>";
         return;
     }
-    out.innerHTML = res.brands.map(b => `
-        <div style="padding:4px 0; border-bottom:1px dashed #444">
+     out.innerHTML = res.brands.map(b => `
+        <div style="padding:6px 0; border-bottom:1px dashed #444">
             <b>${b.name}</b>
-            ${b.alias && b.alias.length
-                ? `<div style="opacity:0.7">aliases: ${b.alias.join(", ")}</div>`
+
+            ${b.brand_alias && b.brand_alias.length
+                ? `<div style="opacity:0.7">
+                    aliases: ${b.brand_alias.join(", ")}
+                   </div>`
                 : ""}
+
+            ${b.canonicals && b.canonicals.length
+                ? `<div style="margin-top:4px; padding-left:10px; font-size:12px;">
+                    ${b.canonicals
+                        .map(c => `• ${c.name}`)
+                        .join("<br>")}
+                   </div>`
+                : `<div style="opacity:0.5; font-size:12px; padding-left:10px;">
+                    no canonicals
+                   </div>`
+            }
         </div>
     `).join("");
 }
@@ -130,7 +146,7 @@ function renderOfferEditor() {
     const priceCase   = offer.price_case ?? "";
     const currency    = offer.currency ?? "";
     let originalsBlock = `
-        <button onclick="loadEditorOriginals()">
+        <button id="btn_editor_originals">
             📄 Show original rows
         </button>
     `;
@@ -144,10 +160,7 @@ function renderOfferEditor() {
                         const tail = parts.slice(1).join(" | ");
                         return `
                             <div class="editor-original-row"
-                                onclick="
-                                    navigator.clipboard.writeText(${JSON.stringify(r.raw)});
-                                    showToast('Original row copied');
-                                ">
+                                 data-raw=${JSON.stringify(r.raw)}>
                                 <strong>${head}</strong>
                                 ${tail ? `<div class="muted">${tail}</div>` : ``}
                             </div>
@@ -167,11 +180,8 @@ function renderOfferEditor() {
                     Offer ID:
                 <code id="editor_offer_id">${activeOfferId}</code>
                 <button
+                    id="btn_copy_offer_id"
                     style="font-size:11px; padding:2px 6px"
-                    onclick="
-                        navigator.clipboard.writeText('${activeOfferId}');
-                        showToast('Offer ID copied');
-                    "
                 >📋 Copy</button>
                 </div>
                 <div style="opacity:0.6; font-size:12px; margin-top:2px">
@@ -221,8 +231,7 @@ function renderOfferEditor() {
                     <input id="edit_price_bottle"
                            type="number"
                            step="0.0001"
-                           value="${priceBottle}"
-                           oninput="onEditBottle()">
+                           value="${priceBottle}">
                 </label>
             </div>
 
@@ -232,8 +241,7 @@ function renderOfferEditor() {
                     <input id="edit_price_case"
                            type="number"
                            step="0.0001"
-                           value="${priceCase}"
-                           oninput="onEditCase()">
+                           value="${priceCase}">
                 </label>
             </div>
 
@@ -244,8 +252,7 @@ function renderOfferEditor() {
                            type="number"
                            step="1"
                            min="1"
-                           value="${offer.bottles_per_case ?? ""}"
-                           oninput="onEditBPC()">
+                           value="${offer.bottles_per_case ?? ""}">
                 </label>
             </div>
 
@@ -259,8 +266,8 @@ function renderOfferEditor() {
             </div>
 
             <div class="editor-actions">
-                <button onclick="saveOffer()">💾 Save</button>
-                <button onclick="exitEditor()">✖ Cancel</button>
+                <button id="btn_editor_save">💾 Save</button>
+                <button id="btn_editor_cancel">✖ Cancel</button>
             </div>
 
         </div>
@@ -273,6 +280,47 @@ function renderOfferEditor() {
 
         </div>
     `;
+    // --- wire copy Offer ID ---
+    const btnCopy = document.getElementById("btn_copy_offer_id");
+    if (btnCopy) {
+        btnCopy.onclick = () => {
+            navigator.clipboard.writeText(activeOfferId);
+            showToast("Offer ID copied");
+        };
+    }
+
+    // --- wire original rows copy ---
+    document.querySelectorAll(".editor-original-row").forEach(el => {
+        el.onclick = () => {
+            navigator.clipboard.writeText(el.dataset.raw);
+            showToast("Original row copied");
+        };
+    });
+    // --- wire editor inputs ---
+    const bottleInput = document.getElementById("edit_price_bottle");
+    if (bottleInput) {
+        bottleInput.addEventListener("input", onEditBottle);
+    }
+
+    const caseInput = document.getElementById("edit_price_case");
+    if (caseInput) {
+        caseInput.addEventListener("input", onEditCase);
+    }
+
+    const bpcInput = document.getElementById("edit_bottles_per_case");
+    if (bpcInput) {
+        bpcInput.addEventListener("input", onEditBPC);
+    }
+    // --- wire editor action buttons ---
+    const btnSave = document.getElementById("btn_editor_save");
+    if (btnSave) {
+        btnSave.addEventListener("click", saveOffer);
+    }
+
+    const btnCancel = document.getElementById("btn_editor_cancel");
+    if (btnCancel) {
+        btnCancel.addEventListener("click", exitEditor);
+    }
 }
 
 //layout for offer editor
@@ -280,9 +328,10 @@ function renderOfferList() {
     const box = document.getElementById("editor_offer_list");
 
     box.innerHTML = lastOffers.map(o => `
-        <div class="editor-offer-item
-                    ${o.id === activeOfferId ? "active" : ""}"
-             onclick="selectEditorOffer('${o.id}')">
+        <div
+            class="editor-offer-item ${o.id === activeOfferId ? "active" : ""}"
+            data-offer-id="${o.id}"
+        >
             <div class="name">${o.name}</div>
             <div class="price">
                 ${o.price_case ?? "—"} ${o.currency ?? ""}
@@ -291,8 +340,31 @@ function renderOfferList() {
     `).join("");
 }
 
+//wiring
+export function wireEditorOfferList() {
+    document.addEventListener("click", (e) => {
+        const item = e.target.closest(".editor-offer-item");
+        if (!item) return;
 
-function renderEditorLayout() {
+        const id = item.dataset.offerId;
+        if (!id) return;
+
+        selectEditorOffer(id);
+    });
+}
+
+export function wireEditorOriginals() {
+    document.addEventListener("click", (e) => {
+        const btn = e.target.closest("#btn_editor_originals");
+        if (!btn) return;
+
+        loadEditorOriginals();
+    });
+}
+
+
+
+export function renderEditorLayout() {
     const out = document.getElementById("output");
 
     out.innerHTML = `
@@ -409,3 +481,14 @@ async function addCanonicalFromUI() {
     showToast("Canonical created");
 }
 
+//wiring buttons from admin.html
+
+export function wireCanonical() {
+    document.getElementById("btn_find_brand")
+        ?.addEventListener("click", findBrand);
+    document.getElementById("btn_add_canonical")
+        ?.addEventListener("click", addCanonicalFromUI);
+}
+
+// expose to window for legacy code
+window.enterEditor = enterEditor

@@ -8,11 +8,7 @@
 <link rel="stylesheet" href="/static/offer.css">
 <link rel="stylesheet" href="/static/output.css">
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-<script src="/static/admin_state.js"></script>
-<script src="/static/admin_backend.js"></script>
-<script src="/static/admin_editor.js"></script>
-<script src="/static/render_offer.js"></script>
-<script src="/static/events.js"></script>
+<script type="module" src="/static/main.js"></script>
 </head>
 
 <body>
@@ -29,7 +25,6 @@
             border-radius:6px;
             cursor:pointer;
         "
-        onclick="resetState()"
         title="Return to main menu"
     >
         ⬅ Main menu
@@ -42,7 +37,6 @@
             border-radius:6px;
             cursor:pointer;
         "
-        onclick="openPivot()"
         title="Open pivot table"
     >
         📊 Pivot
@@ -65,44 +59,41 @@
             </div>
 
             <div class="menu">
-                <div class="menu-item" onclick="loadSuppliers()">⟳ Reload Suppliers</div>
-                <div class="menu-item" onclick="enterTestMode()">🧪 TEST</div>            
-
+                <div id="btn_offers" class="menu-item"
+                     style="display:none;">
+                    📦 View Offers
+                </div>
                 <div id="btn_change_supplier" class="menu-item"
-                     style="display:none;" onclick="resetState()">
+                     style="display:none;">
                     ❎ Change Supplier
                 </div>
 
                 <div id="btn_toggle_excluded"
                     class="menu-item warning"
-                    style="display:none;"
-                    onclick="toggleExcluded()">
+                    style="display:none;">
                     🚫 Exclude from pivot
                 </div>
 
                 <div id="btn_rebuild_sheets"
-                    class="menu-item warning"
-                    onclick="rebuildSheets()">
+                    class="menu-item warning">
                     🔄 Rebuild Sheets
                 </div>
 
                 <div id="btn_nodes" class="menu-item"
-                     style="display:none;" onclick="loadNodes()">
+                     style="display:none;">
                     🔍 Find Nodes
                 </div>
+                <div class="menu-item">⟳ Reload Suppliers</div>
 
-                <div id="btn_offers" class="menu-item"
-                     style="display:none;" onclick="loadOffers()">
-                    📦 View Offers
-                </div>
+                <div id="btn_test" class="menu-item">🧪 TEST</div>
 
                 <div id="btn_remove" class="menu-item danger"
-                     style="display:none;" onclick="removeSupplier()">
+                     style="display:none;">
                     ❌ Remove Supplier
                 </div>
 
                 <div id="btn_dfout" class="menu-item danger"
-                     style="display:none;" onclick="deleteDfOut()">
+                     style="display:none;">
                     🗑 Delete all DfOut
                 </div>
             </div>
@@ -112,7 +103,7 @@
         <div class="section-block" id="dfout_block">
             <h3>Blob ID / DfOut</h3>
             <input id="dfout_id" placeholder="DfOut ID" />
-            <button onclick="markCanonical()">⭐ Mark Canonical</button>
+            <button id="btn_mark_canonical">⭐ Mark Canonical</button>
         </div>
 
             </div><!-- /admin_panel -->
@@ -128,11 +119,11 @@
             ></textarea>
 
             <div class="menu" style="margin-top:10px;">
-                <div class="menu-item" onclick="runGraphTest()">▶ Test graph</div>
-                <div class="menu-item" onclick="testGBX()">▶ Test GBX</div>
-                <div class="menu-item" onclick="testPrice()">▶ Test price</div>
+                <div class="menu-item" id="btn_test_graph">▶ Test graph</div>
+                <div class="menu-item" id="btn_test_gbx">▶ Test GBX</div>
+                <div class="menu-item" id="btn_test_price">▶ Test price</div>
 
-                <div class="menu-item danger" onclick="exitTestMode()">
+                <div class="menu-item danger" id="btn_test_exit">
                     ← Return to menu
                 </div>
             </div>
@@ -147,6 +138,7 @@
         </div>
 
         <!-- BRAND / CANONICAL (shown in STATE 2, OFFERS) -->
+        <div id="canonical_toast_anchor" style="position: relative;"></div>
         <div class="section-block"
              id="brand_panel">
             <h3>🔍 Brand / Canonical</h3>
@@ -159,7 +151,7 @@
                     placeholder="e.g. moet"
                     style="width:100%; margin-bottom:6px;"
                 />
-                <button onclick="findBrand()">🔍 Find brand</button>
+                <button id="btn_find_brand">🔍 Find brand</button>
                 <div id="brand_result" style="font-size:13px; opacity:0.9; margin-top:6px;"></div>
             </div>
 
@@ -207,7 +199,7 @@
                     style="width:100%; margin-bottom:6px;"
                 />
 
-                <button onclick="addCanonicalFromUI()">
+                <button id="btn_add_canonical">
                     ➕ Create canonical
                 </button>
             </div>
@@ -226,42 +218,6 @@ document.addEventListener("mousemove", e => {
     lastMouse.y = e.clientY;
 });
 
-//event handler for delete button
-
-document.addEventListener("click", async (e) => {
-    const btn = e.target.closest(".node-delete");
-    if (!btn) return;
-
-    const card = btn.closest("[data-id]");
-    if (!card) return;
-
-    const id = card.dataset.id;
-    if (!id) return;
-
-    if (!confirm("Delete node?\n" + id)) return;
-
-    const res = await api("/delete_node", "POST", { id }, false);
-
-    if (res?.error) {
-        showToastAt(lastMouse.x, lastMouse.y, "Delete failed");
-        logEvent(`Delete failed: ${id}`, "error");
-        return;
-    }
-
-    // ✅ 1. лог пишем ВСЕГДА
-    logEvent(`Node deleted: ${id}`, "ok");
-
-    // ✅ 2. toast у мыши
-    showToastAt(lastMouse.x, lastMouse.y, "Node deleted");
-
-    // ✅ 3. остаёмся в текущем view
-    if (viewMode === "offers") {
-        await loadOffers();
-    } else {
-        await loadNodes();
-    }
-});
-
 
 //event handler for download button
 document.addEventListener("click", (e) => {
@@ -277,39 +233,6 @@ document.addEventListener("click", (e) => {
     // trigger browser download
     window.location = API_BASE + "/download/" + encodeURIComponent(id);
 });
-
-
-// Auto-connect to api when page loads
-window.onload = async () => {
-    await loadConfig();
-    await loadSuppliers();
-    renderState();
-};
-
-//helper to display copy id when id is copied
-function showToast(msg) {
-    const t = document.createElement("div");
-    t.innerText = msg;
-    t.style.position = "absolute";
-    t.style.top = "20px";
-    t.style.right = "20px";
-    t.style.background = "black";
-    t.style.color = "white";
-    t.style.padding = "10px 16px";
-    t.style.borderRadius = "6px";
-    t.style.opacity = "0";
-    t.style.transition = "opacity 0.25s ease";
-    t.style.zIndex = 9999;
-    document.body.appendChild(t);
-
-    requestAnimationFrame(() => t.style.opacity = "1");
-
-    setTimeout(() => {
-        t.style.opacity = "0";
-        setTimeout(() => t.remove(), 250);
-    }, 900);
-}
-
 
 
 

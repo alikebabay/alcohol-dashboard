@@ -1,32 +1,8 @@
 #Модуль переводит сокращения в расширенную форму для улучшения парсинга. 
 # Также исправляет грамматические ошибки поставщиков
 import re
+from config import ABBREVIATIONS
 
-# 🧩 Карта опечаток поставщиков, словарь замены
-ABBREVIATIONS = {
-    #"imperial brut": "Brut Imperial",
-    "yo": "Year Old",    
-    "Grey Goose Blue": "Grey Goose",
-    "PS": "Pagos Seleccionados",
-    #"Guidlaberto": "Guidalberto",
-    #"JD": "Jack Daniel's",
-    #"Jack daniels": "Jack Daniel's",
-    #"Raspberri": "Raspberry",    
-    #"vs":"V.S",
-    #"VS":"V.S",
-    #"Gentleman Jack": "Jack Daniel's Gentleman Jack",
-    #"teachers": "Teacher's",
-    #"Grants": "Grant's",
-    #"Hendricks": "Hendrick's",
-    #"Ballantines": "Ballantine's",
-    #"Grants": "Grant's",
-    #"Makers Mark": "Maker's Mark",
-    #"Blantons": "Blanton's",
-    #"Dekuyper": "DeKuyper",
-    #"Hennesy": "Hennessy",
-    #"Gordons": "Gordon's",
-    #"Brokers": "Broker's",
-}
 
 def convert_abbreviation(text: str) -> str:
     """

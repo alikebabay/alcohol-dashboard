@@ -1,4 +1,11 @@
 // admin_state.js
+import { renderEditorLayout } from "./admin_editor.js";
+import { runGraphTest} from "./admin_diagnostics.js";
+import { testGBX} from "./admin_diagnostics.js";
+import { testPrice} from "./admin_diagnostics.js";
+import { renderEvents } from "./events.js";
+import { renderOfferCard } from "./render_offer.js";
+
 
 // =========================
 // GLOBAL STATE
@@ -16,7 +23,7 @@ window.editorOriginals = null;   // show originals for supplier offers null = no
 // =========================
 // STATE TRANSITIONS
 // =========================
-function resetState() {
+export function resetState() {
     if (state === 2) {
         state = 1;
         renderState();
@@ -31,6 +38,7 @@ function resetState() {
 function enterTestMode() {
     state = 3;
     renderState();
+    wireTestModeButtons();
 }
 
 function exitTestMode() {
@@ -71,9 +79,13 @@ function renderState() {
     // STATE 0: EVENT LOG
     // =====================
 
-    if (s === 0) { 
+    if (s === 0) {
     lbl.innerText = "Event Log";
-
+    // RESTORE MENU ITEMS (editor hides them globally)
+    document.querySelectorAll(".menu .menu-item").forEach(el => {
+        el.style.display = "block";
+    });
+    
     btnC.style.display = "none";
     rm.style.display   = "none";
     nd.style.display   = "none";
@@ -93,6 +105,9 @@ function renderState() {
     return;
     }
 
+    //show test button
+    const btnTest = document.getElementById("btn_test");
+    if (btnTest) btnTest.style.display = "block";
 
     if (s === 1) { // supplier selected state
         lbl.innerText = "Active supplier: " + activeSupplier;
@@ -143,7 +158,7 @@ function renderState() {
         if (viewMode === "offers") {
             out.innerHTML = lastOffers
                 .filter(o => o.type === "Offer")
-                .map(o => window.renderOfferCard(o))
+                .map(o => renderOfferCard(o))
                 .join("");
             return;
         }
@@ -211,6 +226,11 @@ function renderState() {
         // hide ALL admin UI
         adminPanel.style.display = "none";
 
+        // 🔧 RESTORE test menu buttons (editor hid them globally)
+        testPanel.querySelectorAll(".menu-item").forEach(el => {
+            el.style.display = "block";
+        });
+
         btnC.style.display = "none";
         rm.style.display   = "none";
         nd.style.display   = "none";
@@ -273,3 +293,38 @@ function renderState() {
         return;
     }    
 }
+
+
+//wiring buttons from admin.html
+export function wireMainMenu() {
+    const btn = document.getElementById("btn_main_menu");
+    if (!btn) return;
+
+    btn.addEventListener("click", () => {
+        resetState();
+    });
+}
+
+export function wireTestButton() {
+    const btn = document.getElementById("btn_test");
+    if (!btn) return;
+
+    btn.addEventListener("click", enterTestMode);
+}
+
+function wireTestModeButtons() {
+    document.getElementById("btn_test_graph")
+        ?.addEventListener("click", runGraphTest);
+
+    document.getElementById("btn_test_gbx")
+        ?.addEventListener("click", testGBX);
+
+    document.getElementById("btn_test_price")
+        ?.addEventListener("click", testPrice);
+
+    document.getElementById("btn_test_exit")
+        ?.addEventListener("click", exitTestMode);
+}
+
+// expose to window for legacy code
+window.renderState = renderState;

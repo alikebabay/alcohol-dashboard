@@ -42,9 +42,11 @@ async def _find_brand(run_query, name: str):
         WHERE toLower(b.name) CONTAINS toLower($name)
            OR ANY(a IN coalesce(b.brand_alias, [])
                   WHERE toLower(a) CONTAINS toLower($name))
+        OPTIONAL MATCH (b)-[:HAS_CANONICAL]->(c:Canonical)
         RETURN
             b.name        AS name,
-            b.brand_alias AS brand_alias
+            b.brand_alias AS brand_alias,
+            collect(DISTINCT c.name) AS canonicals
         ORDER BY b.name
         LIMIT 20
         """,
@@ -60,7 +62,18 @@ async def _find_brand(run_query, name: str):
 
     return {
         "found": True,
-        "brands": rows
+        "brands": [
+            {
+                "name": r["name"],
+                "brand_alias": r.get("brand_alias"),
+                "canonicals": [
+                    {"name": c}
+                    for c in (r.get("canonicals") or [])
+                    if c
+                ],
+            }
+            for r in rows
+        ],
     }
 
 
