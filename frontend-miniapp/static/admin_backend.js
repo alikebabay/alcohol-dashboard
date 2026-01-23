@@ -4,23 +4,19 @@ import { resetState } from "./admin_state.js";
 import { logEvent } from "./events.js";
 import {showToastAt } from "./toast.js"
 
-//connection to api
-let API_BASE = null;
+//connection to api (backend handles mode)
+const API_BASE = "/admin";
 
+ export async function api(path, method="GET", body=null, updateOutput=true) {
+     let opts = { method, headers: {"Content-Type": "application/json"} };
+     if (body) opts.body = JSON.stringify(body);
 
-
-async function loadConfig() {
-    try {
-        const res = await fetch("/admin/config");
-        const cfg = await res.json();
-        API_BASE = cfg.api_base;
-    } catch (e) {
-        // fallback for FILE:// usage
-        API_BASE = "http://localhost:8001/admin";
-    }
-}
-
-
+     const res = await fetch(API_BASE + path, opts);
+     const data = await res.json().catch(()=>({error:"Invalid JSON"}));
+     if (updateOutput)
+         document.getElementById("output").innerText = JSON.stringify(data, null, 2);
+     return data;
+ }
 
 
 //populates supplier dropdown
@@ -40,7 +36,7 @@ async function loadSuppliers() {
         div.className = "supplier-item";
         div.innerText = row.name + (row.admin_excluded ? " 🚫" : "");
         //reloads supplier data on active supplier switch
-        div.onclick = () => {
+        div.onclick = async () => {
             const prevSupplier = activeSupplier;
             activeSupplier = row.name;
             supplierExcluded = !!row.admin_excluded;
@@ -54,16 +50,17 @@ async function loadSuppliers() {
                 return;
             }
 
-            // 🟡 default behaviour
+            // 🟡 default behaviour → LOAD OFFERS
             if (prevSupplier !== row.name) {
                 lastNodes = [];
                 lastOffers = [];
-                viewMode = "nodes";
+                viewMode = "offers";
+                await loadOffers();   // sets state = 2 internally
+                highlightActiveSupplier();
+                return;
             }
-
-            viewMode = "nodes";
-            loadNodes();              // ⬅️ this sets state = 2 internally
-            highlightActiveSupplier();
+            // fallback (same supplier clicked)
+            renderState();
         };
 
 
@@ -139,18 +136,6 @@ async function rebuildSheets() {
     logEvent(`Sheets rebuilt (${res.rows || "?"} rows)`, "ok");
 }
 
-
-// backend calls
-export async function api(path, method="GET", body=null, updateOutput=true) {
-    let opts = { method, headers: {"Content-Type": "application/json"} };
-    if (body) opts.body = JSON.stringify(body);
-
-    const res = await fetch(API_BASE + path, opts);
-    const data = await res.json().catch(()=>({error:"Invalid JSON"}));
-    if (updateOutput)
-        document.getElementById("output").innerText = JSON.stringify(data, null, 2);
-    return data;
-}
 
 function listSuppliers(){
     api("/list_suppliers", "GET");
@@ -315,7 +300,6 @@ async function openPivot() {
 
 
 // expose to window for legacy code
-window.loadConfig = loadConfig;
 window.loadSuppliers = loadSuppliers;
 window.loadOffers = loadOffers;
 

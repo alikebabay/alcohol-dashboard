@@ -219,22 +219,6 @@ document.addEventListener("mousemove", e => {
 });
 
 
-//event handler for download button
-document.addEventListener("click", (e) => {
-    const btn = e.target.closest(".node-download");
-    if (!btn) return;
-
-    const card = btn.closest("[data-id]");
-    if (!card) return;
-
-    const id = card.dataset.id;
-    if (!id) return;
-
-    // trigger browser download
-    window.location = API_BASE + "/download/" + encodeURIComponent(id);
-});
-
-
 
 </script>
 </body>

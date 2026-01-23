@@ -20,9 +20,7 @@ import { wireAdminActions } from "./admin_backend.js";
 import { wireCanonical } from "./admin_editor.js";
 import { wireNodeDeleteHandler } from "./admin_backend.js";
 import { wireOfferEditHandler } from "./admin_backend.js";
-
-
-
+import { initDownloadHandler } from "./admin_editor.js";
 
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -32,11 +30,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     wireSupplierMenu();
     wireEditorOfferList();
     wireEditorOriginals();
-    await loadConfig();
     await loadSuppliers();
     renderState();
     wireAdminActions();
     wireCanonical();
     wireNodeDeleteHandler();
     wireOfferEditHandler();
+    initDownloadHandler();
 });

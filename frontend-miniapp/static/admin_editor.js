@@ -1,6 +1,6 @@
 //admin_editor.js
 
-import { api } from "./admin_backend.js";
+import { api} from "./admin_backend.js";
 
 function enterEditor(offerId) {
     activeOfferId = offerId;
@@ -480,6 +480,23 @@ async function addCanonicalFromUI() {
 
     showToast("Canonical created");
 }
+
+//download node
+
+//event handler for download button
+export function initDownloadHandler() {
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".node-download");
+    if (!btn) return;
+
+    const node = btn.closest(".node-item");
+    const id = node?.dataset?.id;
+    if (!id) return;
+
+    window.location.href = `/admin/download/${id}`;
+  });
+}
+
 
 //wiring buttons from admin.html
 
