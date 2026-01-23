@@ -19,6 +19,9 @@ class OfferEdit(BaseModel):
     price_case: float | None = None
     currency: str | None = None
     bpc: int | None = None
+    cl: str | None = None
+    access: str | None = None          # → "Доступ <supplier>"
+    location: str | None = None        # → "Место загрузки <supplier>"
 
 
 class CanonicalCreate(BaseModel):
@@ -214,18 +217,28 @@ def attach_editor_routes(run_query) -> APIRouter:
             'цена за бутылку ' + o.supplier AS k_btl,
             'цена за кейс ' + o.supplier   AS k_case,
             'currency ' + o.supplier       AS k_curr,
-            'шт_кор ' + o.supplier         AS k_bpc
+            'шт_кор ' + o.supplier         AS k_bpc,
+            'Доступ ' + o.supplier         AS k_access,
+            'Место загрузки ' + o.supplier AS k_location
         SET
             // 🆕 NAME (GLOBAL)
             o.`Наименование` =
                 COALESCE($name, o.`Наименование`),
 
+            // 🆕 BASE FIELD (GLOBAL)
+            o.`cl` =
+                COALESCE($cl, o.`cl`),
+
             // 💰 SUPPLIER-SCOPED FIELDS
-            o[k_btl]  = COALESCE($price_bottle, o[k_btl]),
-            o[k_case] = COALESCE($price_case,   o[k_case]),
-            o[k_curr] = COALESCE($currency,     o[k_curr]),
-            o[k_bpc]  = COALESCE($bpc,          o[k_bpc]),
-            o.`шт_кор` = COALESCE($bpc,          o.`шт_кор`)
+            o[k_btl]      = COALESCE($price_bottle, o[k_btl]),
+            o[k_case]     = COALESCE($price_case,   o[k_case]),
+            o[k_curr]     = COALESCE($currency,     o[k_curr]),
+            o[k_bpc]      = COALESCE($bpc,           o[k_bpc]),
+            o.`шт_кор`    = COALESCE($bpc,           o.`шт_кор`),
+
+            // 🆕 ACCESS / LOCATION (SUPPLIER-SCOPED)
+            o[k_access]   = COALESCE($access,        o[k_access]),
+            o[k_location] = COALESCE($location,      o[k_location])
         RETURN true AS ok
 
 

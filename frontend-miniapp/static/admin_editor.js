@@ -144,7 +144,10 @@ function renderOfferEditor() {
 
     const priceBottle = offer.price_bottle ?? "";
     const priceCase   = offer.price_case ?? "";
+    const cl   = offer.cl ?? "";
     const currency    = offer.currency ?? "";
+    const location    = offer.location ?? "";
+    const access    = offer.access ?? "";
     let originalsBlock = `
         <button id="btn_editor_originals">
             📄 Show original rows
@@ -255,6 +258,14 @@ function renderOfferEditor() {
                            value="${offer.bottles_per_case ?? ""}">
                 </label>
             </div>
+            <div class="editor-section">
+                <label>
+                    Currency<br/>
+                    <input id="edit_cl"
+                           type="text"
+                           value="${cl}">
+                </label>
+            </div>
 
             <div class="editor-section">
                 <label>
@@ -262,6 +273,23 @@ function renderOfferEditor() {
                     <input id="edit_currency"
                            type="text"
                            value="${currency}">
+                </label>
+            </div>
+
+            <div class="editor-section">
+                <label>
+                    Location<br/>
+                    <input id="edit_location"
+                           type="text"
+                           value="${location}">
+                </label>
+            </div>
+            <div class="editor-section">
+                <label>
+                    Access<br/>
+                    <input id="edit_access"
+                           type="text"
+                           value="${access}">
                 </label>
             </div>
 
@@ -400,6 +428,9 @@ async function saveOffer() {
     const pack   = document.getElementById("edit_price_case").value;
     const curr   = document.getElementById("edit_currency").value;
     const bpcVal = document.getElementById("edit_bottles_per_case")?.value;
+    const cl = document.getElementById("edit_cl").value;
+    const location = document.getElementById("edit_location").value;
+    const access = document.getElementById("edit_access").value;
 
     const payload = {
         id: activeOfferId,
@@ -407,7 +438,10 @@ async function saveOffer() {
         price_bottle: bottle === "" ? null : Number(bottle),
         price_case:   pack   === "" ? null : Number(pack),
         currency:     curr   === "" ? null : curr,
-        bpc: bpcVal === "" || bpcVal == null ? null : parseInt(bpcVal, 10)
+        bpc: bpcVal === "" || bpcVal == null ? null : parseInt(bpcVal, 10),
+        cl: cl === "" ? null : cl,
+        location: location === "" ? null : location,
+        access: access === "" ? null : access,
     };
 
     const res = await api("/offer", "POST", payload, false);

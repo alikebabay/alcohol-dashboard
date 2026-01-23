@@ -20,7 +20,7 @@ logger.info(f"[Neo4j] Using shared driver (mode={MODE})")
 # ───────────────────────────────────────────────
 def push_offers_to_graph(df: pd.DataFrame, supplier_name: str = None):
     """
-    Сохраняет df_out в Neo4j:
+    Сохраняет офферы и создает узлы в Neo4j:
       (Supplier)-[:HAS_OFFER]->(Offer)
     Если supplier_name не передан — берёт активный из FSM.
     """
