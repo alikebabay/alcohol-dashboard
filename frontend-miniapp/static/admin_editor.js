@@ -260,7 +260,7 @@ function renderOfferEditor() {
             </div>
             <div class="editor-section">
                 <label>
-                    Currency<br/>
+                    CL<br/>
                     <input id="edit_cl"
                            type="text"
                            value="${cl}">
