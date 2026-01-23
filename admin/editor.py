@@ -209,41 +209,64 @@ def attach_editor_routes(run_query) -> APIRouter:
     # --------------------------------------------------------
     @router.post("/offer")
     async def update_offer(req: OfferEdit):
+        # --------------------------------------------------
+        # build dynamic props (supplier-scoped)
+        # --------------------------------------------------
+        props = {}
+
+        supplier = None
+
+        # load supplier once (cheap & safe)
+        q_supplier = """
+        MATCH (o:Offer)
+        WHERE elementId(o) = $id
+        RETURN o.supplier AS supplier
+        LIMIT 1
+        """
+        rows = await run_query(q_supplier, {"id": req.id})
+        if not rows:
+            return {"error": "Offer not found"}
+
+        supplier = rows[0]["supplier"]
+
+        if req.price_bottle is not None:
+            props[f"цена за бутылку {supplier}"] = req.price_bottle
+
+        if req.price_case is not None:
+            props[f"цена за кейс {supplier}"] = req.price_case
+
+        if req.currency is not None:
+            props[f"currency {supplier}"] = req.currency
+
+        if req.access is not None:
+            props[f"Доступ {supplier}"] = req.access
+
+        if req.location is not None:
+            props[f"Место загрузки {supplier}"] = req.location
+
+        if req.bpc is not None:
+            props[f"шт_кор"] = req.bpc
+
+        # --------------------------------------------------
+        # update offer
+        # --------------------------------------------------
         query = """
         MATCH (o:Offer)
         WHERE elementId(o) = $id
-        WITH o,
-            o.supplier AS supplier,
-            'цена за бутылку ' + o.supplier AS k_btl,
-            'цена за кейс ' + o.supplier   AS k_case,
-            'currency ' + o.supplier       AS k_curr,
-            'шт_кор ' + o.supplier         AS k_bpc,
-            'Доступ ' + o.supplier         AS k_access,
-            'Место загрузки ' + o.supplier AS k_location
         SET
-            // 🆕 NAME (GLOBAL)
-            o.`Наименование` =
-                COALESCE($name, o.`Наименование`),
-
-            // 🆕 BASE FIELD (GLOBAL)
-            o.`cl` =
-                COALESCE($cl, o.`cl`),
-
-            // 💰 SUPPLIER-SCOPED FIELDS
-            o[k_btl]      = COALESCE($price_bottle, o[k_btl]),
-            o[k_case]     = COALESCE($price_case,   o[k_case]),
-            o[k_curr]     = COALESCE($currency,     o[k_curr]),
-            o[k_bpc]      = COALESCE($bpc,           o[k_bpc]),
-            o.`шт_кор`    = COALESCE($bpc,           o.`шт_кор`),
-
-            // 🆕 ACCESS / LOCATION (SUPPLIER-SCOPED)
-            o[k_access]   = COALESCE($access,        o[k_access]),
-            o[k_location] = COALESCE($location,      o[k_location])
+            o.`Наименование` = COALESCE($name, o.`Наименование`),
+            o.`cl`           = COALESCE($cl,   o.`cl`)
+        SET o += $props
         RETURN true AS ok
-
-
         """
-        await run_query(query, req.dict())
+
+        await run_query(query, {
+            "id": req.id,
+            "name": req.name,
+            "cl": req.cl,
+            "props": props,
+        })
+
         return {"ok": True}
     # --------------------------------------------------------
     # ADD CANONICAL
