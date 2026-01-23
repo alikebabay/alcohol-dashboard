@@ -160,6 +160,15 @@ ABBREVIATIONS = {
     "JW": "Johnnie Walker",
 }
 
+
+#regression test mode
+class ExecutionPolicy:
+    allow_graph_writes = True
+    allow_sheets = True
+    allow_notifications = True
+
+POLICY = ExecutionPolicy()
+
 #Silence pandas warning about column types
 pd.set_option('future.no_silent_downcasting', True)
 

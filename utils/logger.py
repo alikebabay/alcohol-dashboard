@@ -61,7 +61,7 @@ def setup_logging(global_level=logging.INFO):
         "core.graph_normalizer.brand": logging.ERROR,
         "core.normalizer": logging.ERROR,
         "integrations.rules_typing": logging.ERROR,
-        "integrations.graph_offers": logging.ERROR,
+        "integrations.graph_offers": logging.DEBUG,
         "integrations.graph_to_sheets": logging.ERROR,
         "core.parser": logging.ERROR,
         "core.name_enricher": logging.ERROR,
@@ -74,12 +74,13 @@ def setup_logging(global_level=logging.INFO):
         "core.text_parser": logging.ERROR,
         #workers
         "workers.excel_worker": logging.ERROR,
+        "workers.noprice_collector": logging.ERROR,
         # утилиты и извлекатели
         "utils.text_extractors": logging.ERROR,
         "utils.text_extractors.prices": logging.ERROR,
         "utils.text_extractors.access": logging.DEBUG,
         "utils.text_extractors.location": logging.ERROR,
-        "core.access_assistant": logging.DEBUG,
+        "core.access_assistant": logging.ERROR,
         "core.location_assistant": logging.ERROR,  
         "integrations.raw_to_graph": logging.ERROR,
         "workers.blob_worker": logging.ERROR,
@@ -146,6 +147,7 @@ def setup_logging(global_level=logging.INFO):
         "core.product_detector": "product_detector_debug.txt",
         "merge_headers": "merge_headers_debug.txt",
         "core.graph_normalizer.brand": "brand_debug.txt",
+        "workers.noprice_collector": "noprice_debug.txt"
     }
 
     

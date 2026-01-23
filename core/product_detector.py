@@ -34,15 +34,10 @@ def detect_product_without_price(s: str) -> bool:
     # -------------------------------------------------
     # HARD GATE 1 — цена ЗАПРЕЩЕНА
     # -------------------------------------------------
-    for rx in RX_BOTTLE:
-        if rx.search(s):
-            logger.debug("[PROD_DETECT] reject: bottle price detected (%s)", rx.pattern)
-            return False
-
-    for rx in RX_CASE:
-        if rx.search(s):
-            logger.debug("[PROD_DETECT] reject: case price detected (%s)", rx.pattern)
-            return False
+    s_low = s.lower()
+    if any(cur in s_low for cur in ("€", "$", "eur", "euro", "usd", "gbp")):
+        logger.debug("[PROD_DETECT] reject: currency token present")
+        return False
 
     # -------------------------------------------------
     # HARD GATE 2 — ASCII-плотность

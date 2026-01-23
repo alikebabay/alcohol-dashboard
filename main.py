@@ -17,6 +17,7 @@ from workers.blob_worker import init_worker as init_blob_worker
 from workers.reference_worker import init_worker as init_reference_worker
 from workers.excel_worker import init_worker as init_excel_worker
 from workers.telegram_notifier import init_worker as init_telegram_notifier
+from workers.noprice_collector import init_worker as init_noprice_collector
 from utils.logger import setup_logging
 
 
@@ -123,7 +124,8 @@ def main():
     init_reference_worker()
     init_excel_worker()
     init_telegram_notifier(app.bot)
-    logger.info("[BUS] Работники разбужены: init_blob_worker, init_reference_worker, init_excel_worker, telegram_notifier")
+    init_noprice_collector(app.bot)
+    logger.info("[BUS] Работники разбужены: blob_worker, reference_worker, excel_worker, telegram_notifier, noprice_collector")
 
     # --- Диалог ---
     conv_handler = ConversationHandler(

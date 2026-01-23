@@ -24,6 +24,7 @@ class AlcoholStateMachine:
         self.state = "INIT"
         self.df_raw = None  # здесь будем хранить входной (сырый) датафрейм
         self.df_out = None  # здесь будем хранить выходной датафрейм
+        self.mapping = {}   # ← mapping из parse_text / TextState
 
     def ready(self):
         self.state = "READY"
@@ -45,6 +46,14 @@ class AlcoholStateMachine:
         if ts.df_raw is not None:
             self.df_raw = ts.df_raw.copy()
             logger.debug(f"[FSM] Saved df_raw from TextState, shape={self.df_raw.shape}")
+        
+        # 💡 сохраняем mapping из text pipeline
+        if hasattr(ts, "mapping"):
+            self.mapping = ts.mapping or {}
+            logger.debug(
+                "[FSM] Saved mapping from TextState: keys=%s",
+                list(self.mapping.keys())
+            )
 
         return df_out  # (5)
     
@@ -88,6 +97,7 @@ class AlcoholStateMachine:
         self.state = "INIT"
         self.df_raw = None
         self.df_out = None
+        self.mapping = {}
         self.name = None
 
     # 👇 Регистрируем активную FSM

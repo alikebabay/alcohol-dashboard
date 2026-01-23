@@ -21,7 +21,16 @@ class TextState:
     def run(self) -> pd.DataFrame:
         # 1. сырой текст → DataFrame с уже разобранными колонками
         self.df_raw, self.mapping = parse_text(self.raw_text)
-        
+        logger.debug(
+            "[TextState] parse_text mapping keys=%s",
+            list(self.mapping.keys()) if self.mapping else []
+        )
+
+        if "noprice_lines" in self.mapping:
+            logger.debug(
+                "[TextState] noprice_lines=%d",
+                len(self.mapping.get("noprice_lines") or [])
+            )        
 
         #2. Нормализация и очистка данных
         self.df_norm, _ = normalize_alcohol_df(self.df_raw)

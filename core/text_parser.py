@@ -154,7 +154,9 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
     """
     logger.debug("=== START parse_text ===")
     logger.debug("Raw input:\n%s", raw_text[:500])  # ограничим, если текст длинный
-
+    
+    #сборщик строк без цен
+    NOPRICELINES = []
     #0 нормализация - пока только слипшийся с цифрой евро
     raw_text = preprocess_raw_text(raw_text)
 
@@ -163,6 +165,19 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
     logger.debug("=== RAW LINES ===")
     for i, l in enumerate(base_lines):
         logger.debug("  [%02d] %r", i, l)
+    
+    #сборщик строк без цен
+    for raw in base_lines:
+        line = raw.strip()
+        if not line:
+            continue
+
+        if detect_product_without_price(line):
+            NOPRICELINES.append(line)
+            logger.debug(
+                "[NOPRICE][PRE-MERGE] product-like without price: %r",
+                line
+            )
     merged_lines = _merge_short_headers(base_lines)
     logger.debug("Lines before merge: %d, after merge: %d", len(base_lines), len(merged_lines))
     logger.debug("=== AFTER MERGE (short headers) ===")
@@ -230,7 +245,10 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
     logger.debug("DataFrame head:\n%s", df.head().to_string())
     logger.debug("DF columns: %s", df.columns.tolist())
 
-    mapping = {"source": "text"}   # ← как у вас
+    mapping = {
+        "source": "text",
+        "noprice_lines": NOPRICELINES,
+    }
 
     logger.debug("Mapping: %s", mapping)
     logger.debug("=== END parse_text ===")

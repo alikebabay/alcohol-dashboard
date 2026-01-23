@@ -2,11 +2,17 @@
 import asyncio
 import logging
 import os
-from config import driver
+from config import driver, POLICY
 from dispatcher import dispatch_excel
 from integrations import input_loader
 from tests.graph_download_local import export_node  # ← используем готовую функцию
 
+
+
+#выключаем пуши в граф
+POLICY.allow_graph_writes = False
+POLICY.allow_sheets = False
+POLICY.allow_notifications = False
 
 # ───────────────────────────────────────────────
 # 🧩 Заглушка publish, чтобы dispatcher не падал при регрессионном запуске
@@ -208,7 +214,7 @@ async def run_regression():
         except Exception as e:
             logger.error(f"[REG] Ошибка при прогоне {supplier}: {e}")
 
-        await asyncio.sleep(1)
+        
 
 if __name__ == "__main__":
     asyncio.run(run_regression())

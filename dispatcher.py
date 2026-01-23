@@ -3,6 +3,7 @@ import time
 print(f"[ENV] loaded {__name__}.py at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
 import logging
+from config import MODE, driver, POLICY
 
 #code integrations
 from writer import save_to_excel
@@ -13,7 +14,6 @@ from utils.verifier import verifier
 from integrations.graph_offers import push_offers_to_graph
 from integrations.graph_to_sheets import get_all_offers, make_master_sheet, upload_to_gsheets
 from integrations.raw_to_graph import persist_raw_blob
-from config import MODE, driver
 from workers.event_bus import publish
 from integrations.reference_to_graph import reference_to_graph
 from utils.logger import setup_logging
@@ -24,9 +24,11 @@ logger = logging.getLogger(__name__)
 
 
 async def dispatch_excel(update, context, supplier_choice=None):
-        # 1. загружаем файл или текст через input_loader
+    # 1. загружаем файл или текст через input_loader
     file_src, file_name = await load(update, context)
-    
+
+    # chat_id может отсутствовать (regression / DummyUpdate)
+    chat_id = getattr(getattr(update, "effective_chat", None), "id", None)    
     
     # Создаём state machine и определяем состояние
     supplier_sm = AlcoholStateMachine(file_name, supplier_choice)
@@ -51,6 +53,14 @@ async def dispatch_excel(update, context, supplier_choice=None):
         f"[DISPATCH] Event 'df_raw_ready' published: "
         f"supplier={supplier_sm.name}, raw_id={raw_id}, df_raw_id={df_raw_id}"
     )
+    
+    # уведомляем воркера об окончании парсинга текста
+    mapping = getattr(supplier_sm, "mapping", None) or {}
+    
+    await publish("parse_finished", {
+        "chat_id": chat_id,
+        "mapping": mapping,
+    })
 
     # 3.1 Категоризация + порядок
     df_distilled = attach_categories(df_distilled, name_col="name", out_col="Тип")
@@ -67,14 +77,14 @@ async def dispatch_excel(update, context, supplier_choice=None):
     except ValueError as e:
         if str(e) == "NO_PRICE_COLUMNS":
             await publish("ingest.failed", {
-                "chat_id": update.effective_chat.id,
+                "chat_id": chat_id,
                 "reason": "NO_PRICE",
             })
             return None
 
         if str(e) == "NO_PRICE_VALUES":
             await publish("ingest.failed", {
-                "chat_id": update.effective_chat.id,
+                "chat_id": chat_id,
                 "reason": "NO_PRICE",
             })
             return None
@@ -93,8 +103,8 @@ async def dispatch_excel(update, context, supplier_choice=None):
     # пуш сборника офферов в граф
     df_id = reference_to_graph(df_out)
     await publish("df_out_ready", {"supplier": supplier_name, "df_id": df_id})
-
-    push_offers_to_graph(df_out, supplier_name)
+    if POLICY.allow_graph_writes:
+        push_offers_to_graph(df_out, supplier_name)
 
     # 5. Обновляем Google Sheets на основе графа
     try:

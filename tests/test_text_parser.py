@@ -8,10 +8,17 @@ from core.text_parser import parse_text
 setup_logging()
 
 SAMPLE_TEXT = """
+Maxim
 
-1500 cases Hennessy VS 50cl x 12, 40% REF @ 13.5EUR
-No gbx 
-Shipping schedule: ETA Riga - 22NOV. Deposit we need to have until 26 SEP
+We can offer:
+827 cs Bushmills 6 x 1 ltr at Euro 46.80 ex Loendersloot - T2
+2 load - 3125 cs Jameson 6 x 70cl at Euro 48 exw Newcorp - T1
+1000 cs Jack Daniels 12x 70cl NRF at 113 ex Riga 
+864 bottles Clase Azul 6 x 75cl at Euro 128 per bottle ex Loendersloot - T1 goods
+
+Best Regards
+
+Anil Khetan
 
 """
 
