@@ -191,7 +191,7 @@ function renderState() {
                 </div>
 
                 <div>
-                    ID: <span class="copy-id" data-id="${id}">${id}</span>
+                    ID: <span class="copy-id" data-copy="${id}">${id}</span>
                 </div>
 
                 <div>
@@ -203,18 +203,7 @@ function renderState() {
 
         `;
     }).join("");
-
-    // enable click to copy (nodes only)
-    document.querySelectorAll(".copy-id").forEach(el => {
-        el.onclick = () => {
-            navigator.clipboard.writeText(el.dataset.id);
-            el.style.color = "green";
-            setTimeout(() => el.style.color = "blue", 800);
-            showToast("Copied!");
-        };
-    });
-
-
+    
         return;
     }
     // =====================

@@ -163,7 +163,7 @@ function renderOfferEditor() {
                         const tail = parts.slice(1).join(" | ");
                         return `
                             <div class="editor-original-row"
-                                 data-raw=${JSON.stringify(r.raw)}>
+                                 data-copy=${JSON.stringify(r.raw)}>
                                 <strong>${head}</strong>
                                 ${tail ? `<div class="muted">${tail}</div>` : ``}
                             </div>
@@ -181,12 +181,12 @@ function renderOfferEditor() {
             <div class="editor-section">
                 <div style="opacity:0.6; font-size:12px">
                     Offer ID:
-                <code id="editor_offer_id">${activeOfferId}</code>
+                    <code>${activeOfferId}</code>
+                </div>
                 <button
-                    id="btn_copy_offer_id"
+                    data-copy="${activeOfferId}"
                     style="font-size:11px; padding:2px 6px"
                 >📋 Copy</button>
-                </div>
                 <div style="opacity:0.6; font-size:12px; margin-top:2px">
                     Supplier: <b>${activeSupplier}</b>
                 </div>
@@ -308,22 +308,7 @@ function renderOfferEditor() {
 
         </div>
     `;
-    // --- wire copy Offer ID ---
-    const btnCopy = document.getElementById("btn_copy_offer_id");
-    if (btnCopy) {
-        btnCopy.onclick = () => {
-            navigator.clipboard.writeText(activeOfferId);
-            showToast("Offer ID copied");
-        };
-    }
 
-    // --- wire original rows copy ---
-    document.querySelectorAll(".editor-original-row").forEach(el => {
-        el.onclick = () => {
-            navigator.clipboard.writeText(el.dataset.raw);
-            showToast("Original row copied");
-        };
-    });
     // --- wire editor inputs ---
     const bottleInput = document.getElementById("edit_price_bottle");
     if (bottleInput) {

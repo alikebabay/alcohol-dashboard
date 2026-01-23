@@ -2,6 +2,7 @@
 
 import { showToast } from "./toast.js";
 window.showToast = showToast;
+import { ClipboardHelper } from "./clipboard.js";
 
 // core logic
 import "./admin_backend.js";
@@ -23,6 +24,7 @@ import { wireOfferEditHandler } from "./admin_backend.js";
 import { initDownloadHandler } from "./admin_editor.js";
 
 
+
 document.addEventListener("DOMContentLoaded", async () => {
     wireMainMenu();
     wireTestButton();
@@ -37,4 +39,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     wireNodeDeleteHandler();
     wireOfferEditHandler();
     initDownloadHandler();
+});
+
+
+// ------------------------------------------------------------
+// Global copy handler via data-copy attribute
+// ------------------------------------------------------------
+document.addEventListener("click", async e => {
+    const el = e.target.closest("[data-copy]");
+    if (!el) return;
+
+    const text = el.dataset.copy;
+    if (!text) return;
+
+    const ok = await ClipboardHelper.copy(text);
+    showToast(ok ? "Copied" : "Copy failed");
 });
