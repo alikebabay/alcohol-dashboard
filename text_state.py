@@ -6,6 +6,7 @@ from core.name_enricher import filter_and_enrich
 from core.normalizer import normalize_alcohol_df
 from utils.verifier import verifier
 from utils.logger import setup_logging
+from utils.merge_short_name import merge_short
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -34,6 +35,8 @@ class TextState:
 
         #2. Нормализация и очистка данных
         self.df_norm, _ = normalize_alcohol_df(self.df_raw)
+        # 2.5 Text-only: glue short brand headers to next row
+        self.df_norm = merge_short(self.df_norm, col="name")
 
         #3. фильтрация и обогащение (этап df_distilled)
         

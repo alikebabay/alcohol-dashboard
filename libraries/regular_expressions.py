@@ -8,6 +8,11 @@ RX_CURRENCY_MARKER = re.compile(
     re.I,
 )
 
+#валюта без цен
+RX_CURRENCY = re.compile(
+    r"(?i)(?:€|\$|£|\b(?:eur|euro|usd|gbp)\b)"
+)
+
 
 # Цена за бутылку
 RX_BOTTLE = [
@@ -24,6 +29,7 @@ RX_BOTTLE = [
 
 # Цена за кейс
 RX_CASE = [
+        #per case
         re.compile(r'(?:eur|euro|euros|€|usd|gbp)\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:per\s*case|case|cs)\b', re.I),
         re.compile(r'([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|euros|€|usd|gbp)\s*(?:per\s*case|case|cs)\b', re.I),
         re.compile(r'price\s+per\s*case\s+([0-9]+(?:[.,][0-9]+)?)\s*(?:eur|euro|euros|€|usd|gbp)\b', re.I),
@@ -48,6 +54,7 @@ RX_BOTTLE_RIGHT = [
     re.compile(r'\bper\s+bottle\b', re.I),
     re.compile(r'\bbottle\b', re.I),
 ]
+
 RX_CASE_LEFT = [
     re.compile(r'\bcase\b', re.I),
     re.compile(r'\bcs\b', re.I),

@@ -343,7 +343,7 @@ class PriceExtractor:
             if any(x in right_clean for x in ("per bottle", "eur/btl", "per btl", "per-bottle", "per-btl")):
                  scores["bottle"] += 1.5
             
-            if any(x in right_clean for x in ("per case", "per cs", "per-case", "per-case")):
+            if any(x in right_clean for x in ("per case", "per cs", "per-case", "/case", "eur/case", "euro/case", "usd/case", "gbp/case")):
                  scores["case"] += 1.5
             
 

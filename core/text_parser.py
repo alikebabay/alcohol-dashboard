@@ -10,9 +10,8 @@ from core.access_assistant import AccessAssistant
 
 from utils.logger import setup_logging
 from config import MIN_PRODUCT_LEN
-from libraries.regular_expressions import RX_BOTTLE, RX_BPC, RX_BPC_TRIPLE, RX_CASE
-from libraries.distillator import looks_like_product
-from core.product_detector import detect_product_without_price
+from libraries.regular_expressions import RX_BOTTLE, RX_BPC, RX_BPC_TRIPLE, RX_CASE, RX_CURRENCY, RX_CURRENCY_MARKER
+from core.product_detector import detect_product_without_price, detect_product
 from libraries.distillator import preprocess_raw_text
 
 # --- Initialize logging once ---
@@ -20,12 +19,6 @@ setup_logging(logging.DEBUG)
 logger = logging.getLogger("core.text_parser")
 
 merge_logger = logging.getLogger("merge_headers")
-
-
-#helper funcions for merge
-def has_price(s: str) -> bool:
-    return any(rx.search(s) for rx in RX_BOTTLE) or any(rx.search(s) for rx in RX_CASE)
-
 
 # ---- global location aliases (loaded once) ----
 try:
@@ -48,103 +41,112 @@ def _looks_like_access_or_location(s: str) -> bool:
         or first in INCOTERM_ALIASES
     )
 
-
-
 #для случаев "Magners"
 #           "cider bottle 24x330ml"
 
+#helper funcions for merge
+def has_price(s: str) -> bool:
+    return bool(RX_CURRENCY_MARKER.search(s))
+
+
 def _merge_short_headers(lines):
-    lines = [l for l in lines if l.strip()]  # удаляем пустые строки
+    return HeaderMerger().merge(lines)
 
-    merged = []
-    skip_next = False
 
-    for i, line in enumerate(lines):
-        if skip_next:
-            merge_logger.debug(
-                "[MERGE][SKIP] idx=%d consumed_by_previous_merge",
-                i
-            )
-            skip_next = False
-            continue
+class HeaderMerger:
+    STATE_IDLE = "IDLE"
+    STATE_WAIT_PRICE = "WAIT_PRICE"
 
-        s = line.strip()
-        #guard to prevent merging acces or location lines
+    def __init__(self, min_product_len=MIN_PRODUCT_LEN):
+        self.min_product_len = min_product_len
+        self.state = self.STATE_IDLE
+        self.pending_product = None
 
-        if _looks_like_access_or_location(s):
-            merge_logger.debug(
-                "[MERGE][SKIP][LOCATION] idx=%d '%s'",
-                i, s
-            )
-            merged.append(line)
-            continue
+    def merge(self, lines):
+        lines = [l for l in lines if l.strip()]
+        merged = []
 
-        # =========================
-        # STAGE 1 — short line
-        # =========================
-        if not (0 < len(s) < MIN_PRODUCT_LEN):
-            merge_logger.debug(
-                "[MERGE][REJECT][S1] idx=%d reason=len=%d",
-                i, len(s)
-            )
-        elif i + 1 >= len(lines):
-            merge_logger.debug(
-                "[MERGE][REJECT][S1] idx=%d reason=no_next_line",
-                i
-            )
-        else:
-            next_line = lines[i + 1].strip()
-            merge_logger.debug(
-                "[MERGE][S1][ACCEPT] idx=%d '%s' + '%s'",
-                i, s, next_line
-            )
-            merged.append(f"{s} {next_line}")
-            skip_next = True
-            continue
+        for i, line in enumerate(lines):
+            s = line.strip()
 
-        # =========================
-        # STAGE 2 — product w/o price
-        # =========================
-        if not detect_product_without_price(s):
-            merge_logger.debug(
-                "[MERGE][REJECT][S2] idx=%d reason=not_product_without_price",
-                i
-            )
-        elif i + 1 >= len(lines):
-            merge_logger.debug(
-                "[MERGE][REJECT][S2] idx=%d reason=no_next_line",
-                i
-            )
-        elif not has_price(lines[i + 1]):
-            merge_logger.debug(
-                "[MERGE][REJECT][S2] idx=%d reason=next_line_has_no_price",
-                i
-            )
-        else:
-            next_line = lines[i + 1].strip()
-            merge_logger.debug(
-                "[MERGE][S2][ACCEPT] idx=%d '%s' + '%s'",
-                i, s, next_line
-            )
-            merged.append(f"{s} {next_line}")
-            skip_next = True
-            continue
+            if self.state == self.STATE_IDLE:
+                # guard: never merge access/location
+                if _looks_like_access_or_location(s):
+                    merge_logger.debug("[MERGE][SKIP][LOCATION] idx=%d '%s'", i, s)
+                    merged.append(line)
+                    continue
 
-        # =========================
-        # NO MERGE
-        # =========================
+                # STAGE 1 — short header
+                if 0 < len(s) < self.min_product_len and detect_product(s):
+                    merge_logger.debug("[MERGE][S1][ACCEPT] idx=%d '%s'", i, s)
+                    self.state = self.STATE_WAIT_PRICE
+                    self.pending_product = s
+                    continue
+
+                # STAGE 2 — product w/o price
+                if detect_product(s) and not has_price(s):
+                    merge_logger.debug("[MERGE][S2][ARM] idx=%d '%s'", i, s)
+                    self.state = self.STATE_WAIT_PRICE
+                    self.pending_product = s
+                    continue
+
+                merged.append(line)
+
+            elif self.state == self.STATE_WAIT_PRICE:
+                # 1) если это ПРОДУКТ С ЦЕНОЙ → это самостоятельная строка
+                if detect_product(s) and has_price(s):
+                    merge_logger.debug(
+                        "[MERGE][EMIT][PRODUCT_WITH_PRICE] pending='%s' new='%s'",
+                        self.pending_product, s
+                    )
+                    merged.append(self.pending_product)
+                    merged.append(line)
+                    self.pending_product = None
+                    self.state = self.STATE_IDLE
+                    continue
+
+                # 2) если это НОВЫЙ продукт БЕЗ цены → переармляемся
+                if detect_product(s) and not has_price(s):
+                    merge_logger.debug(
+                        "[MERGE][RESET] new product while waiting price: '%s' -> '%s'",
+                        self.pending_product, s
+                    )
+                    self.pending_product = s
+                    continue
+
+                # 3) если это НЕ продукт, но содержит цену → это price-line
+                if has_price(s):
+                    merge_logger.debug(
+                        "[MERGE][PRICE][ACCEPT] '%s' + '%s'",
+                        self.pending_product, s
+                    )
+                    merged.append(f"{self.pending_product} {s}")
+                    self.state = self.STATE_IDLE
+                    self.pending_product = None
+                    continue
+
+                # 4) иначе — мусор (location, leadtime и т.п.)
+                merge_logger.debug(
+                    "[MERGE][WAIT] skipping '%s'",
+                    s
+                )
+                continue
+
+        # flush dangling pending product
+        if self.pending_product:
+            merge_logger.debug(
+                "[MERGE][FLUSH] pending_product='%s'",
+                self.pending_product
+            )
+            merged.append(self.pending_product)
+
         merge_logger.debug(
-            "[MERGE][NO] idx=%d final_decision",
-            i
+            "[MERGE][SUMMARY] input=%d output=%d",
+            len(lines), len(merged)
         )
-        merged.append(line)
 
-    merge_logger.debug(
-        "[MERGE][SUMMARY] input=%d output=%d",
-        len(lines), len(merged)
-    )
+        return merged
 
-    return merged
 
 
 def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
@@ -166,19 +168,19 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
     for i, l in enumerate(base_lines):
         logger.debug("  [%02d] %r", i, l)
     
-    #сборщик строк без цен
-    for raw in base_lines:
-        line = raw.strip()
-        if not line:
+    merged_lines = _merge_short_headers(base_lines)
+    # сборщик строк без цен (POST-MERGE)
+    for line in merged_lines:
+        s = line.strip()
+        if not s:
             continue
 
-        if detect_product_without_price(line):
-            NOPRICELINES.append(line)
+        if detect_product_without_price(s) and not has_price(s):
+            NOPRICELINES.append(s)
             logger.debug(
-                "[NOPRICE][PRE-MERGE] product-like without price: %r",
-                line
+                "[NOPRICE][POST-MERGE] product-like without price: %r",
+                s
             )
-    merged_lines = _merge_short_headers(base_lines)
     logger.debug("Lines before merge: %d, after merge: %d", len(base_lines), len(merged_lines))
     logger.debug("=== AFTER MERGE (short headers) ===")
     for i, l in enumerate(merged_lines):

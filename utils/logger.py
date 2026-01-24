@@ -61,7 +61,7 @@ def setup_logging(global_level=logging.INFO):
         "core.graph_normalizer.brand": logging.ERROR,
         "core.normalizer": logging.ERROR,
         "integrations.rules_typing": logging.ERROR,
-        "integrations.graph_offers": logging.DEBUG,
+        "integrations.graph_offers": logging.ERROR,
         "integrations.graph_to_sheets": logging.ERROR,
         "core.parser": logging.ERROR,
         "core.name_enricher": logging.ERROR,
@@ -72,34 +72,34 @@ def setup_logging(global_level=logging.INFO):
         "integrations.df_raw_to_graph": logging.ERROR,
         "core.gbx_detector": logging.ERROR,              
         "core.text_parser": logging.ERROR,
+        "core.header_detector": logging.ERROR,
+        "core.product_detector": logging.ERROR,
+        "core.volume_detector": logging.ERROR,
+        "merge_headers": logging.ERROR,
         #workers
         "workers.excel_worker": logging.ERROR,
         "workers.noprice_collector": logging.ERROR,
-        # утилиты и извлекатели
-        "utils.text_extractors": logging.ERROR,
-        "utils.text_extractors.prices": logging.ERROR,
-        "utils.text_extractors.access": logging.DEBUG,
-        "utils.text_extractors.location": logging.ERROR,
-        "core.access_assistant": logging.ERROR,
-        "core.location_assistant": logging.ERROR,  
-        "integrations.raw_to_graph": logging.ERROR,
         "workers.blob_worker": logging.ERROR,
         "integrations.reference_to_graph": logging.ERROR,
         "workers.reference_worker": logging.ERROR,
+        # извлекатели
+        "utils.text_extractors": logging.ERROR,
+        "utils.text_extractors.prices": logging.ERROR,
+        "utils.text_extractors.access": logging.ERROR,
+        "utils.text_extractors.location": logging.ERROR,
+        "core.access_assistant": logging.ERROR,
+        "core.location_assistant": logging.ERROR,  
+        "integrations.raw_to_graph": logging.ERROR,        
         "main": logging.ERROR,
+        #утилиты
         "integrations.fingerprint_utils": logging.ERROR,
         "core.distillator": logging.ERROR,
         "core.normalizer.access_location": logging.ERROR,
         "utils.verifier": logging.ERROR,
         "utils.verify_cols": logging.ERROR,
-        "core.volume_detector": logging.ERROR,
-        "utils.wine_guard": logging.ERROR,
-        "core.header_detector": logging.ERROR,
-        "core.product_detector": logging.ERROR,
-        "merge_headers": logging.ERROR,
+        "utils.wine_guard": logging.ERROR,        
         # админка
         "admin.admin_api": logging.ERROR
-
     }
 
     # читаем переопределения из ENV

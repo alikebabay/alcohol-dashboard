@@ -2,8 +2,7 @@
 import re
 import logging
 from utils.logger import setup_logging
-from libraries.regular_expressions import RX_BPC, RX_BPC_TRIPLE, RX_VOLUME
-from utils.text_extractors import RX_BOTTLE, RX_CASE
+from libraries.regular_expressions import RX_BPC, RX_BPC_TRIPLE, RX_VOLUME, RX_CURRENCY, RX_VINTAGE
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +33,7 @@ def detect_product_without_price(s: str) -> bool:
     # -------------------------------------------------
     # HARD GATE 1 — цена ЗАПРЕЩЕНА
     # -------------------------------------------------
-    s_low = s.lower()
-    if any(cur in s_low for cur in ("€", "$", "eur", "euro", "usd", "gbp")):
+    if RX_CURRENCY.search(s):
         logger.debug("[PROD_DETECT] reject: currency token present")
         return False
 
@@ -114,3 +112,50 @@ def detect_product_without_price(s: str) -> bool:
     else:
         logger.debug("[PROD_DETECT] reject: score < 3")
         return False
+
+
+
+def detect_product(s: str) -> bool:
+    if not s:
+        return False
+
+    s = s.strip()
+
+    letters = sum(c.isalpha() for c in s)
+    digits  = sum(c.isdigit() for c in s)
+
+    if letters < 4:
+        return False
+    if digits < 1:
+        return False
+
+    # ОБЯЗАТЕЛЬНО: структурный маркер товара
+    if not (
+        RX_BPC.search(s)
+        or RX_BPC_TRIPLE.search(s)
+        or RX_VOLUME.search(s)
+        or RX_AGE.search(s)
+        or RX_VINTAGE.search(s)
+    ):
+        return False
+
+    score = 0
+
+    if RX_BPC.search(s):
+        score += 2
+    if RX_BPC_TRIPLE.search(s):
+        score += 2
+    if RX_VOLUME.search(s):
+        score += 1
+    if RX_CS.search(s):
+        score += 1
+    if RX_VINTAGE.search(s):
+        score += 1
+    if RX_AGE.search(s):
+        score += 1
+    if letters >= 8:
+        score += 1
+    if digits >= 3:
+        score += 1
+
+    return score >= 3
