@@ -12,9 +12,9 @@ import "./render_offer.js";
 import "./events.js";
 
 // wiring
-import { wireMainMenu, wireTestButton } from "./admin_state.js";
+import { wireMainMenu, wireTestButton, renderState } from "./admin_state.js";
 import { wireOfferButtons } from "./admin_backend.js";
-import { wireSupplierMenu } from "./admin_backend.js";
+import { wireSupplierMenu, loadSuppliers} from "./admin_backend.js";
 import { wireEditorOfferList } from "./admin_editor.js";
 import { wireEditorOriginals } from "./admin_editor.js";
 import { wireAdminActions } from "./admin_backend.js";

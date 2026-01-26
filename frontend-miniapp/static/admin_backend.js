@@ -1,13 +1,15 @@
 //admin_backend.js
 
-import { resetState } from "./admin_state.js";
+import { resetState, renderState, appState } from "./admin_state.js";
 import { logEvent } from "./events.js";
-import {showToastAt } from "./toast.js"
+import {showToastAt } from "./toast.js";
+import { enterEditor } from "./admin_editor.js";
+
 
 //connection to api (backend handles mode)
 const API_BASE = "/admin";
 
- export async function api(path, method="GET", body=null, updateOutput=true) {
+export async function api(path, method="GET", body=null, updateOutput=true) {
      let opts = { method, headers: {"Content-Type": "application/json"} };
      if (body) opts.body = JSON.stringify(body);
 
@@ -20,7 +22,7 @@ const API_BASE = "/admin";
 
 
 //populates supplier dropdown
-async function loadSuppliers() {
+export async function loadSuppliers() {
     const data = await api("/list_suppliers", "GET", null, false);
     const grid = document.getElementById("supplier_grid");
 
@@ -37,14 +39,14 @@ async function loadSuppliers() {
         div.innerText = row.name + (row.admin_excluded ? " 🚫" : "");
         //reloads supplier data on active supplier switch
         div.onclick = async () => {
-            const prevSupplier = activeSupplier;
-            activeSupplier = row.name;
-            supplierExcluded = !!row.admin_excluded;
+            const prevSupplier = appState.activeSupplier;
+            appState.activeSupplier = row.name;
+            appState.supplierExcluded = !!row.admin_excluded;
 
             // 🟢 SPECIAL CASE: editor state
-            if (state === 4 && prevSupplier !== row.name) {
-                lastNodes = [];
-                lastOffers = [];
+            if (appState === 4 && prevSupplier !== row.name) {
+                appState.lastNodes = [];
+                appState.lastOffers = [];
                 loadOffers();              // state = 2 внутри
                 highlightActiveSupplier();
                 return;
@@ -52,9 +54,9 @@ async function loadSuppliers() {
 
             // 🟡 default behaviour → LOAD OFFERS
             if (prevSupplier !== row.name) {
-                lastNodes = [];
-                lastOffers = [];
-                viewMode = "offers";
+                appState.lastNodes = [];
+                appState.lastOffers = [];
+                appState.viewMode = "offers";
                 await loadOffers();   // sets state = 2 internally
                 highlightActiveSupplier();
                 return;
@@ -72,20 +74,20 @@ async function loadSuppliers() {
 
 function highlightActiveSupplier() {
     document.querySelectorAll(".supplier-item").forEach(el => {
-        el.classList.toggle("active", el.innerText === activeSupplier);
+        el.classList.toggle("active", el.innerText === appState.activeSupplier);
     });
 }
 
 //manages suppliers
 async function toggleExcluded() {
-    if (!activeSupplier) return;
+    if (!appState.activeSupplier) return;
 
-    const newState = !supplierExcluded;
+    const newState = !appState.supplierExcluded;
 
     const res = await api(
         "/set_supplier_excluded",
         "POST",
-        { supplier: activeSupplier, excluded: newState },
+        { supplier: appState.activeSupplier, excluded: newState },
         false
     );
 
@@ -95,7 +97,7 @@ async function toggleExcluded() {
         return;
     }
 
-    supplierExcluded = newState;
+    appState.supplierExcluded = newState;
 
     showToast(
         newState
@@ -105,8 +107,8 @@ async function toggleExcluded() {
 
     logEvent(
        newState
-           ? `Supplier excluded from pivot: ${activeSupplier}`
-           : `Supplier included in pivot: ${activeSupplier}`,
+           ? `Supplier excluded from pivot: ${appState.activeSupplier}`
+           : `Supplier included in pivot: ${appState.activeSupplier}`,
        "ok"
    );
 
@@ -142,11 +144,11 @@ function listSuppliers(){
 }
 
 async function removeSupplier(){
-    if (!confirm("Remove supplier: " + activeSupplier + " ?")) return;
+    if (!confirm("Remove supplier: " + appState.activeSupplier + " ?")) return;
     const res = await api("/remove_supplier", "POST", { name: activeSupplier }, false);
     if (res?.error) {
         showToast("Remove failed");
-        logEvent(`Remove supplier failed: ${activeSupplier}`, "error");
+        logEvent(`Remove supplier failed: ${appState.activeSupplier}`, "error");
         return;
     }
     showToast("Supplier removed");
@@ -161,27 +163,27 @@ async function loadNodes() {
     viewMode = "nodes";
     await loadCanonicals();
     const data = await api(
-        "/find_nodes?supplier=" + encodeURIComponent(activeSupplier),
+        "/find_nodes?supplier=" + encodeURIComponent(appState.activeSupplier),
         "GET",
         null,
         false
     );
-    lastNodes = data;
-    state = 2;
+    appState.lastNodes = data;
+    appState.state = 2;
     renderState();
 }
 
 // loads supplier offers
-async function loadOffers() {
+export async function loadOffers() {
     const data = await api(
-        "/list_offers?supplier=" + encodeURIComponent(activeSupplier),
+        "/list_offers?supplier=" + encodeURIComponent(appState.activeSupplier),
         "GET",
         null,
         false
     );
-    lastOffers = data;
-    viewMode = "offers";
-    state = 2;
+    appState.lastOffers = data;
+    appState.viewMode = "offers";
+    appState.state = 2;
     renderState();
 }
 
@@ -190,7 +192,7 @@ async function deleteDfOut() {
     const res = await api(
         "/delete_dfout",
         "POST",
-        { supplier: activeSupplier },
+        { supplier: appState.activeSupplier },
         false
     );
 
@@ -202,7 +204,7 @@ async function deleteDfOut() {
 
     showToast("DfOut deleted");
     logEvent(`DfOut deleted for ${activeSupplier}`, "ok");
-    state = 1;
+    appState.state = 1;
     renderState();
 
     // Load nodes immediately → switches state to 2 inside loadNodes()
@@ -227,7 +229,7 @@ async function deleteById() {
 
     showToast("Node deleted");
     logEvent(`Node deleted: ${id}`, "ok"); // сохранит в EventStore
-    state = 0;
+    appState.state = 0;
     renderState(); // state 0 -> renderEvents() покажет
 }
 
@@ -260,7 +262,7 @@ export function wireNodeDeleteHandler() {
         showToastAt(lastMouse.x, lastMouse.y, "Node deleted");
 
         // ✅ reload current view
-        if (viewMode === "offers") {
+        if (appState.viewMode === "offers") {
             await loadOffers();
         } else {
             await loadNodes();
@@ -283,7 +285,7 @@ async function markCanonical(){
 
 async function loadCanonicals() {
     const data = await api("/list_canonicals", "GET", null, false);
-    canonicalIds = new Set(Array.isArray(data) ? data : []);
+    appState.canonicalIds = new Set(Array.isArray(data) ? data : []);
 }
 
 
@@ -299,9 +301,6 @@ async function openPivot() {
 }
 
 
-// expose to window for legacy code
-window.loadSuppliers = loadSuppliers;
-window.loadOffers = loadOffers;
 
 export function wireOfferButtons() {
     const offers = document.getElementById("btn_offers");

@@ -1,11 +1,14 @@
 //admin_editor.js
 
 import { api} from "./admin_backend.js";
+import { renderState, appState } from "./admin_state.js";
+import { loadOffers } from "./admin_backend.js";
 
-function enterEditor(offerId) {
-    activeOfferId = offerId;
-    editorOriginals = null;
-    state = 4;
+
+export function enterEditor(offerId) {
+    appState.activeOfferId = offerId;
+    appState.editorOriginals = null;
+    appState.state = 4;
     renderState();
 }
 
@@ -64,23 +67,23 @@ function onEditBPC() {
 
 //search functions
 function getActiveOffer() {
-    return lastOffers.find(o => o.id === activeOfferId) || null;
+    return appState.lastOffers.find(o => o.id === appState.activeOfferId) || null;
 }
 
 //loads originals for supplier offers
 export async function loadEditorOriginals() {
-    if (editorOriginals !== null) return; // already loaded
+    if (appState.editorOriginals !== null) return; // already loaded
 
-    editorOriginals = [];
+    appState.editorOriginals = [];
     const res = await api(
-        `/editor/original_rows?offer_id=${activeOfferId}`,
+        `/editor/original_rows?offer_id=${appState.activeOfferId}`,
         "GET",
         null,
         false
     );
 
     if (res?.rows) {
-        editorOriginals = res.rows.slice(0, 10);
+        appState.editorOriginals = res.rows.slice(0, 10);
     }
 
     renderOfferEditor();
@@ -154,10 +157,10 @@ function renderOfferEditor() {
         </button>
     `;
 
-    if (editorOriginals !== null) {
+    if (appState.editorOriginals !== null) {
         originalsBlock = `
             <div class="editor-originals">
-                    ${editorOriginals.map(r => {
+                    ${appState.editorOriginals.map(r => {
                         const parts = r.raw.split("|").map(s => s.trim());
                         const head = parts[0] || r.raw;
                         const tail = parts.slice(1).join(" | ");
@@ -181,14 +184,14 @@ function renderOfferEditor() {
             <div class="editor-section">
                 <div style="opacity:0.6; font-size:12px">
                     Offer ID:
-                    <code>${activeOfferId}</code>
+                    <code>${appState.activeOfferId}</code>
                 </div>
                 <button
-                    data-copy="${activeOfferId}"
+                    data-copy="${appState.activeOfferId}"
                     style="font-size:11px; padding:2px 6px"
                 >📋 Copy</button>
                 <div style="opacity:0.6; font-size:12px; margin-top:2px">
-                    Supplier: <b>${activeSupplier}</b>
+                    Supplier: <b>${appState.activeSupplier}</b>
                 </div>
                 <div style="margin-top:6px">
                     <b>${offer.name || ""}</b>
@@ -201,7 +204,7 @@ function renderOfferEditor() {
                    <b>Current values</b>
                </div>
                <div style="opacity:0.6">
-                    Supplier: ${activeSupplier}
+                    Supplier: ${appState.activeSupplier}
                </div>
                <div>
                    Bottle:
@@ -340,9 +343,9 @@ function renderOfferEditor() {
 function renderOfferList() {
     const box = document.getElementById("editor_offer_list");
 
-    box.innerHTML = lastOffers.map(o => `
+    box.innerHTML = appState.lastOffers.map(o => `
         <div
-            class="editor-offer-item ${o.id === activeOfferId ? "active" : ""}"
+            class="editor-offer-item ${o.id === appState.activeOfferId ? "active" : ""}"
             data-offer-id="${o.id}"
         >
             <div class="name">${o.name}</div>
@@ -387,8 +390,7 @@ export function renderEditorLayout() {
         </div>
 
         <div class="editor-footer">
-            <button class="menu-item danger"
-                    onclick="state=0; activeOfferId=null; renderState()">
+            <button class="menu-item danger" id="btn_editor_exit">
                 ← Return to main menu
             </button>
         </div>
@@ -396,12 +398,14 @@ export function renderEditorLayout() {
 
     renderOfferList();
     renderOfferEditor();
+     document.getElementById("btn_editor_exit")
+        ?.addEventListener("click", exitEditor);
 }
 
 
 function selectEditorOffer(offerId) {
-    activeOfferId = offerId;
-    editorOriginals = null;
+    appState.activeOfferId = offerId;
+    appState.editorOriginals = null;
     renderOfferList();     // подсветка
     renderOfferEditor();   // обновляем правую панель
 }
@@ -418,7 +422,7 @@ async function saveOffer() {
     const access = document.getElementById("edit_access").value;
 
     const payload = {
-        id: activeOfferId,
+        id: appState.activeOfferId,
         name: name === "" ? null : name,
         price_bottle: bottle === "" ? null : Number(bottle),
         price_case:   pack   === "" ? null : Number(pack),
@@ -441,14 +445,14 @@ async function saveOffer() {
     // reload offers → pivot stays consistent
     await loadOffers();
 
-    state = 2;
+    appState.state = 2;
     renderState();
 }
 
 function exitEditor() {
-    activeOfferId = null;
-    editorOriginals = null;
-    state = 2;
+    appState.activeOfferId = null;
+    appState.editorOriginals = null;
+    appState.state = 2;
     renderState();
 }
 
@@ -525,6 +529,3 @@ export function wireCanonical() {
     document.getElementById("btn_add_canonical")
         ?.addEventListener("click", addCanonicalFromUI);
 }
-
-// expose to window for legacy code
-window.enterEditor = enterEditor

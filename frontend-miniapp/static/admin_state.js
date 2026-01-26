@@ -8,52 +8,80 @@ import { renderOfferCard } from "./render_offer.js";
 
 
 // =========================
-// GLOBAL STATE
+// MODULE STATE
 // =========================
-window.state = 0;              // 0 = idle, 1 = supplier selected, 2 = nodes/offers view, 3 = test mode, 4 = offer editor
-window.viewMode = "nodes";     // nodes | offers
-window.activeSupplier = null; // stored selected supplier
-window.lastNodes = []; // cached nodes for state 2
-window.lastOffers = []; // cached offers
-window.canonicalIds = new Set(); //cached canonicals for state 2
-window.supplierExcluded = false; //managing states for suppliers
-window.activeOfferId = null;   // 👈 editor context
-window.editorOriginals = null;   // show originals for supplier offers null = not loaded yet
+export const appState = {
+    mode: "default",       // default | advanced
+    state: 0,              // 0 = idle, 1 = supplier selected, 2 = nodes/offers view, 3 = test mode, 4 = offer editor
+    viewMode: "nodes",     // nodes | offers
+    activeSupplier: null,
+    lastNodes: [],
+    lastOffers: [],
+    canonicalIds: new Set(),
+    supplierExcluded: false,
+    activeOfferId: null,
+    editorOriginals: null,
+};
+
+// ==========
+// STATE DISPATCHER
+// ==========
+export function renderState() {
+    if (appState.mode === "advanced") {
+        renderAdvancedState();
+    } else {
+        renderDefaultState();
+    }
+}
+
 
 // =========================
 // STATE TRANSITIONS
 // =========================
 export function resetState() {
-    if (state === 2) {
-        state = 1;
+    if (appState.state === 2) {
+        appState.state = 1;
         renderState();
         return;
     }
-    activeSupplier = null;
-    state = 0;
+    appState.activeSupplier = null;
+    appState.state = 0;
     renderState();
     renderEvents();
 }
 
 function enterTestMode() {
-    state = 3;
+    appState.state = 3;
     renderState();
     wireTestModeButtons();
 }
 
 function exitTestMode() {
-    state = 0;
+    appState.state = 0;
     renderState();
+}
+
+// =========================
+// ADVANCED STATE USERS
+// =========================
+
+function renderAdvancedState() {
+    const lbl = document.getElementById("active_supplier");
+    const out = document.getElementById("output");
+
+    lbl.innerText = "ADVANCED MODE";
+    out.style.display = "block";
+    out.innerHTML = "<em>Advanced tools go here</em>";
 }
 
 
 // =========================
-// RENDER STATE
+// DEFAULT STATE FOR USERS
 // =========================
 
 
-function renderState() {
-    const s = state;
+function renderDefaultState() {
+    const s = appState.state;
     // reset editor mode by default
     document.body.classList.remove("editor-mode");
     const lbl  = document.getElementById("active_supplier");
@@ -72,7 +100,7 @@ function renderState() {
     //main menu button
     const btnMain = document.getElementById("btn_main_menu");
     if (btnMain) {
-        btnMain.style.display = state === 0 ? "none" : "inline-block";
+        btnMain.style.display = appState.state === 0 ? "none" : "inline-block";
     }
     
     // =====================
@@ -110,7 +138,7 @@ function renderState() {
     if (btnTest) btnTest.style.display = "block";
 
     if (s === 1) { // supplier selected state
-        lbl.innerText = "Active supplier: " + activeSupplier;
+        lbl.innerText = "Active supplier: " + appState.activeSupplier;
         btnC.style.display = "block"; //change supplier
         rm.style.display   = "block"; //remove supplier
         nd.style.display   = "block"; //find all nodes for supplier
@@ -122,7 +150,7 @@ function renderState() {
         //manage suppliers
         const ex = document.getElementById("btn_toggle_excluded");
         ex.style.display = "block";
-        ex.innerText = supplierExcluded
+        ex.innerText = appState.supplierExcluded
             ? "✅ Include in pivot"
             : "🚫 Exclude from pivot";
         renderEvents();
@@ -130,7 +158,7 @@ function renderState() {
     }
 
     if (s === 2) {   // NODES VIEW
-        lbl.innerText = "Nodes for: " + activeSupplier;
+        lbl.innerText = "Nodes for: " + appState.activeSupplier;
         btnC.style.display = "block";
         rm.style.display   = "block";
         nd.style.display   = "block";
@@ -144,19 +172,19 @@ function renderState() {
         const brandPanel = document.getElementById("brand_panel");
         if (brandPanel) {
             brandPanel.style.display =
-                viewMode === "offers" ? "block" : "none";
+                appState.viewMode === "offers" ? "block" : "none";
         }
 
         //manage suppliers
         const ex = document.getElementById("btn_toggle_excluded");
         ex.style.display = "block";
-        ex.innerText = supplierExcluded
+        ex.innerText = appState.supplierExcluded
             ? "✅ Include in pivot"
             : "🚫 Exclude from pivot";
 
         // OFFERS VIEW
-        if (viewMode === "offers") {
-            out.innerHTML = lastOffers
+        if (appState.viewMode === "offers") {
+            out.innerHTML = appState.lastOffers
                 .filter(o => o.type === "Offer")
                 .map(o => renderOfferCard(o))
                 .join("");
@@ -164,7 +192,7 @@ function renderState() {
         }
 
     // Render NODES (separate pipeline)
-    out.innerHTML = lastNodes.map(n => {
+    out.innerHTML = appState.lastNodes.map(n => {
         const id = n.id || "?";
         const name = n.name || "";
 
@@ -178,7 +206,7 @@ function renderState() {
         else if (t === "brand") cls = "node-brand";
 
         const isCanonical =
-            t === "dfout" && canonicalIds.has(id);
+            t === "dfout" && appState.canonicalIds.has(id);
 
         const badge = isCanonical
             ? `<div class="badge-canonical">⭐ canonical</div>`
@@ -314,6 +342,3 @@ function wireTestModeButtons() {
     document.getElementById("btn_test_exit")
         ?.addEventListener("click", exitTestMode);
 }
-
-// expose to window for legacy code
-window.renderState = renderState;
