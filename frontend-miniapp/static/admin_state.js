@@ -65,13 +65,31 @@ function exitTestMode() {
 // ADVANCED STATE USERS
 // =========================
 
+
+function enterAdvancedMode() {
+    appState.mode = "advanced";
+    renderState();
+}
+
+function exitAdvancedMode() {
+    appState.mode = "default";
+    renderState();
+}
+
 function renderAdvancedState() {
     const lbl = document.getElementById("active_supplier");
     const out = document.getElementById("output");
+    const modeBox = document.getElementById("mode_controls");
 
     lbl.innerText = "ADVANCED MODE";
     out.style.display = "block";
     out.innerHTML = "<em>Advanced tools go here</em>";
+
+    modeBox.innerHTML = `
+        <button id="btn_back_default">← Back</button>
+    `;
+    document.getElementById("btn_back_default")
+        ?.addEventListener("click", exitAdvancedMode);
 }
 
 
@@ -126,16 +144,29 @@ function renderDefaultState() {
     //manage suppliers
     document.getElementById("btn_toggle_excluded").style.display = "none";
 
+    // hide BRAND / CANONICAL in idle
+    const brandPanel = document.getElementById("brand_panel");
+    if (brandPanel) brandPanel.style.display = "none";
+
     // show event log
     const out = document.getElementById("output");
     out.style.display = "block";
     renderEvents();
+    const modeBox = document.getElementById("mode_controls");
+    modeBox.innerHTML = `
+        <button id="btn_advanced">⚙ Advanced</button>
+    `;
+    document.getElementById("btn_advanced")
+        ?.addEventListener("click", enterAdvancedMode);
     return;
     }
 
     //show test button
     const btnTest = document.getElementById("btn_test");
     if (btnTest) btnTest.style.display = "block";
+
+    const modeBox = document.getElementById("mode_controls");
+    if (modeBox) modeBox.innerHTML = "";
 
     if (s === 1) { // supplier selected state
         lbl.innerText = "Active supplier: " + appState.activeSupplier;

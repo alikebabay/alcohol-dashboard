@@ -77,6 +77,20 @@ function highlightActiveSupplier() {
         el.classList.toggle("active", el.innerText === appState.activeSupplier);
     });
 }
+//search for suppliers
+export function wireSupplierSearch() {
+    const input = document.getElementById("supplier_search");
+    if (!input) return;
+
+    input.addEventListener("input", () => {
+        const q = input.value.toLowerCase();
+
+        document.querySelectorAll(".supplier-item").forEach(el => {
+            const name = el.innerText.toLowerCase();
+            el.style.display = name.includes(q) ? "" : "none";
+        });
+    });
+}
 
 //manages suppliers
 async function toggleExcluded() {
@@ -145,14 +159,14 @@ function listSuppliers(){
 
 async function removeSupplier(){
     if (!confirm("Remove supplier: " + appState.activeSupplier + " ?")) return;
-    const res = await api("/remove_supplier", "POST", { name: activeSupplier }, false);
+    const res = await api("/remove_supplier", "POST", { name: appState.activeSupplier }, false);
     if (res?.error) {
         showToast("Remove failed");
         logEvent(`Remove supplier failed: ${appState.activeSupplier}`, "error");
         return;
     }
     showToast("Supplier removed");
-    logEvent(`Supplier removed: ${activeSupplier}`, "ok");
+    logEvent(`Supplier removed: ${appState.activeSupplier}`, "ok");
 }
 
 function findNodes() {
@@ -160,7 +174,7 @@ function findNodes() {
 }
 
 async function loadNodes() {
-    viewMode = "nodes";
+    appState.viewMode = "nodes";
     await loadCanonicals();
     const data = await api(
         "/find_nodes?supplier=" + encodeURIComponent(appState.activeSupplier),
@@ -203,7 +217,7 @@ async function deleteDfOut() {
     }
 
     showToast("DfOut deleted");
-    logEvent(`DfOut deleted for ${activeSupplier}`, "ok");
+    logEvent(`DfOut deleted for ${appState.activeSupplier}`, "ok");
     appState.state = 1;
     renderState();
 

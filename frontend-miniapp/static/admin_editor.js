@@ -12,6 +12,7 @@ export function enterEditor(offerId) {
     renderState();
 }
 
+
 //global state for calculator
 let lastEditedField = null; // "case" | "bottle" | null
 //calculator

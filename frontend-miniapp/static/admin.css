@@ -24,6 +24,9 @@ body {
     gap: 10px;
     margin-top: 10px;
     margin-bottom: 10px;
+    max-height: 300px;      /* or 40vh if you prefer */
+    overflow-y: auto;
+    padding-right: 4px;     /* avoids scrollbar overlapping items */
 }
 
 .supplier-item {

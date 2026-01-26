@@ -22,11 +22,12 @@ DEFAULT_EXCLUDED = False
 
 
 Q_LIST_SUPPLIERS = """
-MATCH (s:Supplier)
+MATCH (s:Supplier)-[:HAS_BLOB]->(:RawBlob)-[:HAS_DFOUT]->(d:DfOut)
 RETURN
     s.name AS name,
-    coalesce(s.admin_excluded, $default) AS admin_excluded
-ORDER BY name
+    coalesce(s.admin_excluded, $default) AS admin_excluded,
+    max(d.createdAt) AS last_seen
+ORDER BY last_seen DESC
 """
 
 Q_SET_EXCLUDED = """

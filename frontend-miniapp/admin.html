@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8" />
-<title>Graph Admin</title>
+<title>Supplier Admin</title>
 <link rel="stylesheet" href="/static/admin.css">
 <link rel="stylesheet" href="/static/editor.css">
 <link rel="stylesheet" href="/static/offer.css">
@@ -14,7 +14,7 @@
 <body>
 
 <div style="display:flex; align-items:center; gap:12px;">
-    <h2 style="margin:0;">Graph Admin</h2>
+    <h2 style="margin:0;">Supplier Admin</h2>
     <!-- MAIN MENU BUTTON -->
     <button
         id="btn_main_menu"
@@ -51,6 +51,11 @@
         <!-- SUPPLIERS -->
         <div class="section-block">
             <h3>Suppliers</h3>
+            <input
+            id="supplier_search"
+            placeholder="🔍 Find supplier…"
+            style="width:100%; margin-bottom:6px;"
+            >
 
             <div id="supplier_grid"></div>
 
@@ -137,6 +142,9 @@
             <h3>Output</h3>
             <div id="output" class="result"></div>
         </div>
+
+        <!-- MODE CONTROLS (STATE 0) -->
+        <div id="mode_controls" class="section-block" style="text-align:center;"></div>
         
         <!-- BRAND / CANONICAL (shown in STATE 2, OFFERS) -->
         <div id="canonical_toast_anchor" style="position: relative;"></div>
