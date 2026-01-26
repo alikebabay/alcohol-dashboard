@@ -79,28 +79,8 @@ async def _find_brand(run_query, name: str):
         ],
     }
 
-
-
-
-# ============================================================
-# Attach routes
-# ============================================================
-
-def attach_editor_routes(run_query) -> APIRouter:
-
-    # --------------------------------------------------------
-    # FIND BRAND (ADMIN)
-    # --------------------------------------------------------
-    @router.get("/find_brand")
-    async def find_brand(name: str):
-        return await _find_brand(run_query, name)
-
-
-    # --------------------------------------------------------
-    # LOAD ORIGINAL ROWS (DfRaw ±3 rows, FUZZY by name)
-    # --------------------------------------------------------
-    @router.get("/editor/original_rows")
-    async def load_original_rows(offer_id: str = Query(...)):
+#load original rows
+async def load_original_rows_handler(run_query, offer_id: str):
 
         # 1️⃣ Load Offer (only what we need)
         q_offer = """
@@ -204,75 +184,70 @@ def attach_editor_routes(run_query) -> APIRouter:
             rows = rows + [header]
         return {"rows": rows}
 
-    # --------------------------------------------------------
-    # UPDATE OFFER PRICE
-    # --------------------------------------------------------
-    @router.post("/offer")
-    async def update_offer(req: OfferEdit):
-        # --------------------------------------------------
-        # build dynamic props (supplier-scoped)
-        # --------------------------------------------------
-        props = {}
+#update offer
+async def update_offer_handler(run_query, req: OfferEdit):
+    # --------------------------------------------------
+    # build dynamic props (supplier-scoped)
+    # --------------------------------------------------
+    props = {}
 
-        supplier = None
+    supplier = None
 
-        # load supplier once (cheap & safe)
-        q_supplier = """
-        MATCH (o:Offer)
-        WHERE elementId(o) = $id
-        RETURN o.supplier AS supplier
-        LIMIT 1
-        """
-        rows = await run_query(q_supplier, {"id": req.id})
-        if not rows:
-            return {"error": "Offer not found"}
+    # load supplier once (cheap & safe)
+    q_supplier = """
+    MATCH (o:Offer)
+    WHERE elementId(o) = $id
+    RETURN o.supplier AS supplier
+    LIMIT 1
+    """
+    rows = await run_query(q_supplier, {"id": req.id})
+    if not rows:
+        return {"error": "Offer not found"}
 
-        supplier = rows[0]["supplier"]
+    supplier = rows[0]["supplier"]
 
-        if req.price_bottle is not None:
-            props[f"цена за бутылку {supplier}"] = req.price_bottle
+    if req.price_bottle is not None:
+        props[f"цена за бутылку {supplier}"] = req.price_bottle
 
-        if req.price_case is not None:
-            props[f"цена за кейс {supplier}"] = req.price_case
+    if req.price_case is not None:
+        props[f"цена за кейс {supplier}"] = req.price_case
 
-        if req.currency is not None:
-            props[f"currency {supplier}"] = req.currency
+    if req.currency is not None:
+        props[f"currency {supplier}"] = req.currency
 
-        if req.access is not None:
-            props[f"Доступ {supplier}"] = req.access
+    if req.access is not None:
+        props[f"Доступ {supplier}"] = req.access
 
-        if req.location is not None:
-            props[f"Место загрузки {supplier}"] = req.location
+    if req.location is not None:
+        props[f"Место загрузки {supplier}"] = req.location
 
-        if req.bpc is not None:
-            props[f"шт_кор"] = req.bpc
+    if req.bpc is not None:
+        props[f"шт_кор"] = req.bpc
 
-        # --------------------------------------------------
-        # update offer
-        # --------------------------------------------------
-        query = """
-        MATCH (o:Offer)
-        WHERE elementId(o) = $id
-        SET
-            o.`Наименование` = COALESCE($name, o.`Наименование`),
-            o.`cl`           = COALESCE($cl,   o.`cl`)
-        SET o += $props
-        RETURN true AS ok
-        """
+    # --------------------------------------------------
+    # update offer
+    # --------------------------------------------------
+    query = """
+    MATCH (o:Offer)
+    WHERE elementId(o) = $id
+    SET
+        o.`Наименование` = COALESCE($name, o.`Наименование`),
+        o.`cl`           = COALESCE($cl,   o.`cl`)
+    SET o += $props
+    RETURN true AS ok
+    """
 
-        await run_query(query, {
-            "id": req.id,
-            "name": req.name,
-            "cl": req.cl,
-            "props": props,
-        })
+    await run_query(query, {
+        "id": req.id,
+        "name": req.name,
+        "cl": req.cl,
+        "props": props,
+    })
 
-        return {"ok": True}
-    # --------------------------------------------------------
-    # ADD CANONICAL
-    # --------------------------------------------------------
-    @router.post("/editor/addcanonical")
-    async def add_canonical(req: CanonicalCreate):
+    return {"ok": True}
+
+#add canonical
+async def add_canonical_handler(run_query, req: CanonicalCreate):
 
         query = """
         // ---- CANONICAL ----
@@ -312,8 +287,40 @@ def attach_editor_routes(run_query) -> APIRouter:
         RETURN c.name AS canonical
         """
 
-        await run_query(query, req.dict())
+        await run_query(query, req.model_dump())
         return {"ok": True}
 
+# ============================================================
+# Attach routes - maps several admin routes together
+# ============================================================
+
+def attach_editor_routes(run_query) -> APIRouter:
+
+    # --------------------------------------------------------
+    # FIND BRAND (ADMIN)
+    # --------------------------------------------------------
+    @router.get("/find_brand")
+    async def find_brand(name: str):
+        return await _find_brand(run_query, name)
+
+    # --------------------------------------------------------
+    # LOAD ORIGINAL ROWS (DfRaw ±3 rows, FUZZY by name)
+    # --------------------------------------------------------
+    @router.get("/editor/original_rows")
+    async def load_original_rows(offer_id: str = Query(...)):
+        return await load_original_rows_handler(run_query, offer_id)
+
+    # --------------------------------------------------------
+    # UPDATE OFFER PRICE
+    # --------------------------------------------------------
+    @router.post("/offer")
+    async def update_offer(req: OfferEdit):
+        return await update_offer_handler(run_query, req)
+    # --------------------------------------------------------
+    # ADD CANONICAL
+    # --------------------------------------------------------
+    @router.post("/editor/addcanonical")
+    async def add_canonical(req: CanonicalCreate):
+        return await add_canonical_handler (run_query, req)
 
     return router

@@ -107,7 +107,7 @@ async def run_query(query: str, params: dict):
 
 
 
-#offer editor
+#admon router
 app.include_router(
     attach_editor_routes(run_query),
     prefix="/admin"

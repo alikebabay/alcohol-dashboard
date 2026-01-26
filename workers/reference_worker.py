@@ -1,11 +1,14 @@
 # worker_dfout.py
 import asyncio
 import logging
+from neo4j import AsyncGraphDatabase
 
 from workers.event_bus import subscribe
-from config import driver, MODE
+from config import MODE, USER, PASS, URI
 
 logger = logging.getLogger(__name__)
+
+async_driver = AsyncGraphDatabase.driver(URI, auth=(USER, PASS))
 
 async def handle_df_out(payload):
     supplier = payload["supplier"]
@@ -25,18 +28,21 @@ async def handle_df_out(payload):
     """
 
     try:
-        with driver.session() as session:
-            rec = session.run(check_link, supplier=supplier, df_id=df_id).single()
-            rel_exists = rec["rel_exists"] if rec else 0
+        async with async_driver.session() as session:
+            result = await session.run(check_link, supplier=supplier, df_id=df_id)
+            record = await result.single()
+            rel_exists = record["rel_exists"] if record else 0
 
             if rel_exists and rel_exists > 0:
                 logger.info(f"[WORKER_DF] связь с DfOut уже существует для {supplier}")
             else:
-                rec2 = session.run(create_link, supplier=supplier, df_id=df_id).single()
+                result2 = await session.run(create_link, supplier=supplier, df_id=df_id)
+                rec2 = await result2.single()
                 logger.info(
                     f"[WORKER_DF] создана связь Supplier → RawBlob → DfOut: "
                     f"{rec2['supplier']} → {rec2['raw_id']} → {rec2['df_id']}"
                 )
+
     except Exception as e:
         logger.error(f"[WORKER_DF] ошибка при создании связи: {e}")
 
