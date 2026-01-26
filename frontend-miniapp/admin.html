@@ -45,174 +45,22 @@
 
 
 <div class="container">
-    <div class="left">
-
-        <div id="admin_panel">
-        <!-- SUPPLIERS -->
-        <div class="section-block">
-            <h3>Suppliers</h3>
-            <input
-            id="supplier_search"
-            placeholder="🔍 Find supplier…"
-            style="width:100%; margin-bottom:6px;"
-            >
-
-            <div id="supplier_grid"></div>
-
-            <div id="active_supplier"
-                 style="font-weight:bold; margin-top:10px; margin-bottom:10px;">
-            </div>
-
-            <div class="menu">
-                <div id="btn_offers" class="menu-item"
-                     style="display:none;">
-                    📦 View Offers
-                </div>
-                <div id="btn_change_supplier" class="menu-item"
-                     style="display:none;">
-                    ❎ Change Supplier
-                </div>
-
-                <div id="btn_toggle_excluded"
-                    class="menu-item warning"
-                    style="display:none;">
-                    🚫 Exclude from pivot
-                </div>
-
-                <div id="btn_rebuild_sheets"
-                    class="menu-item warning">
-                    🔄 Rebuild Sheets
-                </div>
-
-                <div id="btn_nodes" class="menu-item"
-                     style="display:none;">
-                    🔍 Find Nodes
-                </div>
-                <div id="btn_reload_suppliers" class="menu-item">
-                    ⟳ Reload Suppliers
-                </div>
-                <div id="btn_test" class="menu-item">🧪 TEST</div>
-
-                <div id="btn_remove" class="menu-item danger"
-                     style="display:none;">
-                    ❌ Remove Supplier
-                </div>
-
-                <div id="btn_dfout" class="menu-item danger"
-                     style="display:none;">
-                    🗑 Delete all DfOut
-                </div>
-            </div>
-        </div>
-
-        <!-- Mark DfOut as canonical -->
-        <div class="section-block" id="dfout_block">
-            <h3>Blob ID / DfOut</h3>
-            <input id="dfout_id" placeholder="DfOut ID" />
-            <button id="btn_mark_canonical">⭐ Mark Canonical</button>
-        </div>
-
-            </div><!-- /admin_panel -->
-
-            <!-- TEST MODE PANEL -->
-        <div class="section-block" id="test_panel" style="display:none;">
-            <h3>Test input</h3>
-
-            <textarea
-                id="test_input"
-                placeholder="Paste raw text here..."
-                style="width:100%; height:220px;"
-            ></textarea>
-
-            <div class="menu" style="margin-top:10px;">
-                <div class="menu-item" id="btn_test_graph">▶ Test graph</div>
-                <div class="menu-item" id="btn_test_gbx">▶ Test GBX</div>
-                <div class="menu-item" id="btn_test_price">▶ Test price</div>
-
-                <div class="menu-item danger" id="btn_test_exit">
-                    ← Return to menu
-                </div>
-            </div>
-        </div>
+    <div class="left">        
+        <!-- SUPPLIERS PANEL PLACEHOLDER -->
+        <div id="suppliers_panel_container"></div>
+        <div id="test_panel_container"></div>            
     </div>
-
     <div class="right">
         <!-- OUTPUT -->
         <div class="section-block">
             <h3>Output</h3>
             <div id="output" class="result"></div>
         </div>
-
         <!-- MODE CONTROLS (STATE 0) -->
         <div id="mode_controls" class="section-block" style="text-align:center;"></div>
-        
-        <!-- BRAND / CANONICAL (shown in STATE 2, OFFERS) -->
-        <div id="canonical_toast_anchor" style="position: relative;"></div>
-        <div class="section-block"
-             id="brand_panel">
-            <h3>🔍 Brand / Canonical</h3>
-
-            <!-- SEARCH BRAND -->
-            <div style="margin-bottom:10px;">
-                <div style="font-size:12px; opacity:0.7; margin-bottom:4px;">Search brand</div>
-                <input
-                    id="brand_search"
-                    placeholder="e.g. moet"
-                    style="width:100%; margin-bottom:6px;"
-                />
-                <button id="btn_find_brand">🔍 Find brand</button>
-                <div id="brand_result" style="font-size:13px; opacity:0.9; margin-top:6px;"></div>
-            </div>
-
-            <hr style="opacity:0.2; margin:12px 0;" />
-
-            <!-- CREATE CANONICAL -->
-                <div style="font-size:12px; opacity:0.7; margin-bottom:4px;">Brand (create)</div>
-                <input
-                    id="canon_brand"
-                    placeholder="e.g. Moët & Chandon"
-                    style="width:100%; margin-bottom:6px;"
-                />
-                <div style="font-size:12px; opacity:0.7; margin-bottom:4px;">Brand Alias</div>
-                <input
-                    id="brand_alias"
-                    placeholder="e.g. Moet Chandon"
-                    style="width:100%; margin-bottom:6px;"
-                />
-
-                <div style="font-size:12px; opacity:0.7; margin-bottom:4px;">Canonical name</div>
-                <input
-                    id="canon_name"
-                    placeholder="e.g. Moët & Chandon Brut Impérial"
-                    style="width:100%; margin-bottom:6px;"
-                />
-
-                <div style="font-size:12px; opacity:0.7; margin-bottom:4px;">Series</div>
-                <input
-                    id="canon_series"
-                    placeholder="e.g. Brut Impérial"
-                    style="width:100%; margin-bottom:6px;"
-                />
-
-                <div style="font-size:12px; opacity:0.7; margin-bottom:4px;">Series Alias</div>
-                <input
-                    id="series_alias"
-                    placeholder="e.g. Brut, Brut Imperial"
-                    style="width:100%; margin-bottom:6px;"
-                />
-
-                <div style="font-size:12px; opacity:0.7; margin-bottom:4px;">Category (optional)</div>
-                <input
-                    id="canon_category"
-                    placeholder="e.g. Champagne"
-                    style="width:100%; margin-bottom:6px;"
-                />
-
-                <button id="btn_add_canonical">
-                    ➕ Create canonical
-                </button>
-            </div>
-        </div>
+        <!-- BRAND PANEL PLACEHOLDER -->
+        <div id="brand_panel_container"></div>
+    </div>
 </div>
 
 

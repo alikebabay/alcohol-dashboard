@@ -26,6 +26,9 @@ import { initDownloadHandler } from "./admin_editor.js";
 
 
 document.addEventListener("DOMContentLoaded", async () => {
+    await loadPartial("brand_panel_container", "/static/partials/brand_panel.html");
+    await loadPartial("suppliers_panel_container", "/static/partials/suppliers_panel.html");
+    await loadPartial("test_panel_container", "/static/partials/test_panel.html");
     wireMainMenu();
     wireTestButton();
     wireOfferButtons();
@@ -56,3 +59,10 @@ document.addEventListener("click", async e => {
     const ok = await ClipboardHelper.copy(text);
     showToast(ok ? "Copied" : "Copy failed");
 });
+
+
+//loader for partials in admin.html
+async function loadPartial(id, url) {
+  const res = await fetch(url);
+  document.getElementById(id).innerHTML = await res.text();
+}

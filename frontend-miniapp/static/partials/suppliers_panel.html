@@ -1,0 +1,60 @@
+<div id="admin_panel">
+  <!-- SUPPLIERS -->
+  <div class="section-block">
+    <h3>Suppliers</h3>
+    <input
+      id="supplier_search"
+      placeholder="🔍 Find supplier…"
+      style="width:100%; margin-bottom:6px;"
+    >
+
+    <div id="supplier_grid"></div>
+
+    <div id="active_supplier"
+         style="font-weight:bold; margin-top:10px; margin-bottom:10px;">
+    </div>
+
+    <div class="menu">
+      <div id="btn_offers" class="menu-item" style="display:none;">
+        📦 View Offers
+      </div>
+      <div id="btn_change_supplier" class="menu-item" style="display:none;">
+        ❎ Change Supplier
+      </div>
+
+      <div id="btn_toggle_excluded"
+           class="menu-item warning"
+           style="display:none;">
+        🚫 Exclude from pivot
+      </div>
+
+      <div id="btn_rebuild_sheets"
+           class="menu-item warning">
+        🔄 Rebuild Sheets
+      </div>
+
+      <div id="btn_nodes" class="menu-item" style="display:none;">
+        🔍 Find Nodes
+      </div>
+      <div id="btn_reload_suppliers" class="menu-item">
+        ⟳ Reload Suppliers
+      </div>
+      <div id="btn_test" class="menu-item">🧪 TEST</div>
+
+      <div id="btn_remove" class="menu-item danger" style="display:none;">
+        ❌ Remove Supplier
+      </div>
+
+      <div id="btn_dfout" class="menu-item danger" style="display:none;">
+        🗑 Delete all DfOut
+      </div>
+    </div>
+  </div>
+
+  <!-- Mark DfOut as canonical -->
+  <div class="section-block" id="dfout_block">
+    <h3>Blob ID / DfOut</h3>
+    <input id="dfout_id" placeholder="DfOut ID" />
+    <button id="btn_mark_canonical">⭐ Mark Canonical</button>
+  </div>
+</div>
