@@ -34,6 +34,30 @@ export function renderState() {
     }
 }
 
+// panel mover
+function moveBrandPanel(target) {
+    const panel = document.getElementById("brand_panel");
+    if (!panel) return;
+
+    // HTML anchors:
+    // - advanced (LEFT):  #brand_panel_container
+    // - default/editor (RIGHT): #brand_anchor_default
+    const left  = document.getElementById("brand_panel_container");
+    const right = document.getElementById("brand_anchor_default");
+
+    if (!panel) {
+        console.warn("brand_panel not found");
+        return;
+    }
+
+    if (target === "left" && left && panel.parentElement !== left) {
+        left.appendChild(panel);
+    }
+    if (target === "right" && right && panel.parentElement !== right) {
+        right.appendChild(panel);
+    }
+}
+
 
 // =========================
 // STATE TRANSITIONS
@@ -57,7 +81,8 @@ function enterTestMode() {
 }
 
 function exitTestMode() {
-    appState.state = 0;
+    appState.mode = "default";
+    appState.state = 0;    
     renderState();
 }
 
@@ -79,11 +104,25 @@ function exitAdvancedMode() {
 function renderAdvancedState() {
     const lbl = document.getElementById("active_supplier");
     const out = document.getElementById("output");
+    const adminPanel = document.getElementById("admin_panel");
+    const brandPanel = document.getElementById("brand_panel");
+    const dfoutBlock = document.getElementById("dfout_block");
+    const testPanel  = document.getElementById("test_panel");
     const modeBox = document.getElementById("mode_controls");
 
     lbl.innerText = "ADVANCED MODE";
+    // hide suppliers / test / dfout
+    if (adminPanel) adminPanel.style.display = "none";
+    if (dfoutBlock) dfoutBlock.style.display = "none";
+    if (testPanel)  testPanel.style.display = "none";
+
+    // show brand panel (left side logic already handled by HTML)
+    moveBrandPanel("left");
+    if (brandPanel) brandPanel.style.display = "block";
+
+    // output = defaults view
     out.style.display = "block";
-    out.innerHTML = "<em>Advanced tools go here</em>";
+    out.innerHTML = "<em>Default brands / series will be shown here</em>";
 
     modeBox.innerHTML = `
         <button id="btn_back_default">← Back</button>
@@ -100,6 +139,8 @@ function renderAdvancedState() {
 
 function renderDefaultState() {
     const s = appState.state;
+    // ВСЕГДА возвращаем бренд-панель вправо в default режиме
+    moveBrandPanel("right");
     // reset editor mode by default
     document.body.classList.remove("editor-mode");
     const lbl  = document.getElementById("active_supplier");
@@ -118,7 +159,10 @@ function renderDefaultState() {
     //main menu button
     const btnMain = document.getElementById("btn_main_menu");
     if (btnMain) {
-        btnMain.style.display = appState.state === 0 ? "none" : "inline-block";
+        const show =
+            appState.state !== 0 ||
+            appState.mode === "advanced";
+        btnMain.style.display = show ? "inline-block" : "none";
     }
     
     // =====================
@@ -184,6 +228,11 @@ function renderDefaultState() {
         ex.innerText = appState.supplierExcluded
             ? "✅ Include in pivot"
             : "🚫 Exclude from pivot";
+
+        moveBrandPanel("right");
+        const brandPanel = document.getElementById("brand_panel");
+        if (brandPanel) brandPanel.style.display = "none";
+
         renderEvents();
         return;
     }
@@ -199,7 +248,9 @@ function renderDefaultState() {
 
         const out = document.getElementById("output");
         out.style.display = "block";
+
         // 🆕 BRAND PANEL — только в offers
+        moveBrandPanel("right");
         const brandPanel = document.getElementById("brand_panel");
         if (brandPanel) {
             brandPanel.style.display =
@@ -324,11 +375,13 @@ function renderDefaultState() {
         const rebuildBtn = document.getElementById("btn_rebuild_sheets");
         if (rebuildBtn) rebuildBtn.style.display = "block";
 
-        // === HIDE DFOUT / BRAND / OTHER TOOLS ===
+        // === HIDE DFOUT OTHER TOOLS ===
         dfoutBlock.style.display = "none";
-        const brandBlock = document.getElementById("brand")?.closest(".section-block");
-        if (brandBlock) brandBlock.style.display = "none";
 
+        // BRAND PANEL must be visible in editor (state 4)
+        moveBrandPanel("right");
+        const brandPanel = document.getElementById("brand_panel");
+        if (brandPanel) brandPanel.style.display = "block";
         // === HIDE TEST PANEL ===
         testPanel.style.display = "none";
 
