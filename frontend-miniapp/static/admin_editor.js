@@ -1,5 +1,9 @@
 //admin_editor.js
 
+import { getLogger } from "./logger.js";
+const log = getLogger("editor");
+
+
 import { api} from "./admin_backend.js";
 import { renderState, appState } from "./admin_state.js";
 import { loadOffers } from "./admin_backend.js";
@@ -92,14 +96,7 @@ export async function loadEditorOriginals() {
 
 async function findBrand() {
     const q = document.getElementById("brand_search").value.trim();
-    const out = document.getElementById("brand_result");
-
-    if (!q) {
-        out.innerHTML = "<em>Enter brand name</em>";
-        return;
-    }
-
-    out.innerHTML = "Searching…";
+    if (!q) return;
 
     const res = await api(
         "/find_brand?name=" + encodeURIComponent(q),
@@ -107,33 +104,15 @@ async function findBrand() {
         null,
         false
     );
-    if (!res || !res.found) {
-        out.innerHTML = "<em>Brand not found</em>";
-        return;
-    }
-     out.innerHTML = res.brands.map(b => `
-        <div style="padding:6px 0; border-bottom:1px dashed #444">
-            <b>${b.name}</b>
 
-            ${b.brand_alias && b.brand_alias.length
-                ? `<div style="opacity:0.7">
-                    aliases: ${b.brand_alias.join(", ")}
-                   </div>`
-                : ""}
+    // overwrite previous search (so old one disappears)
+    appState.foundBrands = res?.found ? res.brands : null;
+    log.info("findBrand result", appState.foundBrands?.map(b => b.name));
 
-            ${b.canonicals && b.canonicals.length
-                ? `<div style="margin-top:4px; padding-left:10px; font-size:12px;">
-                    ${b.canonicals
-                        .map(c => `• ${c.name}`)
-                        .join("<br>")}
-                   </div>`
-                : `<div style="opacity:0.5; font-size:12px; padding-left:10px;">
-                    no canonicals
-                   </div>`
-            }
-        </div>
-    `).join("");
+    // re-render output panel
+    renderState();
 }
+
 
 
 //renders offer editing space
@@ -356,6 +335,96 @@ function renderOfferList() {
         </div>
     `).join("");
 }
+
+//default series
+
+const MOCK_DEFAULT_SERIES = {
+    "Moet & Chandon": ["Brut Imperial", "Ice Imperial", "Rose Imperial"],
+    "Jack Daniel's": ["Old No.7", "Gentleman Jack"],
+    "Penfolds": ["Bin 28", "Bin 389", "Bin 707"],
+    "Hennessy": ["VS", "VSOP", "XO"]
+};
+
+
+function renderDefaultSeriesHTML() {
+    const entries = Object.entries(MOCK_DEFAULT_SERIES);
+
+    return `
+      <div style="font-size:14px; opacity:0.7; margin-bottom:6px;">
+        Default canonicals
+      </div>
+      <div class="canon-grid">
+        ${entries.map(([brand, series]) => `
+          <div class="canon-col">
+            <div style="font-size:16px; font-weight:bold; margin-bottom:4px;">
+              ${brand}
+            </div>
+            <div style="font-size:13px; opacity:0.85;">
+              ${series.map(s => `• ${s}`).join("<br>")}
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+}
+
+
+function renderFoundBrandsHTML(brands) {
+    return brands.map(b => `
+        <div style="padding:6px 0; border-bottom:1px dashed #444">
+            <b style="font-size:32px;">${b.name}</b>
+
+            ${b.canonicals?.length
+                ? `<div style="margin-top:4px; padding-left:10px; font-size:22px;">
+                    ${b.canonicals.map(c => `• ${c.name}`).join("<br>")}
+                   </div>`
+                : `<div style="opacity:0.5; font-size:14px; padding-left:10px;">
+                    no canonicals
+                   </div>`
+            }
+        </div>
+    `).join("");
+}
+
+
+export function renderSearchResult() {
+    log.trace("renderSearchResult", {
+        mode: appState.mode,
+        found: appState.foundBrands?.map(b => b.name)
+    });
+    // рендер поиска ТОЛЬКО в default mode
+    if (appState.mode !== "default") {
+        log.debug("renderSearchResult skipped (not default mode)");
+        return;
+    }
+    const out = document.getElementById("brand_result");
+    if (!out) {
+            log.warn("brand_result not found")
+            return;
+    }
+
+     if (!appState.foundBrands) {
+        log.debug("no foundBrands → clear brand_result");
+         out.innerHTML = "";
+         return;
+     }
+     log.info("render brand_result", appState.foundBrands.map(b => b.name));
+     out.innerHTML = renderFoundBrandsHTML(appState.foundBrands);
+}
+
+export function renderOutput() {
+    const out = document.getElementById("output");
+    let html = "";
+
+    if (appState.foundBrands) {
+        html += renderFoundBrandsHTML(appState.foundBrands);
+        html += "<hr>";
+    }
+
+    html += renderDefaultSeriesHTML();
+    out.innerHTML = html;
+}
+
 
 //wiring
 export function wireEditorOfferList() {

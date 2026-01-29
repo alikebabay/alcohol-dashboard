@@ -20,14 +20,15 @@ const EventStore = {
 export function logEvent(msg, type = "info") {
     EventStore.push(msg, type);
 
-    // РЕНДЕРИМ ТОЛЬКО КОГДА НА ЭКРАНЕ ИВЕНТОВ (0/1)
-    // иначе ты сам себе сносишь nodes/offers в #output
-    if (window.state === 0 || window.state === 1) {
+    // рендерим логи ТОЛЬКО в state 0
+    if (window.appState?.state === 0) {
         renderEvents();
     }
 }
 
 export function renderEvents() {
+    // защита: логи могут рендериться ТОЛЬКО в state 0
+    if (window.appState?.state !== 0) return;
     const out = document.getElementById("output");
     if (!out) return;
 

@@ -31,3 +31,14 @@ body.editor-mode .right {
     width: auto;
     flex: 1;
 }
+
+/* brand search output */
+.canon-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.canon-col {
+  min-width: 0;
+}

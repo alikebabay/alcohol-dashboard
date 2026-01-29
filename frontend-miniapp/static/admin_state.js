@@ -1,5 +1,9 @@
 // admin_state.js
-import { renderEditorLayout } from "./admin_editor.js";
+import { getLogger } from "./logger.js";
+const log = getLogger("state");
+
+
+import { renderEditorLayout, renderOutput, renderSearchResult } from "./admin_editor.js";
 import { runGraphTest} from "./admin_diagnostics.js";
 import { testGBX} from "./admin_diagnostics.js";
 import { testPrice} from "./admin_diagnostics.js";
@@ -21,6 +25,7 @@ export const appState = {
     supplierExcluded: false,
     activeOfferId: null,
     editorOriginals: null,
+    foundBrands: null, // search result from Find brand; null = no active search
 };
 
 // ==========
@@ -63,13 +68,24 @@ function moveBrandPanel(target) {
 // STATE TRANSITIONS
 // =========================
 export function resetState() {
-    if (appState.state === 2) {
-        appState.state = 1;
-        renderState();
-        return;
-    }
-    appState.activeSupplier = null;
+    log.info("resetState");
+    // Always leave advanced mode when going to main menu
+    appState.mode = "default";
+
+    // Go to idle state
     appState.state = 0;
+
+    //clear findbrand search results
+    appState.foundBrands = null;
+    const box = document.getElementById("brand_result");
+    log.debug("resetState clear brand_result", {
+        exists: !!box,
+        len: box?.innerHTML?.length
+    });
+
+    if (box) box.innerHTML = "";
+
+    // DO NOT clear activeSupplier here
     renderState();
     renderEvents();
 }
@@ -82,7 +98,8 @@ function enterTestMode() {
 
 function exitTestMode() {
     appState.mode = "default";
-    appState.state = 0;    
+    appState.state = 0;
+    appState.foundBrands = null;    
     renderState();
 }
 
@@ -92,7 +109,15 @@ function exitTestMode() {
 
 
 function enterAdvancedMode() {
+    log.info("enterAdvancedMode");
     appState.mode = "advanced";
+    appState.foundBrands = null;
+    const box = document.getElementById("brand_result");
+    log.debug("enterAdvancedMode clear brand_result", {
+        exists: !!box,
+        len: box?.innerHTML?.length
+    });
+    if (box) box.innerHTML = "";
     renderState();
 }
 
@@ -122,7 +147,9 @@ function renderAdvancedState() {
 
     // output = defaults view
     out.style.display = "block";
-    out.innerHTML = "<em>Default brands / series will be shown here</em>";
+
+    // 👇 ВМЕСТО текста — карта default series
+    renderOutput();
 
     modeBox.innerHTML = `
         <button id="btn_back_default">← Back</button>
@@ -136,27 +163,17 @@ function renderAdvancedState() {
 // DEFAULT STATE FOR USERS
 // =========================
 
-
-function renderDefaultState() {
-    const s = appState.state;
-    // ВСЕГДА возвращаем бренд-панель вправо в default режиме
+// общая шапка
+function normalizeDefaultLayout() {
     moveBrandPanel("right");
-    // reset editor mode by default
     document.body.classList.remove("editor-mode");
-    const lbl  = document.getElementById("active_supplier");
-    const btnC = document.getElementById("btn_change_supplier");
-    const rm   = document.getElementById("btn_remove");
-    const nd   = document.getElementById("btn_nodes");
-    const df   = document.getElementById("btn_dfout");
-    const dfoutBlock = document.getElementById("dfout_block");
+
     const adminPanel = document.getElementById("admin_panel");
     const testPanel  = document.getElementById("test_panel");
 
-    //default visibility
     adminPanel.style.display = "block";
     testPanel.style.display  = "none";
 
-    //main menu button
     const btnMain = document.getElementById("btn_main_menu");
     if (btnMain) {
         const show =
@@ -164,18 +181,24 @@ function renderDefaultState() {
             appState.mode === "advanced";
         btnMain.style.display = show ? "inline-block" : "none";
     }
-    
-    // =====================
-    // STATE 0: EVENT LOG
-    // =====================
+}
 
-    if (s === 0) {
+//state 0
+function renderIdle() {
+    const lbl  = document.getElementById("active_supplier");
+    const btnC = document.getElementById("btn_change_supplier");
+    const rm   = document.getElementById("btn_remove");
+    const nd   = document.getElementById("btn_nodes");
+    const df   = document.getElementById("btn_dfout");
+    const dfoutBlock = document.getElementById("dfout_block");
+
     lbl.innerText = "Event Log";
+
     // RESTORE MENU ITEMS (editor hides them globally)
     document.querySelectorAll(".menu .menu-item").forEach(el => {
         el.style.display = "block";
     });
-    
+
     btnC.style.display = "none";
     rm.style.display   = "none";
     nd.style.display   = "none";
@@ -184,7 +207,7 @@ function renderDefaultState() {
 
     // hide DFOUT tools in idle
     dfoutBlock.style.display = "none";
-    
+
     //manage suppliers
     document.getElementById("btn_toggle_excluded").style.display = "none";
 
@@ -196,14 +219,38 @@ function renderDefaultState() {
     const out = document.getElementById("output");
     out.style.display = "block";
     renderEvents();
+
     const modeBox = document.getElementById("mode_controls");
     modeBox.innerHTML = `
         <button id="btn_advanced">⚙ Advanced</button>
     `;
     document.getElementById("btn_advanced")
         ?.addEventListener("click", enterAdvancedMode);
-    return;
-    }
+}
+
+
+
+function renderDefaultState() {
+    const s = appState.state;
+    normalizeDefaultLayout();
+
+    // ✅ keep refs here (unchanged from before)
+    const lbl  = document.getElementById("active_supplier");
+    const btnC = document.getElementById("btn_change_supplier");
+    const rm   = document.getElementById("btn_remove");
+    const nd   = document.getElementById("btn_nodes");
+    const df   = document.getElementById("btn_dfout");
+    const dfoutBlock = document.getElementById("dfout_block");
+    const adminPanel = document.getElementById("admin_panel");
+    const testPanel  = document.getElementById("test_panel");
+
+    // =====================
+    // STATE 0: EVENT LOG
+    // =====================
+    if (s === 0) {
+        renderIdle();
+        return;
+    }    
 
     //show test button
     const btnTest = document.getElementById("btn_test");
@@ -270,6 +317,8 @@ function renderDefaultState() {
                 .filter(o => o.type === "Offer")
                 .map(o => renderOfferCard(o))
                 .join("");
+            // 🔽 render brand search result under search box (default mode)
+            renderSearchResult();
             return;
         }
 

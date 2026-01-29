@@ -1,4 +1,18 @@
 // main.js
+import { setLogLevel, enableModule, disableModule } from "./logger.js";
+
+const isLocal =
+    location.hostname === "localhost" ||
+    location.hostname === "127.0.0.1";
+
+if (isLocal) {
+    setLogLevel("off");
+    enableModule("state");
+    enableModule("editor");
+} else {
+    setLogLevel("error");
+}
+
 
 import { showToast } from "./toast.js";
 window.showToast = showToast;

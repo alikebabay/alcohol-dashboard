@@ -42,6 +42,10 @@ export async function loadSuppliers() {
             const prevSupplier = appState.activeSupplier;
             appState.activeSupplier = row.name;
             appState.supplierExcluded = !!row.admin_excluded;
+            // 🧹 clear brand search when switching supplier
+            appState.foundBrands = null;
+            const box = document.getElementById("brand_result");
+            if (box) box.innerHTML = "";
 
             // 🟢 SPECIAL CASE: editor state
             if (appState === 4 && prevSupplier !== row.name) {
