@@ -6,7 +6,7 @@ const isLocal =
     location.hostname === "127.0.0.1";
 
 if (isLocal) {
-    setLogLevel("off");
+    setLogLevel("trace");
     enableModule("state");
     enableModule("editor");
 } else {

@@ -7,6 +7,9 @@ const log = getLogger("editor");
 import { api} from "./admin_backend.js";
 import { renderState, appState } from "./admin_state.js";
 import { loadOffers } from "./admin_backend.js";
+import { renderDefaultSeriesHTML } from "./features/default_series/default_series_view.js";
+import { wireDefaultCanonicals } from "./features/default_series/default_series_controller.js";
+
 
 
 export function enterEditor(offerId) {
@@ -336,39 +339,6 @@ function renderOfferList() {
     `).join("");
 }
 
-//default series
-
-const MOCK_DEFAULT_SERIES = {
-    "Moet & Chandon": ["Brut Imperial", "Ice Imperial", "Rose Imperial"],
-    "Jack Daniel's": ["Old No.7", "Gentleman Jack"],
-    "Penfolds": ["Bin 28", "Bin 389", "Bin 707"],
-    "Hennessy": ["VS", "VSOP", "XO"]
-};
-
-
-function renderDefaultSeriesHTML() {
-    const entries = Object.entries(MOCK_DEFAULT_SERIES);
-
-    return `
-      <div style="font-size:14px; opacity:0.7; margin-bottom:6px;">
-        Default canonicals
-      </div>
-      <div class="canon-grid">
-        ${entries.map(([brand, series]) => `
-          <div class="canon-col">
-            <div style="font-size:16px; font-weight:bold; margin-bottom:4px;">
-              ${brand}
-            </div>
-            <div style="font-size:13px; opacity:0.85;">
-              ${series.map(s => `• ${s}`).join("<br>")}
-            </div>
-          </div>
-        `).join("")}
-      </div>
-    `;
-}
-
-
 function renderFoundBrandsHTML(brands) {
     return brands.map(b => `
         <div style="padding:6px 0; border-bottom:1px dashed #444">
@@ -412,7 +382,7 @@ export function renderSearchResult() {
      out.innerHTML = renderFoundBrandsHTML(appState.foundBrands);
 }
 
-export function renderOutput() {
+export async function renderOutput() {
     const out = document.getElementById("output");
     let html = "";
 
@@ -421,8 +391,13 @@ export function renderOutput() {
         html += "<hr>";
     }
 
-    html += renderDefaultSeriesHTML();
+    html += `<h3 class="default-title">Default canonicals</h3>`;
     out.innerHTML = html;
+
+    // mount point for this feature
+    const container = out;
+    container.innerHTML += await renderDefaultSeriesHTML();
+    wireDefaultCanonicals(container);
 }
 
 

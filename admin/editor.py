@@ -32,10 +32,14 @@ class CanonicalCreate(BaseModel):
     brand_alias: list[str] | None = None
     series_alias: list[str] | None = None
 
+class DefaultSeriesCreate(BaseModel):
+    brand: str
+    series: str
+
 
 
 # ============================================================
-# Brand helpers
+# Brand helper
 # ============================================================
 
 async def _find_brand(run_query, name: str):
@@ -78,6 +82,61 @@ async def _find_brand(run_query, name: str):
             for r in rows
         ],
     }
+
+# ============================================================
+# Default series helper
+# ============================================================
+
+async def _get_default_series(run_query):
+    rows = await run_query(
+        """
+        MATCH (b:Brand)
+        WHERE b.default_series IS NOT NULL
+        RETURN b.name AS name, b.default_series AS series
+        ORDER BY b.name
+        """,
+        {}
+    )
+
+    return {
+        "brands": [
+            {
+                "name": r["name"],
+                "series": r["series"] if isinstance(r["series"], list) else [r["series"]]
+            }
+            for r in rows
+        ]
+    }
+
+async def _set_default_series(run_query, req: DefaultSeriesCreate):
+    query = """
+        MATCH (b:Brand {name: $brand})
+        SET b.default_series =
+          CASE
+            WHEN b.default_series IS NULL THEN [$series]
+            WHEN $series IN b.default_series THEN b.default_series
+            ELSE b.default_series + [$series]
+          END
+        RETURN b.name AS name, b.default_series AS series
+    """
+    rows = await run_query(query, req.model_dump())
+    return {"ok": True, "name": rows[0]["name"], "series": rows[0]["series"]}
+
+async def _remove_default_series(run_query, req: DefaultSeriesCreate):
+    query = """
+    MATCH (b:Brand {name: $brand})
+    WITH b, [s IN b.default_series WHERE s <> $series] AS newSeries
+    FOREACH (_ IN CASE WHEN size(newSeries) = 0 THEN [1] ELSE [] END |
+        REMOVE b.default_series
+    )
+    FOREACH (_ IN CASE WHEN size(newSeries) > 0 THEN [1] ELSE [] END |
+        SET b.default_series = newSeries
+    )
+    RETURN b.name AS name, coalesce(b.default_series, []) AS series
+    """
+    rows = await run_query(query, req.model_dump())
+    return {"ok": True, "name": rows[0]["name"], "series": rows[0]["series"]}
+
 
 #load original rows
 async def load_original_rows_handler(run_query, offer_id: str):
@@ -302,6 +361,26 @@ def attach_editor_routes(run_query) -> APIRouter:
     @router.get("/find_brand")
     async def find_brand(name: str):
         return await _find_brand(run_query, name)
+    
+    # --------------------------------------------------------
+    # FIND DEFAULT SERIES
+    # --------------------------------------------------------
+    
+    @router.get("/default_series")
+    async def get_default_series():
+        return await _get_default_series(run_query)
+    
+    # --------------------------------------------------------
+    # SET ADN REMOVE DEFAULT SERIES
+    # --------------------------------------------------------
+
+    @router.post("/default_series/add")
+    async def set_default_series(req: DefaultSeriesCreate):
+        return await _set_default_series(run_query, req)
+    
+    @router.post("/default_series/remove")
+    async def remove_default_series(req: DefaultSeriesCreate):
+        return await _remove_default_series(run_query, req)
 
     # --------------------------------------------------------
     # LOAD ORIGINAL ROWS (DfRaw ±3 rows, FUZZY by name)

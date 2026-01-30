@@ -9,6 +9,10 @@ import { testGBX} from "./admin_diagnostics.js";
 import { testPrice} from "./admin_diagnostics.js";
 import { renderEvents } from "./events.js";
 import { renderOfferCard } from "./render_offer.js";
+import { renderAdvancedState as renderAdvanced } from "./advanced_state.js";
+import { clearDefaultSeriesCache } 
+  from "./features/default_series/default_series_model.js";
+
 
 
 // =========================
@@ -33,7 +37,10 @@ export const appState = {
 // ==========
 export function renderState() {
     if (appState.mode === "advanced") {
-        renderAdvancedState();
+        renderAdvanced(appState, {
+            moveBrandPanel,
+            exitAdvancedMode
+        });
     } else {
         renderDefaultState();
     }
@@ -122,42 +129,20 @@ function enterAdvancedMode() {
 }
 
 function exitAdvancedMode() {
+    log.info("exitAdvancedMode");
     appState.mode = "default";
-    renderState();
-}
+    appState.state = 0;
+    appState.foundBrands = null;
 
-function renderAdvancedState() {
-    const lbl = document.getElementById("active_supplier");
+    // hard reset of advanced output (it was drawn by renderOutput)
     const out = document.getElementById("output");
-    const adminPanel = document.getElementById("admin_panel");
-    const brandPanel = document.getElementById("brand_panel");
-    const dfoutBlock = document.getElementById("dfout_block");
-    const testPanel  = document.getElementById("test_panel");
-    const modeBox = document.getElementById("mode_controls");
+    if (out) out.innerHTML = "";
 
-    lbl.innerText = "ADVANCED MODE";
-    // hide suppliers / test / dfout
-    if (adminPanel) adminPanel.style.display = "none";
-    if (dfoutBlock) dfoutBlock.style.display = "none";
-    if (testPanel)  testPanel.style.display = "none";
+    clearDefaultSeriesCache();
 
-    // show brand panel (left side logic already handled by HTML)
-    moveBrandPanel("left");
-    if (brandPanel) brandPanel.style.display = "block";
-
-    // output = defaults view
-    out.style.display = "block";
-
-    // 👇 ВМЕСТО текста — карта default series
-    renderOutput();
-
-    modeBox.innerHTML = `
-        <button id="btn_back_default">← Back</button>
-    `;
-    document.getElementById("btn_back_default")
-        ?.addEventListener("click", exitAdvancedMode);
+    // force default pipeline to rebuild idle screen
+    renderDefaultState();
 }
-
 
 // =========================
 // DEFAULT STATE FOR USERS
@@ -440,6 +425,8 @@ function renderDefaultState() {
 
         // ⬇️ ВАЖНО: editor layout живёт в admin_editor.js
         renderEditorLayout();
+        // 🔽 IMPORTANT: render brand search result in editor too
+        renderSearchResult();
         return;
     }    
 }
