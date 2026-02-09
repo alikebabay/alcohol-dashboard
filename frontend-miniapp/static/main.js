@@ -36,6 +36,9 @@ import { wireCanonical } from "./admin_editor.js";
 import { wireNodeDeleteHandler } from "./admin_backend.js";
 import { wireOfferEditHandler } from "./admin_backend.js";
 import { initDownloadHandler } from "./admin_editor.js";
+import { mountDeleteButtons } from "./features/delete_buttons/delete_buttons_controller.js";
+import { wireOfferSearch } from "./admin_backend.js";
+
 
 
 
@@ -54,9 +57,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderState();
     wireAdminActions();
     wireCanonical();
+    mountDeleteButtons({
+    refresh: async () => renderState(), // или если хочешь перезапуск поиска — скажи, сделаем
+    });
     wireNodeDeleteHandler();
     wireOfferEditHandler();
     initDownloadHandler();
+    wireOfferSearch();
 });
 
 

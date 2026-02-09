@@ -9,6 +9,8 @@ import { renderState, appState } from "./admin_state.js";
 import { loadOffers } from "./admin_backend.js";
 import { renderDefaultSeriesHTML } from "./features/default_series/default_series_view.js";
 import { wireDefaultCanonicals } from "./features/default_series/default_series_controller.js";
+import { showToastAt } from "./toast.js";
+
 
 
 
@@ -98,7 +100,8 @@ export async function loadEditorOriginals() {
 }
 
 async function findBrand() {
-    const q = document.getElementById("brand_search").value.trim();
+    const input = document.getElementById("brand_search");
+    const q = input?.value.trim();
     if (!q) return;
 
     const res = await api(
@@ -112,10 +115,21 @@ async function findBrand() {
     appState.foundBrands = res?.found ? res.brands : null;
     log.info("findBrand result", appState.foundBrands?.map(b => b.name));
 
+    // ✅ toast when not found (near Find button)
+    if (!res?.found) {
+        const btn = document.getElementById("btn_find_brand");
+        if (btn) {
+            const r = btn.getBoundingClientRect();
+            showToastAt(r.left, r.top, res?.message || "brand not found");
+        } else {
+            // fallback
+            showToastAt(20, 20, res?.message || "brand not found");
+        }
+    }
+
     // re-render output panel
     renderState();
 }
-
 
 
 //renders offer editing space
@@ -339,21 +353,135 @@ function renderOfferList() {
     `).join("");
 }
 
-function renderFoundBrandsHTML(brands) {
-    return brands.map(b => `
-        <div style="padding:6px 0; border-bottom:1px dashed #444">
-            <b style="font-size:32px;">${b.name}</b>
+//renders found brands, series, alias, canonicals
+function wrapAdaptive(listHtml, count) {
+  if (count <= 4) return listHtml;
 
-            ${b.canonicals?.length
-                ? `<div style="margin-top:4px; padding-left:10px; font-size:22px;">
-                    ${b.canonicals.map(c => `• ${c.name}`).join("<br>")}
-                   </div>`
-                : `<div style="opacity:0.5; font-size:14px; padding-left:10px;">
-                    no canonicals
-                   </div>`
-            }
+  const cols = count > 12 ? 3 : 2;
+
+  return `
+    <div style="
+      display:grid;
+      grid-template-columns: repeat(${cols}, 1fr);
+      gap:4px 14px;
+      margin-top:2px;
+    ">
+      ${listHtml}
+    </div>
+  `;
+}
+
+
+export function renderFoundBrandsHTML(brands) {
+  const deletable = (appState?.mode === "advanced"); // delete only in advanced mode
+  const esc = (s) => (s ?? "").toString()
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+
+  const joinAliases = (a) => Array.isArray(a) ? a.filter(Boolean).join(", ") : "";
+
+  if (!Array.isArray(brands) || brands.length === 0) {
+    return `<div style="opacity:.7;">brand not found</div>`;
+  }
+
+  return brands.map(b => {
+    const brandName = b?.name ?? "";
+    const brandAliases = joinAliases(b?.brand_alias);
+
+    const series = Array.isArray(b?.series) ? b.series : [];
+    const canonicals = Array.isArray(b?.canonicals) ? b.canonicals : [];
+
+    const seriesHtml = series.length
+      ? series.map(s => { 
+          const sName = s?.name ?? "";
+          const sAlias = joinAliases(s?.alias);
+          
+          return `
+            <div style="margin:2px 0;">
+              • <span data-copy="${esc(sName)}"
+                        style="cursor:pointer; font-size:15px; font-weight:600; line-height:1.25;">
+                    ${esc(sName)}
+                </span>
+
+              ${sAlias ? `<span style="opacity:.75; font-size:12.5px;"> (${esc(sAlias)})</span>` : ""}
+              ${deletable ? `
+                <button
+                    data-del-series
+                    data-brand="${esc(brandName)}"
+                    data-series="${esc(sName)}"
+                    style="font-size:11px; padding:1px 6px; margin-left:6px;"
+                    title="Delete series"
+                >🗑</button>
+                ` : ""}
+
+            </div>
+          `;
+        }).join("")
+      : `<div style="opacity:.6; font-size:12px;">—</div>`; 
+       
+
+    const canonHtml = canonicals.length
+      ? canonicals.map(c => {
+          // backend now returns {name:"..."} objects
+          const cName = (typeof c === "string") ? c : (c?.name ?? "");
+          return `
+            <div style="margin:2px 0;">
+                ${deletable ? `
+                <button
+                    data-del-canonical="${esc(cName)}"
+                    style="font-size:11px; padding:1px 6px; margin-left:6px;"
+                    title="Delete canonical"
+                >🗑</button>
+                ` : ""}
+
+              • <span data-copy="${esc(cName)}"
+                    style="cursor:pointer; font-size:14px; line-height:1.25;">
+                ${esc(cName)}
+            </span>
+
+            </div>
+          `;
+        }).join("")
+      : `<div style="opacity:.6; font-size:12px;">—</div>`;
+
+    return `
+      <div style="border:1px solid rgba(255,255,255,.12); padding:8px; border-radius:8px; margin:8px 0;">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <div style="font-weight:700; font-size:18px; letter-spacing:0.2px;">
+            ${esc(brandName)}
+            </div>
+          <button data-copy="${esc(brandName)}" style="margin-left:auto; font-size:11px; padding:2px 6px;">copy</button>
+            ${deletable ? `
+            <button
+                data-del-brand="${esc(brandName)}"
+                style="font-size:11px; padding:2px 6px;"
+                title="Delete brand"
+            >🗑</button>
+            ` : ""}
+
         </div>
-    `).join("");
+
+        ${brandAliases ? `<div style="opacity:.85; font-size:13px; margin-top:4px;">aliases: ${esc(brandAliases)}</div>` : ""}
+
+        <div style="margin-top:8px;">
+          <div style="font-size:14px; font-weight:600; opacity:.9; margin-bottom:4px;">
+                    Series
+            </div>
+          ${wrapAdaptive(seriesHtml, series.length)}
+        </div>
+
+        <div style="margin-top:8px;">
+          <div style="font-size:14px; font-weight:600; opacity:.9; margin-bottom:4px;">
+            Canonicals
+            </div>
+          ${wrapAdaptive(canonHtml, canonicals.length)}
+        </div>
+      </div>
+    `;
+  }).join("");
 }
 
 

@@ -32,6 +32,17 @@ class CanonicalCreate(BaseModel):
     brand_alias: list[str] | None = None
     series_alias: list[str] | None = None
 
+class DeleteBrand(BaseModel):
+    name: str
+
+class DeleteSeries(BaseModel):
+    brand: str
+    series: str
+
+class DeleteCanonical(BaseModel):
+    name: str
+
+
 class DefaultSeriesCreate(BaseModel):
     brand: str
     series: str
@@ -49,11 +60,31 @@ async def _find_brand(run_query, name: str):
         WHERE toLower(b.name) CONTAINS toLower($name)
            OR ANY(a IN coalesce(b.brand_alias, [])
                   WHERE toLower(a) CONTAINS toLower($name))
-        OPTIONAL MATCH (b)-[:HAS_CANONICAL]->(c:Canonical)
+
+        // ---- canonicals
+        CALL {
+          WITH b
+          OPTIONAL MATCH (b)-[:HAS_CANONICAL]->(c:Canonical)
+          RETURN collect(DISTINCT c.name) AS canonicals
+        }
+
+        // ---- series + alias
+        CALL {
+          WITH b
+          OPTIONAL MATCH (b)-[:HAS_SERIES]->(s:Series)
+          RETURN collect(
+            DISTINCT {
+              name: s.name,
+              alias: s.alias
+            }
+          ) AS series
+        }
+
         RETURN
             b.name        AS name,
             b.brand_alias AS brand_alias,
-            collect(DISTINCT c.name) AS canonicals
+            canonicals,
+            series
         ORDER BY b.name
         LIMIT 20
         """,
@@ -73,6 +104,14 @@ async def _find_brand(run_query, name: str):
             {
                 "name": r["name"],
                 "brand_alias": r.get("brand_alias"),
+                "series": [
+                    {
+                        "name": s.get("name"),
+                        "alias": s.get("alias")
+                    }
+                    for s in (r.get("series") or [])
+                    if s and s.get("name")
+                ],
                 "canonicals": [
                     {"name": c}
                     for c in (r.get("canonicals") or [])
@@ -82,6 +121,7 @@ async def _find_brand(run_query, name: str):
             for r in rows
         ],
     }
+
 
 # ============================================================
 # Default series helper
@@ -137,6 +177,55 @@ async def _remove_default_series(run_query, req: DefaultSeriesCreate):
     rows = await run_query(query, req.model_dump())
     return {"ok": True, "name": rows[0]["name"], "series": rows[0]["series"]}
 
+#delete brands, series,canonicals
+async def delete_brand_handler(run_query, req: DeleteBrand):
+    query = """
+    MATCH (b:Brand {name:$name})
+    WITH b
+    LIMIT 1
+    DETACH DELETE b
+    RETURN count(b) AS deleted;
+    """
+    rows = await run_query(query, req.model_dump())
+    if not rows or rows[0]["deleted"] == 0:
+        return {"ok": False, "error": "brand not found"}
+    return {"ok": True}
+
+
+async def delete_series_handler(run_query, req: DeleteSeries):
+    query = """
+    MATCH (b:Brand {name:$brand})-[r:HAS_SERIES]->(s:Series {name:$series})
+    WITH b, r, s
+    LIMIT 1
+    DELETE r
+    WITH s
+    WHERE NOT (s)<-[:HAS_SERIES]-(:Brand)
+    DETACH DELETE s
+    RETURN 1 AS deleted
+    """
+
+    rows = await run_query(query, req.model_dump())
+
+    if not rows:
+        return {"ok": False, "error": "series not found"}
+
+    return {"ok": True}
+
+async def delete_canonical_handler(run_query, req: DeleteCanonical):
+    query = """
+    MATCH (c:Canonical {name:$name})
+    WITH c
+    LIMIT 1
+    DETACH DELETE c
+    RETURN 1 AS deleted
+    """
+
+    rows = await run_query(query, req.model_dump())
+
+    if not rows:
+        return {"ok": False, "error": "canonical not found"}
+
+    return {"ok": True}
 
 #load original rows
 async def load_original_rows_handler(run_query, offer_id: str):
@@ -319,7 +408,12 @@ async def add_canonical_handler(run_query, req: CanonicalCreate):
         SET b.updatedAt = timestamp()
 
         FOREACH (_ IN CASE WHEN $brand_alias IS NULL THEN [] ELSE [1] END |
-            SET b.alias = $brand_alias
+            SET b.brand_alias =
+                CASE
+                    WHEN b.brand_alias IS NULL THEN $brand_alias
+                    ELSE b.brand_alias + [x IN $brand_alias WHERE NOT x IN b.brand_alias]
+                END
+
         )
 
         // ---- CATEGORY ----
@@ -332,14 +426,17 @@ async def add_canonical_handler(run_query, req: CanonicalCreate):
 
         // ---- SERIES (OPTIONAL) ----
         FOREACH (s IN CASE WHEN $series IS NULL THEN [] ELSE [$series] END |
-            MERGE (ser:Series {name: s})
+            MERGE (b)-[:HAS_SERIES]->(ser:Series {name: s})
             SET ser.updatedAt = timestamp()
 
             FOREACH (_ IN CASE WHEN $series_alias IS NULL THEN [] ELSE [1] END |
-                SET ser.alias = $series_alias
-            )
+                SET ser.alias =
+                    CASE
+                        WHEN ser.alias IS NULL THEN $series_alias
+                        ELSE ser.alias + [x IN $series_alias WHERE NOT x IN ser.alias]
+                    END
 
-            MERGE (b)-[:HAS_SERIES]->(ser)
+            )
             MERGE (ser)-[:HAS_CANONICAL]->(c)
         )
 
@@ -401,5 +498,22 @@ def attach_editor_routes(run_query) -> APIRouter:
     @router.post("/editor/addcanonical")
     async def add_canonical(req: CanonicalCreate):
         return await add_canonical_handler (run_query, req)
+    
+    # --------------------------------------------------------
+    # DELETE BRAND,SERIES,CANONICAL
+    # --------------------------------------------------------
+    
+    @router.post("/delete/brand")
+    async def delete_brand(req: DeleteBrand):
+        return await delete_brand_handler(run_query, req)
+
+    @router.post("/delete/series")
+    async def delete_series(req: DeleteSeries):
+        return await delete_series_handler(run_query, req)
+
+    @router.post("/delete/canonical")
+    async def delete_canonical(req: DeleteCanonical):
+        return await delete_canonical_handler(run_query, req)
+
 
     return router

@@ -47,6 +47,10 @@ export async function loadSuppliers() {
             const box = document.getElementById("brand_result");
             if (box) box.innerHTML = "";
 
+            // clear search result for offers
+            const s = document.getElementById("offer_search");
+            if (s) s.value = "";
+
             // 🟢 SPECIAL CASE: editor state
             if (appState === 4 && prevSupplier !== row.name) {
                 appState.lastNodes = [];
@@ -203,6 +207,22 @@ export async function loadOffers() {
     appState.viewMode = "offers";
     appState.state = 2;
     renderState();
+}
+
+//search in offers
+export function wireOfferSearch() {
+    const input = document.getElementById("offer_search");
+    if (!input) return;
+
+    input.addEventListener("input", () => {
+        const q = input.value.toLowerCase();
+
+        // все карточки офферов
+        document.querySelectorAll("#output > div").forEach(card => {
+            const text = card.innerText.toLowerCase();
+            card.style.display = text.includes(q) ? "" : "none";
+        });
+    });
 }
 
 //removes DFOUt, returns user to state 2
