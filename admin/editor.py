@@ -151,14 +151,9 @@ async def _get_default_series(run_query):
 async def _set_default_series(run_query, req: DefaultSeriesCreate):
     query = """
         MATCH (b:Brand {name: $brand})
-        SET b.default_series =
-          CASE
-            WHEN b.default_series IS NULL THEN [$series]
-            WHEN $series IN b.default_series THEN b.default_series
-            ELSE b.default_series + [$series]
-          END
+        SET b.default_series = $series
         RETURN b.name AS name, b.default_series AS series
-    """
+        """
     rows = await run_query(query, req.model_dump())
     return {"ok": True, "name": rows[0]["name"], "series": rows[0]["series"]}
 

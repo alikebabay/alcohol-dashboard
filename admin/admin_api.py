@@ -328,6 +328,18 @@ async def delete_dfout(req: SupplierRequest):
 #delete node by id
 class DeleteByIdRequest(BaseModel):
     id: str
+    
+@app.post("/admin/node_info")
+async def node_info(req: DeleteByIdRequest):
+    query = """
+    MATCH (n)
+    WHERE elementId(n) = $id OR n.id = $id
+    RETURN
+        labels(n) AS labels,
+        coalesce(n.canonical,false) AS canonical
+    LIMIT 1
+    """
+    return await run_query(query, {"id": req.id})
 
 
 @app.post("/admin/delete_node")

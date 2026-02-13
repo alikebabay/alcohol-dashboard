@@ -10,31 +10,11 @@ from utils.abbreviations_helper import convert_abbreviation
 
 # 🧾 Just paste your text here — no need for quotes or commas
 text = """
-Magners cider bottle 24x330ml Locatie: van der Mark | Cases: 2160cs | BBD: fresh | Prijs: €20.25
+Singleton 12 Years 40% 0.70L GB @ EUR 13,78 p/btl
+Tanqueray London Dry Gin 43.1% 0.70L @ EUR 6,78 p/btl
+The Singleton 18 Years 40% 0.70L GBX @ EUR 45,58 p/btl
 
-Estrella damm bottle 24x330ml Locatie: van der Mark | Cases: 1728cs | BBD: fresh | Prijs: €12.30
-
-Stella artois can 24x500ml Locatie: van der Mark | Cases: 1840cs | BBD: fresh | Prijs: €13.75
-
-Grolsch bottle 24x330ml Locatie: van der Mark | Cases: 1872cs | BBD: fresh | Prijs: €13.99
-
-Pilsner urquell bottle 24x330ml Locatie: van der Mark | Cases: 1728cs | BBD: fresh | Prijs: €13.50
-
-Staropramen bottle 24x330ml Locatie: van der Mark | Cases: 1728cs | BBD: fresh | Prijs: €13.15
-
-Staropramen can 24x500ml Locatie: van der Mark | Cases: 1890cs | BBD: fresh | Prijs: €15.05
-
-Coors bottle 24x330ml Locatie: van der Mark | Cases: 1728cs | BBD: fresh | Prijs: €13.10
-
-Coors can 24x500ml Locatie: van der Mark | Cases: 2016cs | BBD: fresh | Prijs: €14.90
-
-Strongbow cider British dry bottle 24x330ml Locatie: van der Mark | Cases: 2016cs | BBD: fresh | Prijs: €16.10
-
-Strongbow cider British dry can 24x500ml Locatie: van der Mark | Cases: 2060cs | BBD: fresh | Prijs: €14.00
-
-John smiths extra smooth can 24x500ml  Locatie: van der Mark | Cases: 1890cs | BBD: fresh | Prijs: €14.10
-
-Paulaner hefen weizen can 24x500ml Locatie: van der Mark | Cases: 1890cs | BBD: fresh | Prijs: €16.50
+EXW Loendersloot
 """
 
 # 🧩 Convert each non-empty line into a row

@@ -40,6 +40,9 @@ export async function loadSuppliers() {
         //reloads supplier data on active supplier switch
         div.onclick = async () => {
             const prevSupplier = appState.activeSupplier;
+
+            console.log("CLICK", row.name, "prev:", prevSupplier);
+
             appState.activeSupplier = row.name;
             appState.supplierExcluded = !!row.admin_excluded;
             // 🧹 clear brand search when switching supplier
@@ -70,7 +73,7 @@ export async function loadSuppliers() {
                 return;
             }
             // fallback (same supplier clicked)
-            renderState();
+            await loadOffers();
         };
 
 

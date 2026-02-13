@@ -56,7 +56,7 @@ def setup_logging(global_level=logging.INFO):
         # инфраструктура
         "integrations.matrix_merger": logging.ERROR,
         "core.graph_normalizer": logging.ERROR,
-        "core.graph_normalizer.canonical": logging.ERROR,
+        "core.graph_normalizer.canonical": logging.DEBUG,
         "core.graph_normalizer.loader": logging.ERROR,
         "core.graph_normalizer.brand": logging.ERROR,
         "core.normalizer": logging.ERROR,

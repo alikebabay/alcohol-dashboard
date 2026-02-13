@@ -202,8 +202,8 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     # === DEBUG: RAW INPUT PREVIEW ===
     try:
         logger.debug(
-            "\n=== RAW DF (first 50 rows) ===\n" +
-            df.head(50).to_string()
+            "\n=== RAW DF (first 70 rows) ===\n" +
+            df.head(70).to_string()
         )
     except Exception as e:
         logger.debug(f"[ERROR] cannot preview RAW DF: {e}")
@@ -348,8 +348,8 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     # === DEBUG: NORMALIZED DF PREVIEW ===
     try:
         logger.debug(
-            "\n=== NORMALIZED DF (first 50 rows) ===\n" +
-            out.head(50).to_string()
+            "\n=== NORMALIZED DF (first 70 rows) ===\n" +
+            out.head(70).to_string()
         )
     except Exception as e:
         logger.debug(f"[ERROR] cannot preview NORMALIZED DF: {e}")
