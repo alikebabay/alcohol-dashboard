@@ -29,8 +29,7 @@ import "./events.js";
 import { wireMainMenu, wireTestButton, renderState } from "./admin_state.js";
 import { wireOfferButtons } from "./admin_backend.js";
 import { wireSupplierMenu, loadSuppliers, wireSupplierSearch} from "./admin_backend.js";
-import { wireEditorOfferList } from "./admin_editor.js";
-import { wireEditorOriginals } from "./admin_editor.js";
+import { wireEditorOriginals, wireEditorOfferList, wireOfferEditorGlobal } from "./features/edit_offer/offer_view.js";
 import { wireAdminActions } from "./admin_backend.js";
 import { wireCanonical } from "./admin_editor.js";
 import { wireNodeDeleteHandler } from "./admin_backend.js";
@@ -49,6 +48,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     wireMainMenu();
     wireTestButton();
     wireOfferButtons();
+    wireOfferEditorGlobal();
     wireSupplierMenu();
     wireSupplierSearch();
     wireEditorOfferList();

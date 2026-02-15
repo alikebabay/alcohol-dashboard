@@ -3,7 +3,8 @@ import { getLogger } from "./logger.js";
 const log = getLogger("state");
 
 
-import { renderEditorLayout, renderOutput, renderSearchResult } from "./admin_editor.js";
+import { renderSearchResult } from "./admin_editor.js";
+import {renderEditorLayout} from "./features/edit_offer/offer_view.js"
 import { runGraphTest} from "./admin_diagnostics.js";
 import { testGBX} from "./admin_diagnostics.js";
 import { testPrice} from "./admin_diagnostics.js";
@@ -14,13 +15,19 @@ import { clearDefaultSeriesCache }
   from "./features/default_series/default_series_model.js";
 
 
+// STATE MAP (2026 REWRITE)
+// state: 0,  // idle
+// state: 1,  // nodes/offers
+// state: 2,  // test mode
+// state: 3,  // offer editor
+
 
 // =========================
 // MODULE STATE
 // =========================
 export const appState = {
     mode: "default",       // default | advanced
-    state: 0,              // 0 = idle, 1 = supplier selected, 2 = nodes/offers view, 3 = test mode, 4 = offer editor
+    state: 0,  // 0 = idle, 1 = nodes/offers, 2 = test mode, 3 = offer editor
     viewMode: "nodes",     // nodes | offers
     activeSupplier: null,
     lastNodes: [],
@@ -98,7 +105,7 @@ export function resetState() {
 }
 
 function enterTestMode() {
-    appState.state = 3;
+    appState.state = 2;
     renderState();
     wireTestModeButtons();
 }
@@ -216,18 +223,39 @@ function renderIdle() {
 
 
 function renderDefaultState() {
+    console.log("[renderDefaultState] state =", appState.state, "viewMode =", appState.viewMode);
+
     const s = appState.state;
+    // 🔴 IMPORTANT: reset editor mode when not in state 4
+    if (s !== 4) {
+        document.body.classList.remove("editor-mode");
+    }
     normalizeDefaultLayout();
 
     // ✅ keep refs here (unchanged from before)
     const lbl  = document.getElementById("active_supplier");
     const btnC = document.getElementById("btn_change_supplier");
+    const search = document.getElementById("offer_search");
     const rm   = document.getElementById("btn_remove");
     const nd   = document.getElementById("btn_nodes");
     const df   = document.getElementById("btn_dfout");
     const dfoutBlock = document.getElementById("dfout_block");
     const adminPanel = document.getElementById("admin_panel");
     const testPanel  = document.getElementById("test_panel");
+    const btnAdd = document.getElementById("btn_add_offer");
+
+    if (btnAdd) {
+        const show =
+        s === 1 && appState.viewMode === "offers";
+        btnAdd.style.display = show ? "block" : "none";
+    }
+
+    if (search) {
+        const show =
+            s === 1 && appState.viewMode === "offers";  // only in offers list
+
+        search.style.display = show ? "block" : "none";
+    }
 
     // =====================
     // STATE 0: EVENT LOG
@@ -244,32 +272,11 @@ function renderDefaultState() {
     const modeBox = document.getElementById("mode_controls");
     if (modeBox) modeBox.innerHTML = "";
 
-    if (s === 1) { // supplier selected state
-        lbl.innerText = "Active supplier: " + appState.activeSupplier;
-        btnC.style.display = "block"; //change supplier
-        rm.style.display   = "block"; //remove supplier
-        nd.style.display   = "block"; //find all nodes for supplier
-        df.style.display   = "block"; //turns deletedf out button display
+    // =====================
+    // STATE 1: supplier selected state
+    // =====================
 
-        dfoutBlock.style.display = "block";
-        document.getElementById("btn_offers").style.display = "block";
-        document.getElementById("output").style.display = "block";
-        //manage suppliers
-        const ex = document.getElementById("btn_toggle_excluded");
-        ex.style.display = "block";
-        ex.innerText = appState.supplierExcluded
-            ? "✅ Include in pivot"
-            : "🚫 Exclude from pivot";
-
-        moveBrandPanel("right");
-        const brandPanel = document.getElementById("brand_panel");
-        if (brandPanel) brandPanel.style.display = "none";
-
-        renderEvents();
-        return;
-    }
-
-    if (s === 2) {   // NODES VIEW
+    if (s === 1) {   // supplier selected state NODES VIEW
         lbl.innerText = "Nodes for: " + appState.activeSupplier;
         btnC.style.display = "block";
         rm.style.display   = "block";
@@ -306,6 +313,8 @@ function renderDefaultState() {
             renderSearchResult();
             return;
         }
+
+        
 
     // Render NODES (separate pipeline)
     out.innerHTML = appState.lastNodes.map(n => {
@@ -351,9 +360,9 @@ function renderDefaultState() {
         return;
     }
     // =====================
-    // STATE 3: TEST MODE
+    // STATE 2: TEST MODE
     // =====================
-    if (s === 3) {
+    if (s === 2) {
         lbl.innerText = "TEST MODE";
 
         // hide ALL admin UI
@@ -383,9 +392,9 @@ function renderDefaultState() {
     }
 
     // =====================
-    // STATE 4: OFFER EDITOR
+    // STATE 3: OFFER EDITOR
     // =====================
-    if (s === 4) {
+    if (s === 3) {
         
         // enable editor layout mode
         document.body.classList.add("editor-mode");

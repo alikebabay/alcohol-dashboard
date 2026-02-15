@@ -23,6 +23,17 @@ class OfferEdit(BaseModel):
     access: str | None = None          # → "Доступ <supplier>"
     location: str | None = None        # → "Место загрузки <supplier>"
 
+class OfferCreate(BaseModel):
+    supplier: str          # ← приходит с фронта
+    name: str | None = None 
+    price_bottle: float | None = None
+    price_case: float | None = None
+    currency: str | None = None
+    bpc: int | None = None
+    cl: str | None = None
+    access: str | None = None          # → "Доступ <supplier>"
+    location: str | None = None        # → "Место загрузки <supplier>"
+
 
 class CanonicalCreate(BaseModel):
     brand: str
@@ -349,6 +360,82 @@ async def update_offer_handler(run_query, req: OfferEdit):
 
     supplier = rows[0]["supplier"]
 
+    removes = []
+
+    if req.price_bottle is not None:
+        props[f"цена за бутылку {supplier}"] = req.price_bottle
+    elif req.price_bottle is None:
+        removes.append(f"o.`цена за бутылку {supplier}`")
+
+    if req.price_case is not None:
+        props[f"цена за кейс {supplier}"] = req.price_case
+    elif req.price_case is None:
+        removes.append(f"o.`цена за кейс {supplier}`")
+
+    if req.currency is not None:
+        props[f"currency {supplier}"] = req.currency
+    elif req.currency is None:
+        removes.append(f"o.`currency {supplier}`")
+
+    if req.access is not None:
+        props[f"Доступ {supplier}"] = req.access
+    elif req.access is None:
+        removes.append(f"o.`Доступ {supplier}`")
+
+    if req.location is not None:
+        props[f"Место загрузки {supplier}"] = req.location
+    elif req.location is None:
+        removes.append(f"o.`Место загрузки {supplier}`")
+
+    if req.bpc is not None:
+        props["шт_кор"] = req.bpc
+    elif req.bpc is None:
+        removes.append("o.`шт_кор`")
+
+
+    # --------------------------------------------------
+    # update offer
+    # --------------------------------------------------
+    remove_clause = ""
+    if removes:
+        remove_clause = "REMOVE " + ", ".join(removes)
+
+    query = f"""
+    MATCH (o:Offer)
+    WHERE elementId(o) = $id
+    SET
+        o.`Наименование` = COALESCE($name, o.`Наименование`),
+        o.`cl`           = COALESCE($cl,   o.`cl`)
+    SET o += $props
+    {remove_clause}
+    RETURN true AS ok
+    """
+
+    await run_query(query, {
+        "id": req.id,
+        "name": req.name,
+        "cl": req.cl,
+        "props": props,
+    })
+
+    return {"ok": True}
+
+async def add_offer_handler(run_query, req: OfferCreate):
+    supplier = req.supplier
+    props = {
+        "supplier": supplier
+    }
+
+    if req.name is not None:
+        props["Наименование"] = req.name
+
+    if req.cl is not None:
+        props["cl"] = req.cl
+
+    if req.bpc is not None:
+        props["шт_кор"] = req.bpc
+
+    # supplier-scoped поля
     if req.price_bottle is not None:
         props[f"цена за бутылку {supplier}"] = req.price_bottle
 
@@ -364,30 +451,22 @@ async def update_offer_handler(run_query, req: OfferEdit):
     if req.location is not None:
         props[f"Место загрузки {supplier}"] = req.location
 
-    if req.bpc is not None:
-        props[f"шт_кор"] = req.bpc
-
-    # --------------------------------------------------
-    # update offer
-    # --------------------------------------------------
     query = """
-    MATCH (o:Offer)
-    WHERE elementId(o) = $id
-    SET
-        o.`Наименование` = COALESCE($name, o.`Наименование`),
-        o.`cl`           = COALESCE($cl,   o.`cl`)
+    MERGE (s:Supplier {name:$supplier})
+    CREATE (o:Offer)
     SET o += $props
-    RETURN true AS ok
+    MERGE (s)-[:HAS_OFFER]->(o)
+    RETURN elementId(o) AS id
     """
 
-    await run_query(query, {
-        "id": req.id,
-        "name": req.name,
-        "cl": req.cl,
-        "props": props,
+    rows = await run_query(query, {
+        "supplier": supplier,
+        "props": props
     })
 
     return {"ok": True}
+
+
 
 #add canonical
 async def add_canonical_handler(run_query, req: CanonicalCreate):
@@ -482,11 +561,15 @@ def attach_editor_routes(run_query) -> APIRouter:
         return await load_original_rows_handler(run_query, offer_id)
 
     # --------------------------------------------------------
-    # UPDATE OFFER PRICE
+    # ADD AND UPDATE OFFER PRICE
     # --------------------------------------------------------
-    @router.post("/offer")
+    @router.post("/offer/update")
     async def update_offer(req: OfferEdit):
         return await update_offer_handler(run_query, req)
+    
+    @router.post("/offer/add")
+    async def add_offer(req: OfferCreate):
+        return await add_offer_handler(run_query, req)
     # --------------------------------------------------------
     # ADD CANONICAL
     # --------------------------------------------------------

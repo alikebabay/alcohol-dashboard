@@ -55,10 +55,10 @@ export async function loadSuppliers() {
             if (s) s.value = "";
 
             // 🟢 SPECIAL CASE: editor state
-            if (appState === 4 && prevSupplier !== row.name) {
+            if (appState.state === 3 && prevSupplier !== row.name) {
                 appState.lastNodes = [];
                 appState.lastOffers = [];
-                loadOffers();              // state = 2 внутри
+                loadOffers();              // state = 1 внутри
                 highlightActiveSupplier();
                 return;
             }
@@ -68,7 +68,7 @@ export async function loadSuppliers() {
                 appState.lastNodes = [];
                 appState.lastOffers = [];
                 appState.viewMode = "offers";
-                await loadOffers();   // sets state = 2 internally
+                await loadOffers();   // sets state = 1 internally
                 highlightActiveSupplier();
                 return;
             }
@@ -194,7 +194,7 @@ async function loadNodes() {
         false
     );
     appState.lastNodes = data;
-    appState.state = 2;
+    appState.state = 1;
     renderState();
 }
 
@@ -208,7 +208,7 @@ export async function loadOffers() {
     );
     appState.lastOffers = data;
     appState.viewMode = "offers";
-    appState.state = 2;
+    appState.state = 1;
     renderState();
 }
 
@@ -245,7 +245,7 @@ async function deleteDfOut() {
 
     showToast("DfOut deleted");
     logEvent(`DfOut deleted for ${appState.activeSupplier}`, "ok");
-    appState.state = 1;
+    appState.state = 0;
     renderState();
 
     // Load nodes immediately → switches state to 2 inside loadNodes()
