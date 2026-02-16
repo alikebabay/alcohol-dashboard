@@ -142,56 +142,88 @@ class PriceExtractor:
         """
 
         tokens = []
+        def _walk_number(s: str, i: int, step: int):
+            """
+            Walks over a numeric block in either direction.
+
+            step:
+                +1 → scan right
+                -1 → scan left
+
+            Returns new index where numeric block ends (exclusive for right,
+            inclusive boundary handled by caller).
+            """
+            n = len(s)
+
+            digits_since_sep = 0
+            seen_sep = False
+
+            while 0 <= i < n and (s[i].isdigit() or s[i] in "., "):
+                c = s[i]
+
+                if c.isdigit():
+                    digits_since_sep += 1
+                    i += step
+                    continue
+
+                if c in ".,":  # level-1 separators
+                    if seen_sep:
+                        # thousands group must be exactly 3 digits
+                        if digits_since_sep != 3:
+                            break
+                    seen_sep = True
+                    digits_since_sep = 0
+                    i += step
+                    continue
+
+                # space (level-2 separator)
+                if c == " ":
+                    if digits_since_sep != 3:
+                        break
+                    digits_since_sep = 0
+                    i += step
+                    continue
+
+            return i
+
 
         def scan_right(idx):
-            # ищем число СРАЗУ после валюты (пробелы разрешены)
             n = len(s)
             i = idx
 
-            # пропускаем пробелы и табы
             while i < n and s[i].isspace():
                 i += 1
 
-            # число должно начинаться с цифры
             if i >= n or not s[i].isdigit():
                 return None
 
             start = i
             i += 1
 
-            # продолжаем, пока идут цифры / . / , / пробел
-            while i < n and (s[i].isdigit() or s[i] in "., "):
-                i += 1
+            i = _walk_number(s, i, +1)
 
-            # удаляем внутренние пробелы "10 000.50" → "10000.50"
             num = s[start:i].replace(" ", "")
             return {"num": num, "start": start, "end": i}
+
         
         def scan_left(idx):
-            # ищем число ПЕРЕД валютой (пробелы разрешены)
             i = idx - 1
 
-            # пропускаем пробелы
             while i >= 0 and s[i].isspace():
                 i -= 1
 
-            # число должно оканчиваться на цифру
             if i < 0 or not s[i].isdigit():
                 return None
 
             end = i + 1
             i -= 1
 
-            # продолжаем влево, пока идут цифры / . / , / пробел
-            while i >= 0 and (s[i].isdigit() or s[i] in "., "):
-                i -= 1
+            i = _walk_number(s, i, -1)
 
             start = i + 1
 
-            # удаляем внутренние пробелы
             num = s[start:end].replace(" ", "")
             return {"num": num, "start": start, "end": end}
-
 
 
         for m in RX_CURRENCY_MARKER.finditer(s):

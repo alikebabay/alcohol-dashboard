@@ -4,7 +4,9 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from utils.text_extractors import PriceExtractor
 
 text = """
-Leffe Blonde 330ml Bottles Price - 14.55 euro/case
+Grolsch NL Can  24/500/5.0%   240cs 2.12.2024 1,99eur
+Grolsch NL Can  24/500/5.0%   240cs 18.7.2025 2,20eur
+Grolsch NL Can  24/500/5.0%   385cs 12.9.2025 2,50 eur
 """
 
 extractor = PriceExtractor()

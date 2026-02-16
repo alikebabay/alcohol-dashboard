@@ -73,7 +73,7 @@ def setup_logging(global_level=logging.INFO):
         "core.gbx_detector": logging.ERROR,              
         "core.text_parser": logging.ERROR,
         "core.header_detector": logging.ERROR,
-        "core.product_detector": logging.ERROR,
+        "core.product_detector": logging.DEBUG,
         "core.volume_detector": logging.ERROR,
         "merge_headers": logging.ERROR,
         #workers

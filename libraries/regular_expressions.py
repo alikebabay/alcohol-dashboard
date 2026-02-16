@@ -2,11 +2,19 @@
 import re
 
 RX_CURRENCY_MARKER = re.compile(
-    r'(?:\b(?:eur|euro|euros|usd|gbp|chf|aed)\b'   # normal currency words
-    r'|[¥₽£€\$]'                             # currency symbols
-    r'|\bE(?=\s*\d))',                       # NEW: "E" only if followed by a number (E 52.00 / E52.00)
-    re.I,
+    r'(?:'
+    r'(?<=\d)(?:eur|euro|euros|usd|gbp|chf|aed)\b'   # 1,99eur
+    r'|'
+    r'\b(?:eur|euro|euros|usd|gbp|chf|aed)\b'        # eur (отдельное слово)
+    r'|'
+    r'[¥₽£€\$]'                                      # символы
+    r'|'
+    r'\bE(?=\s*\d)'                                  # E52 / E 52
+    r')',
+    re.I
 )
+
+
 
 #валюта без цен
 RX_CURRENCY = re.compile(

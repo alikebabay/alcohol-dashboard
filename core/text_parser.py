@@ -167,10 +167,8 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
     logger.debug("=== RAW LINES ===")
     for i, l in enumerate(base_lines):
         logger.debug("  [%02d] %r", i, l)
-    
-    merged_lines = _merge_short_headers(base_lines)
     # сборщик строк без цен (POST-MERGE)
-    for line in merged_lines:
+    for line in base_lines:
         s = line.strip()
         if not s:
             continue
@@ -181,6 +179,9 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
                 "[NOPRICE][POST-MERGE] product-like without price: %r",
                 s
             )
+    
+    merged_lines = _merge_short_headers(base_lines)
+    
     logger.debug("Lines before merge: %d, after merge: %d", len(base_lines), len(merged_lines))
     logger.debug("=== AFTER MERGE (short headers) ===")
     for i, l in enumerate(merged_lines):

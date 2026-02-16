@@ -2,7 +2,7 @@
 import re
 import logging
 from utils.logger import setup_logging
-from libraries.regular_expressions import RX_BPC, RX_BPC_TRIPLE, RX_VOLUME, RX_CURRENCY, RX_VINTAGE
+from libraries.regular_expressions import RX_BPC, RX_BPC_TRIPLE, RX_VOLUME, RX_CURRENCY, RX_VINTAGE, RX_CURRENCY_MARKER
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ def detect_product_without_price(s: str) -> bool:
     # -------------------------------------------------
     # HARD GATE 1 — цена ЗАПРЕЩЕНА
     # -------------------------------------------------
-    if RX_CURRENCY.search(s):
+    if RX_CURRENCY_MARKER.search(s):
         logger.debug("[PROD_DETECT] reject: currency token present")
         return False
 
