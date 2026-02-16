@@ -11,21 +11,8 @@ from libraries.patterns import valid_numerical
 from utils.series_number_extractor import _extract_label_number
 
 
+import core.graph_loader as gl
 
-# импортируем уже сконфигурированный драйвер и MODE
-from config import driver, MODE
-
-
-from core.graph_loader import (
-    BRAND_KEYMAP,
-    BRANDS,
-    ALL_SERIES_SET,
-    DEFAULT_SERIES_MAP,
-    BRAND_SERIES_MAP,
-    BRAND_SERIES_FULL,
-    BRANDS_META,
-    CANONICAL_NAMES,
-)
 
 
 # инициализация общего логгера
@@ -60,7 +47,7 @@ def tokenize(raw: str) -> list[str]:
 # ==========================================================
 def line_contains_any_brand(raw_norm: str) -> bool:
     """Returns True if the line contains ANY known brand (normalized)."""
-    for bnorm in BRAND_KEYMAP.keys():
+    for bnorm in gl.BRAND_KEYMAP.keys():
         if bnorm in raw_norm:
             return True
     return False
@@ -153,7 +140,7 @@ class BrandSeriesExtractor:
         self._series_cache = {}
 
         # Warm cache directly from global BRAND_SERIES_MAP
-        for b_norm, series_list in BRAND_SERIES_MAP.items():
+        for b_norm, series_list in gl.BRAND_SERIES_MAP.items():
             self._series_cache[b_norm] = [(s, _normalize(s)) for s in series_list]
 
     # ==========================================================
@@ -242,7 +229,7 @@ class BrandSeriesExtractor:
             
             # 🔁 нет серии — пробуем дефолт сначала из глобального кэша DEFAULT_SERIES_MAP
             bnorm = _normalize(brand)
-            default_series = DEFAULT_SERIES_MAP.get(bnorm)
+            default_series = gl.DEFAULT_SERIES_MAP.get(bnorm)
             if default_series:
                 logger.debug(f"[FALLBACK→DEFAULT] brand={brand} → default_series='{default_series}'")
                 return brand, default_series
@@ -263,7 +250,7 @@ class BrandSeriesExtractor:
         # DEBUG: brand detection inside this line
         # ------------------------------------------
         detected_brands = []
-        for bnorm, borig in BRAND_KEYMAP.items():
+        for bnorm, borig in gl.BRAND_KEYMAP.items():
             if bnorm in raw_norm:
                 detected_brands.append(borig)
 
@@ -314,7 +301,7 @@ class BrandSeriesExtractor:
             return None
 
         bkey = _normalize(brand)
-        entries = BRAND_SERIES_FULL.get(bkey, [])
+        entries = gl.BRAND_SERIES_FULL.get(bkey, [])
 
 
         raw_norm = _normalize(raw)
@@ -582,7 +569,7 @@ class BrandSeriesExtractor:
         # 🔥 NEW: прямой match по series_norm и alias (НЕ ломает old logic)
         # ============================================================
         bkey = brand_norm
-        entries = BRAND_SERIES_FULL.get(bkey, [])
+        entries = gl.BRAND_SERIES_FULL.get(bkey, [])
 
         best = None
         best_len = -1
@@ -615,7 +602,7 @@ class BrandSeriesExtractor:
 
         # 🧠 собираем все нормализованные серии, где бренд совпадает или не важен
         bkey = brand_norm
-        entries = BRAND_SERIES_FULL.get(bkey, [])
+        entries = gl.BRAND_SERIES_FULL.get(bkey, [])
         possible_series = [ _normalize(e["series"]) for e in entries ]
 
 
@@ -656,7 +643,7 @@ class BrandSeriesExtractor:
 def find_canonical(brand, series, raw):
     """Finds the best canonical name from Neo4j with penalty for overreach."""
     # ⚙️ добавлен DISTINCT для устранения дубликатов Canonical с одинаковыми именами
-    rows = CANONICAL_NAMES
+    rows = gl.CANONICAL_NAMES
     canon_logger.debug(f"[CANON CANDIDATES] total={len(rows)} for brand={brand!r}, series={series!r}")
     if len(rows) > 10:
         canon_logger.debug(f"[CANON CANDIDATES SAMPLE] {rows[:10]}")
@@ -673,7 +660,7 @@ def find_canonical(brand, series, raw):
     # ---------------------------------------------------------
     if brand and not series:
         bkey = bnorm
-        entries = BRAND_SERIES_FULL.get(bkey, [])
+        entries = gl.BRAND_SERIES_FULL.get(bkey, [])
         canon_logger.debug(
             f"[ALIAS SERIES] lookup bkey={bkey!r}, entries={len(entries)}"
         )
@@ -735,13 +722,13 @@ def find_canonical(brand, series, raw):
                 score += 0.6
             
         canon_logger.debug(
-            f"[CANON DEBUG DEFAULT] bnorm={bnorm!r}, snorm={snorm!r}, def_series={DEFAULT_SERIES_MAP.get(bnorm)!r}"
+            f"[CANON DEBUG DEFAULT] bnorm={bnorm!r}, snorm={snorm!r}, def_series={gl.DEFAULT_SERIES_MAP.get(bnorm)!r}"
         )
 
         # ✅ NEW: if no explicit series detected, gently prefer the brand's default
         # using the already loaded DEFAULT_SERIES_MAP (bnorm is normalized brand)
         if not snorm and bnorm:
-            def_series = DEFAULT_SERIES_MAP.get(bnorm)
+            def_series = gl.DEFAULT_SERIES_MAP.get(bnorm)
             if def_series and def_series in cn_norm:
                 score += 0.5
         # --- NEW: token-overlap bonus (brand-agnostic), helps when series is None
@@ -817,7 +804,7 @@ def find_canonical(brand, series, raw):
     tied = [c for c, s in scored if abs(s - best_score) < 1e-9]
     if len(tied) > 1:
         
-        meta = BRANDS_META.get(brand, {})
+        meta = gl.BRANDS_META.get(brand, {})
         default_series = (meta.get("default_series") or "").lower()
         for candidate in tied:
             if default_series and default_series in candidate.lower():
@@ -838,7 +825,8 @@ def normalize_dataframe(df: pd.DataFrame, col_name: str = "Наименован�
         logger.warning(f"[WARN] no '{col}' column")
         return df
 
-    extractor = BrandSeriesExtractor(BRANDS, brands_meta=BRANDS_META)
+    extractor = BrandSeriesExtractor(gl.BRANDS, brands_meta=gl.BRANDS_META)
+    
 
     for i, raw in enumerate(df[col].fillna("").astype(str)):
         if not raw.strip():
