@@ -189,7 +189,7 @@ async def load_canonicals():
 
 
 # ============================================================
-# Admin Endpoints (for your buttons)
+# Admin Endpoints (for buttons)
 # ============================================================
 # ============================================================
 # 🔍 BUTTON: List all suppliers

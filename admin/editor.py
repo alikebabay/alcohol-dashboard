@@ -5,6 +5,8 @@ from fastapi import APIRouter, Query
 from pydantic import BaseModel
 import json
 
+from core.graph_loader import reload_graph_cache, BRAND_KEYMAP
+
 router = APIRouter()
 
 
@@ -64,7 +66,7 @@ class DefaultSeriesCreate(BaseModel):
 # Brand helper
 # ============================================================
 
-async def _find_brand(run_query, name: str):
+async def _find_brand(run_query, name: str):    
     rows = await run_query(
         """
         MATCH (b:Brand)
@@ -108,7 +110,7 @@ async def _find_brand(run_query, name: str):
             "message": "brand not found",
             "brands": []
         }
-
+    reload_graph_cache()
     return {
         "found": True,
         "brands": [
@@ -148,7 +150,7 @@ async def _get_default_series(run_query):
         """,
         {}
     )
-
+    reload_graph_cache()
     return {
         "brands": [
             {
@@ -160,15 +162,18 @@ async def _get_default_series(run_query):
     }
 
 async def _set_default_series(run_query, req: DefaultSeriesCreate):
+    
     query = """
         MATCH (b:Brand {name: $brand})
         SET b.default_series = $series
         RETURN b.name AS name, b.default_series AS series
         """
     rows = await run_query(query, req.model_dump())
+    reload_graph_cache()
     return {"ok": True, "name": rows[0]["name"], "series": rows[0]["series"]}
 
 async def _remove_default_series(run_query, req: DefaultSeriesCreate):
+    
     query = """
     MATCH (b:Brand {name: $brand})
     WITH b, [s IN b.default_series WHERE s <> $series] AS newSeries
@@ -181,10 +186,12 @@ async def _remove_default_series(run_query, req: DefaultSeriesCreate):
     RETURN b.name AS name, coalesce(b.default_series, []) AS series
     """
     rows = await run_query(query, req.model_dump())
+    reload_graph_cache()
     return {"ok": True, "name": rows[0]["name"], "series": rows[0]["series"]}
 
 #delete brands, series,canonicals
 async def delete_brand_handler(run_query, req: DeleteBrand):
+    
     query = """
     MATCH (b:Brand {name:$name})
     WITH b
@@ -195,6 +202,8 @@ async def delete_brand_handler(run_query, req: DeleteBrand):
     rows = await run_query(query, req.model_dump())
     if not rows or rows[0]["deleted"] == 0:
         return {"ok": False, "error": "brand not found"}
+    reload_graph_cache()
+    print("bells" in BRAND_KEYMAP)
     return {"ok": True}
 
 
@@ -214,10 +223,11 @@ async def delete_series_handler(run_query, req: DeleteSeries):
 
     if not rows:
         return {"ok": False, "error": "series not found"}
-
+    reload_graph_cache()
     return {"ok": True}
 
 async def delete_canonical_handler(run_query, req: DeleteCanonical):
+    
     query = """
     MATCH (c:Canonical {name:$name})
     WITH c
@@ -230,7 +240,7 @@ async def delete_canonical_handler(run_query, req: DeleteCanonical):
 
     if not rows:
         return {"ok": False, "error": "canonical not found"}
-
+    reload_graph_cache()
     return {"ok": True}
 
 #load original rows
@@ -470,7 +480,7 @@ async def add_offer_handler(run_query, req: OfferCreate):
 
 #add canonical
 async def add_canonical_handler(run_query, req: CanonicalCreate):
-
+        
         query = """
         // ---- CANONICAL ----
         MERGE (c:Canonical {name: $canonical_name})
@@ -518,6 +528,7 @@ async def add_canonical_handler(run_query, req: CanonicalCreate):
         """
 
         await run_query(query, req.model_dump())
+        reload_graph_cache()
         return {"ok": True}
 
 # ============================================================

@@ -10,11 +10,12 @@ from utils.abbreviations_helper import convert_abbreviation
 
 # 🧾 Just paste your text here — no need for quotes or commas
 text = """
-Singleton 12 Years 40% 0.70L GB @ EUR 13,78 p/btl
-Tanqueray London Dry Gin 43.1% 0.70L @ EUR 6,78 p/btl
-The Singleton 18 Years 40% 0.70L GBX @ EUR 45,58 p/btl
 
-EXW Loendersloot
+Auchentoshan American oak 6x70cl,gbx, 2500 cases Exw Loendersloot 10.8 eur lead time 10 days after deposit
+
+Bell's original 12x50cl,coded, 13728 bottles on floor Exw PLG 3 eur per bottle
+
+Bell's original 12x70cl,coded, 29700 bottles on floor EXW PLG 3.2 eur per bottle
 """
 
 # 🧩 Convert each non-empty line into a row
