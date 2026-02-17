@@ -22,6 +22,11 @@ from utils.logger import setup_logging
 
 
 
+import core.graph_loader as gl
+
+
+
+
 # Логирование
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -39,6 +44,10 @@ logger = logging.getLogger(__name__)
 
 # /start
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Load graph snapshot into parser memory
+    gl.reload_graph_cache()
+    print(f"[CACHE] brands={len(gl.BRAND_KEYMAP)} canonicals={len(gl.CANONICAL_NAMES)}")
+    print(f"[CACHE] using snapshot from {gl.CACHE_LOADED_AT}")
     context.chat_data["_conv_active"] = True
     context.chat_data["_fsm"] = "SUPPLIER"
     keyboard = [
@@ -52,6 +61,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
     return SUPPLIER
+
 
 # выбор поставщика
 async def handle_supplier_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -148,13 +158,14 @@ def main():
                 MessageHandler(
                     (filters.TEXT & ~filters.COMMAND),
                     handle_userdata
-                ),
-            ],
-        },
-         # ВАЖНО: fallbacks здесь работают только КОГДА диалог активен.
+                         ),
+                    ],
+                },       
+
+        # ВАЖНО: fallbacks здесь работают только КОГДА диалог активен.
         fallbacks=[CommandHandler("cancel", cancel)],
         allow_reentry=True
-    )
+    )    
 
     app.add_handler(conv_handler, group=0)
 

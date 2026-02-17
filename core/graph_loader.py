@@ -1,12 +1,16 @@
 
 
 import logging
+import time
+
 from config import driver, MODE
 from utils.normalize import normalize as _normalize
 
 logger = logging.getLogger(__name__)
 loader_logger = logging.getLogger("core.graph_loader")
 logger.info(f"[Neo4j] Using shared driver (mode={MODE})")
+
+CACHE_LOADED_AT = None
 
 
 # ==========================================================
@@ -247,7 +251,7 @@ for brand, meta in sorted(BRANDS_META.items(), key=lambda x: x[0]):
 loader_logger.debug("===== BRAND ALIAS → KEYMAP CHECK END =====")
 
 def reload_graph_cache():
-    global GRAPH
+    global GRAPH, CACHE_LOADED_AT
 
     GRAPH = load_graph_data(driver)
 
@@ -274,4 +278,5 @@ def reload_graph_cache():
 
     CANONICAL_NAMES.clear()
     CANONICAL_NAMES.extend(GRAPH["canonical"])
-
+    CACHE_LOADED_AT = time.strftime("%H:%M:%S")
+    print(f"[CACHE] reloaded at {CACHE_LOADED_AT}")
