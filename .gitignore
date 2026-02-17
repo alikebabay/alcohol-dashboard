@@ -60,4 +60,4 @@ plugins/
 *.xlsx
 
 #test modules
-tests/test_graph_normalizer.py
+tests/test_*.py

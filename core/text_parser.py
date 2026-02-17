@@ -125,11 +125,9 @@ class HeaderMerger:
                     self.pending_product = None
                     continue
 
-                # 4) иначе — мусор (location, leadtime и т.п.)
-                merge_logger.debug(
-                    "[MERGE][WAIT] skipping '%s'",
-                    s
-                )
+                # 4) not product, not price → keep it
+                merge_logger.debug("[MERGE][WAIT][KEEP] '%s'", s)
+                merged.append(line)
                 continue
 
         # flush dangling pending product
