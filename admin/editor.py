@@ -4,6 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 import json
+import unicodedata
 
 from core.graph_loader import reload_graph_cache, BRAND_KEYMAP
 
@@ -243,7 +244,17 @@ async def delete_canonical_handler(run_query, req: DeleteCanonical):
     reload_graph_cache()
     return {"ok": True}
 
+
 #load original rows
+#fuzzy search helper
+
+def norm(s: str) -> str:
+    s = s.lower()
+    s = unicodedata.normalize("NFKD", s)
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    return s
+
+#load original rows 6 near search item
 async def load_original_rows_handler(run_query, offer_id: str):
 
         # 1️⃣ Load Offer (only what we need)
@@ -308,29 +319,34 @@ async def load_original_rows_handler(run_query, offer_id: str):
 
         # 4️⃣ FUZZY MATCH BY NAME первое точное совпадение
         idx = None
-        offer_words = offer_name.split()
+        offer_norm = norm(offer_name)
+        offer_words = offer_norm.split()
         offer_tokens = set(offer_words)
         first_token = offer_words[0] if offer_words else None
 
         for i, row in enumerate(data):
-            text = row["raw"].lower()
-            if not text:
+            text_raw = row["raw"]
+            if not text_raw:
                 continue
 
-            # 1️⃣ exact first-token match (brand anchor)
-            if first_token and text.startswith(first_token):
+            text = norm(text_raw)
+
+            # 1️⃣ strongest: full name substring
+            if offer_norm in text:
                 idx = i
                 break
 
-            # contains OR token overlap
-            if offer_name in text:
+            # 2️⃣ brand anchor anywhere (not only start)
+            if first_token and first_token in text:
                 idx = i
                 break
 
+            # 3️⃣ token overlap (softer)
             tokens = set(text.split())
             if len(tokens & offer_tokens) >= 2:
                 idx = i
                 break
+
 
         # 5️⃣ Slice ±3
         if idx is None:
@@ -347,6 +363,54 @@ async def load_original_rows_handler(run_query, offer_id: str):
         if header:
             rows = rows + [header]
         return {"rows": rows}
+
+async def load_df_raw_handler(run_query, supplier: str):
+    q_dfraw = """
+    MATCH (r:DfRaw)
+    WHERE r.supplier = $supplier
+      AND r.json IS NOT NULL
+    RETURN r.json AS json
+    ORDER BY r.date_int DESC
+    LIMIT 1
+    """
+    dfraw_rows = await run_query(q_dfraw, {"supplier": supplier})
+    if not dfraw_rows:
+        return {"error": "DfRaw not found"}
+
+    raw_json = dfraw_rows[0]["json"]
+    if isinstance(raw_json, str):
+        raw_json = json.loads(raw_json)
+
+    # TEXT dfraw
+    if isinstance(raw_json, dict) and raw_json.get("raw"):
+        return {"rows": [{"raw": raw_json["raw"]}]}
+
+    # TABLE dfraw
+    if not isinstance(raw_json, dict):
+        return {"error": "Unsupported DfRaw format"}
+
+    cols = raw_json.get("columns") or []
+    rows_raw = raw_json.get("data") or []
+
+    def build_raw(row):
+        return " | ".join(
+            str(row[i])
+            for i in range(min(len(row), len(cols)))
+            if row[i] not in (None, "", "nan")
+        )
+
+    data = [{"raw": build_raw(r)} for r in rows_raw]
+
+    header = (
+        {"raw": " | ".join(str(c) for c in cols if c not in (None, "", "nan"))}
+        if cols else None
+    )
+
+    if header:
+        data = [header] + data
+
+    return {"rows": data}
+
 
 #update offer
 async def update_offer_handler(run_query, req: OfferEdit):
@@ -570,6 +634,14 @@ def attach_editor_routes(run_query) -> APIRouter:
     @router.get("/editor/original_rows")
     async def load_original_rows(offer_id: str = Query(...)):
         return await load_original_rows_handler(run_query, offer_id)
+    # --------------------------------------------------------
+    # LOAD DfRaw (latest by date))
+    # --------------------------------------------------------
+    
+    @router.get("/editor/df_raw")
+    async def load_df_raw(supplier: str):
+        return await load_df_raw_handler(run_query, supplier)
+
 
     # --------------------------------------------------------
     # ADD AND UPDATE OFFER PRICE

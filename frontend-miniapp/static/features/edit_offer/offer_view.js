@@ -45,12 +45,9 @@ export async function loadEditorOriginals() {
     if (appState.editorOriginals !== null) return; // already loaded
 
     appState.editorOriginals = [];
-    const res = await api(
-        `/editor/original_rows?offer_id=${appState.activeOfferId}`,
-        "GET",
-        null,
-        false
-    );
+    const res = appState.activeOfferId
+    ? await api(`/editor/original_rows?offer_id=${appState.activeOfferId}`, "GET", null, false)
+    : await api(`/editor/df_raw?supplier=${appState.activeSupplier}`, "GET", null, false);
 
     if (res?.rows) {
         appState.editorOriginals = res.rows.slice(0, 10);
