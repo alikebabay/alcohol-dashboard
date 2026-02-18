@@ -187,7 +187,9 @@ def upload_to_gsheets(df: pd.DataFrame):
         return
 
     try:
+        logger.debug("Opening sheet id: %s", SPREADSHEET_ID)
         sh = gc.open_by_key(SPREADSHEET_ID)
+        logger.debug("Opened sheet title: %s", sh.title)
         try:
             ws = sh.worksheet(SHEET_NAME)
         except gspread.WorksheetNotFound:

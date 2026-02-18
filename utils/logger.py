@@ -32,6 +32,9 @@ def setup_logging(global_level=logging.INFO):
         "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%H:%M:%S",
     )
+    # === Base logs dir (dev-friendly layout) ===
+    logs_dir = Path("logs")
+    logs_dir.mkdir(exist_ok=True)
     
     # === Корневой логгер ===
     root_logger.setLevel(global_level)
@@ -43,7 +46,7 @@ def setup_logging(global_level=logging.INFO):
     root_logger.addHandler(sh)
 
     # Общий файл для всех модулей
-    main_log_path = Path("project_debug.txt")
+    main_log_path = logs_dir / "project_debug.txt"
     fh = logging.FileHandler(main_log_path, encoding="utf-8")
     fh.setFormatter(fmt)
     fh.setLevel(logging.DEBUG)
@@ -62,7 +65,7 @@ def setup_logging(global_level=logging.INFO):
         "core.normalizer": logging.ERROR,
         "integrations.rules_typing": logging.ERROR,
         "integrations.graph_offers": logging.ERROR,
-        "integrations.graph_to_sheets": logging.ERROR,
+        "integrations.graph_to_sheets": logging.DEBUG,
         "core.parser": logging.ERROR,
         "core.name_enricher": logging.ERROR,
         "state_machine": logging.ERROR,
@@ -115,6 +118,7 @@ def setup_logging(global_level=logging.INFO):
         "integrations.matrix_merger": "matrix_debug.txt",
         "integrations.rules_typing": "typing_debug.txt",
         "integrations.graph_offers": "graph_offers_debug.txt",
+        "integrations.graph_to_sheets": "graph_to_sheets_debug.txt",
         "utils.text_extractors": "text_extractors_debug.txt",
         "core.normalizer": "normalizer_debug.txt",
         "core.text_parser": "text_parser_debug.txt",
@@ -162,7 +166,7 @@ def setup_logging(global_level=logging.INFO):
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
     for module, filename in special_logs.items():
-        path = Path(filename)
+        path = logs_dir / filename
         fh = logging.FileHandler(path, encoding="utf-8")
         fh.setFormatter(fmt)
         fh.setLevel(logging.DEBUG)
