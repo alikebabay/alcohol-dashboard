@@ -65,7 +65,7 @@ def setup_logging(global_level=logging.INFO):
         "core.normalizer": logging.ERROR,
         "integrations.rules_typing": logging.ERROR,
         "integrations.graph_offers": logging.ERROR,
-        "integrations.graph_to_sheets": logging.DEBUG,
+        "integrations.graph_to_sheets": logging.ERROR,
         "core.parser": logging.ERROR,
         "core.name_enricher": logging.ERROR,
         "state_machine": logging.ERROR,
@@ -76,7 +76,7 @@ def setup_logging(global_level=logging.INFO):
         "core.gbx_detector": logging.ERROR,              
         "core.text_parser": logging.ERROR,
         "core.header_detector": logging.ERROR,
-        "core.product_detector": logging.DEBUG,
+        "core.product_detector": logging.ERROR,
         "core.volume_detector": logging.ERROR,
         "merge_headers": logging.ERROR,
         #workers
