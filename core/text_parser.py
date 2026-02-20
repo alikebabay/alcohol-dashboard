@@ -158,7 +158,7 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
     logger.debug("=== START parse_text ===")
     logger.debug("Raw input:\n%s", raw_text[:500])  # ограничим, если текст длинный
     
-    #сборщик строк без цен
+    #сборщик строк без цен push again
     NOPRICELINES = []
     #0 нормализация - пока только слипшийся с цифрой евро
     raw_text = preprocess_raw_text(raw_text)
