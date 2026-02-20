@@ -48,6 +48,9 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     gl.reload_graph_cache()
     print(f"[CACHE] brands={len(gl.BRAND_KEYMAP)} canonicals={len(gl.CANONICAL_NAMES)}")
     print(f"[CACHE] using snapshot from {gl.CACHE_LOADED_AT}")
+
+    print("TEXT_PARSER VERSION 2026-02-20 IDX FIX")
+
     context.chat_data["_conv_active"] = True
     context.chat_data["_fsm"] = "SUPPLIER"
     keyboard = [
