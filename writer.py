@@ -99,10 +99,16 @@ def save_to_excel(df: pd.DataFrame, supplier: str) -> pd.DataFrame:
         logger_excel.debug("💰 добавлена 'price_per_bottle'")
 
     # 3) 💰 добавляем колонку валюты
-    fsm = AlcoholStateMachine.get_active()
-    currency = detect_currency(fsm.df_raw if fsm else None)
-    df_out[f"currency {supplier}"] = currency
-    logger_excel.info(f"🪙 currency={currency}")
+    if "currency" in df.columns and df["currency"].notna().any():
+        df_out[f"currency {supplier}"] = df["currency"]
+        logger_excel.info("🪙 currency taken from parsed rows")
+
+    else:
+        fsm = AlcoholStateMachine.get_active()
+        currency = detect_currency(fsm.df_raw if fsm else None)
+        df_out[f"currency {supplier}"] = currency
+        logger_excel.info(f"🪙 currency fallback detected={currency}")
+
 
     df_out[f"Поставщик"] = supplier
 

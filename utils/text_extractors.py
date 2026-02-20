@@ -10,7 +10,8 @@ import logging
 
 from libraries.distillator import _extract_volume, _infer_bpc_from_name, RX_ABV
 from utils.detect_bpc import detect_bpc
-from libraries.regular_expressions import RX_BOTTLE, RX_CASE, RX_CURRENCY_MARKER, RX_BOTTLE_LEFT, RX_BOTTLE_RIGHT, RX_CASE_LEFT, RX_CASE_RIGHT, RX_NUMBER
+import libraries.regular_expressions as rx
+from libraries.regular_expressions import normalize_currency_marker
 from libraries.patterns import PATS, RX_DATE
 from core.bpc_detector import BPC_KNOWN
 
@@ -86,6 +87,7 @@ class PriceExtractor:
         self.price_bottle = None
         self.price_case = None
         self.bottles_per_case = None
+        self.currency = None
 
     # ----------------------------
     # MAIN ENTRY
@@ -95,7 +97,7 @@ class PriceExtractor:
         s = str(text)
         self.raw_text = s
         # HARD RULE: skip rows with no currency markers
-        if not RX_CURRENCY_MARKER.search(s):
+        if not rx.RX_CURRENCY_MARKER.search(s):
             price_logger.debug("[HARD-RULE] No currency markers → skip")
             self.state = "none"
             return {
@@ -127,6 +129,7 @@ class PriceExtractor:
             "price_bottle": self.price_bottle,
             "price_case": self.price_case,
             "bottles_per_case": self.bottles_per_case,
+            "currency": self.currency,
         }
 
     # ----------------------------
@@ -226,12 +229,15 @@ class PriceExtractor:
             return {"num": num, "start": start, "end": end}
 
 
-        for m in RX_CURRENCY_MARKER.finditer(s):
+        for m in rx.RX_CURRENCY_MARKER.finditer(s):
             cur_start, cur_end = m.span()
             
             cur_text = s[cur_start:cur_end]
-            price_logger.debug(f"[L1] CURRENCY FOUND '{cur_text}' at {cur_start}:{cur_end}")
-
+            cur_code = normalize_currency_marker(cur_text)
+            price_logger.debug(
+                "[L1] CURRENCY FOUND '%s' at %d:%d → %s",
+                cur_text, cur_start, cur_end, cur_code
+            )
 
             left_info = scan_left(cur_start)
             right_info = scan_right(cur_end)
@@ -254,6 +260,7 @@ class PriceExtractor:
                     "right": s[left_info["end"]:left_info["end"] + 32],
                     "has_currency": True,
                     "side": "left",
+                    "currency": cur_code,
                 })
 
             if right_info:
@@ -266,6 +273,7 @@ class PriceExtractor:
                     "right": s[right_info["end"]:right_info["end"] + 32],
                     "has_currency": True,
                     "side": "right",
+                    "currency": cur_code,
                 })
         price_logger.debug(f"[L1] FINAL TOKENS: {tokens}")
         return tokens
@@ -325,10 +333,10 @@ class PriceExtractor:
             r_tight = tight_right(s, t["end"])  # end = позиция конца числа
 
             # Новый унифицированный вызов
-            score_side(scores, "bottle", l, RX_BOTTLE_LEFT,  "left")
-            score_side(scores, "bottle", r_tight, RX_BOTTLE_RIGHT, "right")
-            score_side(scores, "case",   l, RX_CASE_LEFT,    "left")            
-            score_side(scores, "case",   r_tight, RX_CASE_RIGHT, "right")         
+            score_side(scores, "bottle", l, rx.RX_BOTTLE_LEFT,  "left")
+            score_side(scores, "bottle", r_tight, rx.RX_BOTTLE_RIGHT, "right")
+            score_side(scores, "case",   l, rx.RX_CASE_LEFT,    "left")            
+            score_side(scores, "case",   r_tight, rx.RX_CASE_RIGHT, "right")         
             
             # ------------------------------------------
             # EXPLICIT CASE and bottle RULES 
@@ -403,6 +411,8 @@ class PriceExtractor:
         if not tokens:
             self.state = "none"
             return
+        # take currency from last strongest token
+        self.currency = tokens[-1][1].get("currency")
 
         # Если два ценовых токена → пытаемся определить bottle/case и BPC
         if len(tokens) >= 2:

@@ -27,7 +27,8 @@ WINE_KEYWORDS = [
     "Reposado",
     "NRB",
     "CAN",
-    "brut"
+    "brut",
+    "Gin"
 ]
 
 # подготавливаем нормализованные формы

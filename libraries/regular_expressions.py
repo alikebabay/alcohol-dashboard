@@ -8,12 +8,27 @@ RX_CURRENCY_MARKER = re.compile(
     r'\b(?:eur|euro|euros|usd|gbp|chf|aed)\b'        # eur (отдельное слово)
     r'|'
     r'[¥₽£€\$]'                                      # символы
-    r'|'
-    r'\bE(?=\s*\d)'                                  # E52 / E 52
     r')',
     re.I
 )
 
+ # --- нормализация маркера → ISO код ---
+CURRENCY_MARKER_TO_CODE = [
+     (re.compile(r"(€|\beur\b|euro|euros)", re.I), "EUR"),
+     (re.compile(r"(\$|\busd\b)", re.I), "USD"),
+     (re.compile(r"(£|\bgbp\b)", re.I), "GBP"),
+     (re.compile(r"(¥|\bjpy\b)", re.I), "JPY"),
+     (re.compile(r"(₽|\brub\b)", re.I), "RUB"),
+     (re.compile(r"(\bchf\b)", re.I), "CHF"),
+     (re.compile(r"(\baed\b)", re.I), "AED"),
+ ]
+
+def normalize_currency_marker(cur_text: str) -> str:
+     t = (cur_text or "").strip()
+     for rx, code in CURRENCY_MARKER_TO_CODE:
+         if rx.search(t):
+             return code
+     return t.upper()
 
 
 #валюта без цен

@@ -9,8 +9,12 @@ import { renderState, appState } from "./admin_state.js";
 import { renderDefaultSeriesHTML } from "./features/default_series/default_series_view.js";
 import { wireDefaultCanonicals } from "./features/default_series/default_series_controller.js";
 import { showToastAt } from "./toast.js";
-import {renderOfferEditor} from "./features/edit_offer/offer_view.js"
-
+import {
+  renderDeleteBrandButton,
+  renderDeleteSeriesButton,
+  renderDeleteCanonicalButton,
+  renderDeleteBrandAliasButton
+} from "./features/delete_buttons/delete_buttons_view.js";
 
 
 
@@ -111,15 +115,7 @@ export function renderFoundBrandsHTML(brands) {
                 </span>
 
               ${sAlias ? `<span style="opacity:.75; font-size:12.5px;"> (${esc(sAlias)})</span>` : ""}
-              ${deletable ? `
-                <button
-                    data-del-series
-                    data-brand="${esc(brandName)}"
-                    data-series="${esc(sName)}"
-                    style="font-size:11px; padding:1px 6px; margin-left:6px;"
-                    title="Delete series"
-                >🗑</button>
-                ` : ""}
+              ${deletable ? renderDeleteSeriesButton(brandName, sName, esc) : ""}
 
             </div>
           `;
@@ -133,13 +129,7 @@ export function renderFoundBrandsHTML(brands) {
           const cName = (typeof c === "string") ? c : (c?.name ?? "");
           return `
             <div style="margin:2px 0;">
-                ${deletable ? `
-                <button
-                    data-del-canonical="${esc(cName)}"
-                    style="font-size:11px; padding:1px 6px; margin-left:6px;"
-                    title="Delete canonical"
-                >🗑</button>
-                ` : ""}
+                ${deletable ? renderDeleteCanonicalButton(cName, esc) : ""}
 
               • <span data-copy="${esc(cName)}"
                     style="cursor:pointer; font-size:14px; line-height:1.25;">
@@ -158,18 +148,23 @@ export function renderFoundBrandsHTML(brands) {
             ${esc(brandName)}
             </div>
           <button data-copy="${esc(brandName)}" style="margin-left:auto; font-size:11px; padding:2px 6px;">copy</button>
-            ${deletable ? `
-            <button
-                data-del-brand="${esc(brandName)}"
-                style="font-size:11px; padding:2px 6px;"
-                title="Delete brand"
-            >🗑</button>
-            ` : ""}
+             ${deletable ? renderDeleteBrandButton(brandName, esc) : ""}
 
         </div>
 
-        ${brandAliases ? `<div style="opacity:.85; font-size:13px; margin-top:4px;">aliases: ${esc(brandAliases)}</div>` : ""}
-
+         ${
+           Array.isArray(b?.brand_alias) && b.brand_alias.length
+             ? `<div style="opacity:.85; font-size:13px; margin-top:4px;">
+                 aliases:
+                 ${b.brand_alias.map(a => `
+                   <span style="margin-right:6px;">
+                     ${esc(a)}
+                     ${deletable ? renderDeleteBrandAliasButton(brandName, a, esc) : ""}
+                   </span>
+                 `).join("")}
+               </div>`
+             : ""
+         }
         <div style="margin-top:8px;">
           <div style="font-size:14px; font-weight:600; opacity:.9; margin-bottom:4px;">
                     Series

@@ -68,7 +68,8 @@ class AlcoholStateMachine:
         except Exception as e:
             logger.debug(f"[FSM] Could not print df_raw preview: {e}")
         df_norm, _ = normalize_alcohol_df(df_raw)
-        return filter_and_enrich(df_norm, col_name="name", df_raw=self.df_raw)
+        return filter_and_enrich(df_norm, col_name="name", df_raw=self.df_raw.copy(),
+            df_gbx=self.df_raw.copy())
 
 
     def handle_state(self, state: str, file_src):

@@ -21,7 +21,13 @@ class TextState:
 
     def run(self) -> pd.DataFrame:
         # 1. сырой текст → DataFrame с уже разобранными колонками
-        self.df_raw, self.mapping = parse_text(self.raw_text)
+        self.df_parsed, self.mapping = parse_text(self.raw_text)
+        self.df_raw = self.mapping.get("df_raw")
+
+        logger.debug("=== TEXTSTATE DF_RAW ===")
+        logger.debug("df_raw columns: %s", self.df_raw.columns.tolist())
+        logger.debug("df_raw shape: %s", self.df_raw.shape)
+        logger.debug("\n%s", self.df_raw.to_string())
         logger.debug(
             "[TextState] parse_text mapping keys=%s",
             list(self.mapping.keys()) if self.mapping else []
@@ -34,7 +40,7 @@ class TextState:
             )        
 
         #2. Нормализация и очистка данных
-        self.df_norm, _ = normalize_alcohol_df(self.df_raw)
+        self.df_norm, _ = normalize_alcohol_df(self.df_parsed)
         # 2.5 Text-only: glue short brand headers to next row
         self.df_norm = merge_short(self.df_norm, col="name")
 
@@ -43,7 +49,8 @@ class TextState:
         self.df_distilled = filter_and_enrich(
             self.df_norm,
             col_name="name",
-            df_raw=self.df_raw )
+            df_raw=self.df_raw.copy(),
+            df_gbx=self.df_raw.copy())
        
 
         verifier.reset()  # сброс состояния дл логики

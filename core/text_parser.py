@@ -63,34 +63,35 @@ class HeaderMerger:
         self.pending_product = None
 
     def merge(self, lines):
-        lines = [l for l in lines if l.strip()]
+        lines = [(i, l) for i, l in enumerate(lines) if l.strip()]
         merged = []
 
-        for i, line in enumerate(lines):
+        for i, line in lines:
             s = line.strip()
 
             if self.state == self.STATE_IDLE:
                 # guard: never merge access/location
                 if _looks_like_access_or_location(s):
                     merge_logger.debug("[MERGE][SKIP][LOCATION] idx=%d '%s'", i, s)
-                    merged.append(line)
+                    merged.append((i, line))
                     continue
 
                 # STAGE 1 — short header
                 if 0 < len(s) < self.min_product_len and detect_product(s):
                     merge_logger.debug("[MERGE][S1][ACCEPT] idx=%d '%s'", i, s)
                     self.state = self.STATE_WAIT_PRICE
-                    self.pending_product = s
+                    self.pending_product = (i, s)
+
                     continue
 
                 # STAGE 2 — product w/o price
                 if detect_product(s) and not has_price(s):
                     merge_logger.debug("[MERGE][S2][ARM] idx=%d '%s'", i, s)
                     self.state = self.STATE_WAIT_PRICE
-                    self.pending_product = s
+                    self.pending_product = (i, s)
                     continue
 
-                merged.append(line)
+                merged.append((i, line))
 
             elif self.state == self.STATE_WAIT_PRICE:
                 # 1) если это ПРОДУКТ С ЦЕНОЙ → это самостоятельная строка
@@ -100,7 +101,8 @@ class HeaderMerger:
                         self.pending_product, s
                     )
                     merged.append(self.pending_product)
-                    merged.append(line)
+                    merged.append((i, line))
+
                     self.pending_product = None
                     self.state = self.STATE_IDLE
                     continue
@@ -111,7 +113,7 @@ class HeaderMerger:
                         "[MERGE][RESET] new product while waiting price: '%s' -> '%s'",
                         self.pending_product, s
                     )
-                    self.pending_product = s
+                    self.pending_product = (i, s)
                     continue
 
                 # 3) если это НЕ продукт, но содержит цену → это price-line
@@ -120,14 +122,15 @@ class HeaderMerger:
                         "[MERGE][PRICE][ACCEPT] '%s' + '%s'",
                         self.pending_product, s
                     )
-                    merged.append(f"{self.pending_product} {s}")
+                    p_idx, p_text = self.pending_product
+                    merged.append((p_idx, f"{p_text} {s}"))
                     self.state = self.STATE_IDLE
                     self.pending_product = None
                     continue
 
                 # 4) not product, not price → keep it
                 merge_logger.debug("[MERGE][WAIT][KEEP] '%s'", s)
-                merged.append(line)
+                merged.append((i, line))
                 continue
 
         # flush dangling pending product
@@ -162,7 +165,12 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
 
     # 1️⃣ Первичное разбиение и слияние коротких заголовков
     base_lines = raw_text.splitlines()
-    logger.debug("=== RAW LINES ===")
+    df_raw = pd.DataFrame({
+        "raw_idx": list(range(len(base_lines))),
+        "raw": base_lines,
+        "name": base_lines,
+    })
+
     for i, l in enumerate(base_lines):
         logger.debug("  [%02d] %r", i, l)
     # сборщик строк без цен (POST-MERGE)
@@ -179,17 +187,19 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
             )
     
     merged_lines = _merge_short_headers(base_lines)
+
     
     logger.debug("Lines before merge: %d, after merge: %d", len(base_lines), len(merged_lines))
     logger.debug("=== AFTER MERGE (short headers) ===")
-    for i, l in enumerate(merged_lines):
-        logger.debug("  [%02d] %r", i, l)
+    for raw_idx, l in merged_lines:
+        logger.debug("  [raw=%02d] %r", raw_idx, l)
+
 
     rows = []
     extractor = PriceExtractor()
 
     # ← добавили: заранее посчитать финальные локации
-    merged_text = "\n".join(merged_lines)
+    merged_text = "\n".join([l for _, l in merged_lines])
     loc_assistant = LocationAssistant(te.extract_location)
     acc_assistant = AccessAssistant(te.extract_access)
 
@@ -211,7 +221,7 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
     logger.debug("=== RESOLVED ACCESS ===")
     logger.debug(pformat(final_access))
 
-    for idx, raw in enumerate(all_lines):
+    for idx, ((orig_raw_idx, _), raw) in enumerate(zip(merged_lines, all_lines)):
         line = raw.strip()
         if not line:
             logger.debug("Skipping empty line at idx=%d", idx)
@@ -227,11 +237,13 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
  
 
         row_dict = {
+            "raw_idx": merged_lines[idx][0],
             "name": line,
             "cl": te.extract_volume(line),
             "bottles_per_case": result.get("bottles_per_case"),
             "price_per_bottle": result.get("price_bottle"),
             "price_per_case": result.get("price_case"),
+            "currency": result.get("currency"),
             "access": final_access[idx],          # ← готовое решение помощника
             "location": final_locations[idx],           # ← готовое решение помощника
             "raw": line
@@ -249,6 +261,7 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
     mapping = {
         "source": "text",
         "noprice_lines": NOPRICELINES,
+        "df_raw": df_raw,
     }
 
     logger.debug("Mapping: %s", mapping)

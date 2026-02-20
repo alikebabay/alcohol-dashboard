@@ -39,12 +39,30 @@ export function mountDeleteButtons(options = {}) {
       }
       return;
     }
+    // -------- brand alias --------
+    const ba = e.target.closest("[data-del-brand_alias]");
+    if (ba) {
+      const brand = ba.dataset.brand || "";
+      const brand_alias = ba.dataset.delBrand_alias || "";
+      if (!brand || !brand_alias) return;
+      const ok = confirm(`Delete brand alias?\n\n${brand} — ${brand_alias}`);
+      if (!ok) return;
 
+      const res = await api("/delete/brand/alias", "POST", { brand, brand_alias }, false);
+      if (res?.ok) {
+        showToast("Deleted");
+        await refresh();
+      } else {
+        showToast(res?.error || "Brand alias not found");
+      }
+      return;
+    }
     // -------- series (scoped) --------
-    const s = e.target.closest("[data-del-series]");
-    if (s) {
-      const brand = s.dataset.brand || "";
-      const series = s.dataset.series || "";
+    const ser = e.target.closest("[data-del-series]");
+    if (ser) {
+      const brand = ser.dataset.brand || "";
+      const series = ser.dataset.series || "";
+      if (!brand || !series) return;
       const ok = confirm(`Delete series?\n\n${brand} — ${series}`);
       if (!ok) return;
 

@@ -2,7 +2,6 @@
 import re
 import pandas as pd
 import logging
-import sys
 
 from utils.logger import setup_logging
 from libraries.regular_expressions import RX_GBX_MARKER, RX_GBX_NEGATIVE
@@ -36,20 +35,35 @@ def detect_gbx_in_row(row: pd.Series) -> str | None:
         "GBX" if found
         None otherwise
     """
-    for cell in row:
-        if not isinstance(cell, str):
-            continue
+    row_text = " ".join(map(str, row.values))
+    #logger.debug(
+    #    "[GBX][SCAN] row_idx=%s text='%s'",
+    #    row.name,
+    #    row_text[:120]
+    #)
 
-        s = _normalize_punct(cell.lower())
+    for cell in row:
+        s = _normalize_punct(str(cell).lower())
 
         # explicit negative (NoGBX, No GBX, Without Box)
         if RX_GBX_NEGATIVE.search(s):
+            logger.debug(
+                "[GBX][SCAN] row_idx=%s -> NEGATIVE",
+                row.name,
+            )
             return None
 
         # positive
         if RX_GBX_MARKER.search(s):
+            logger.debug(
+                "[GBX][SCAN] row_idx=%s -> FOUND GBX",
+                row.name,
+            )
             return "GBX"
-
+    logger.debug(
+        "[GBX][SCAN] row_idx=%s -> NO GBX",
+        row.name,
+    )
     return None
 
 def _detect_gbx_by_blocks(df: pd.DataFrame) -> pd.Series:
@@ -64,6 +78,9 @@ def _detect_gbx_by_blocks(df: pd.DataFrame) -> pd.Series:
 
     for idx, row in df.iterrows():
         row_text = " ".join(map(str, row.values))
+        #excluding header rows
+        if not looks_like_product(row_text) and last_product_idx is None:
+            continue
 
         if looks_like_product(row_text):
             last_product_idx = idx
@@ -117,91 +134,182 @@ def _detect_gbx_column(df: pd.DataFrame) -> str | None:
 
 
 
-def detect_gbx(df_raw: pd.DataFrame) -> pd.DataFrame:
+def detect_gbx(
+    df_gbx: pd.DataFrame,
+    alive_raw_idx: set[int] | None = None
+) -> pd.DataFrame:
     """
     Универсальный GBX-детектор:
        1) ищет текст GBX в любом поле строки
        2) если 0 — ищет чекбокс-колонку
        3) если нет — возвращает пустые флаги
-    """
+    """    
+    # ---- normalize duplicate / empty column names ----
+    df_gbx = df_gbx.copy()
+    df_gbx.columns = [
+        f"col_{i}" if not str(c).strip() else str(c)
+        for i, c in enumerate(df_gbx.columns)
+    ]
+
+    logger.debug("GBX input raw_idx head: %s", df_gbx["raw_idx"].head(10).tolist())
+    logger.debug("[GBX/SHAPE] rows=%d cols=%d", df_gbx.shape[0], df_gbx.shape[1])
+    try:
+        logger.debug("[GBX/COLS] %s", list(df_gbx.columns))
+    except Exception:
+        pass
+    # excel mode → no alive filtering
+    if alive_raw_idx is None:
+        logger.debug("[GBX] alive_raw_idx=None → no product filtering")
+
+
      # === DEBUG: RAW INPUT PREVIEW ===
     try:
         logger.debug(
             "\n=== RAW DF (first 10 rows) ===\n" +
-            df.head(10).to_string()
+            df_gbx.head(10).to_string()
         )
     except Exception as e:
         logger.debug(f"[ERROR] cannot preview RAW DF: {e}")
     
-    N = len(df_raw)
+    N = len(df_gbx)
     logger.debug(f"[GBX] ====== GBX DETECTOR START ====== rows={N}")
+    # ==========================================================
+    # 0) STRUCTURAL CHECKBOX DETECTION FIRST (highest priority)
+    # ==========================================================
+    col = _detect_gbx_column(df_gbx)
+    if col:
+        logger.debug(f"[GBX/MODE] checkbox column detected first: {col!r}")
+
+        s = df_gbx[col].astype(str).str.strip()
+        gb_flag = s.isin(CHECK_POSITIVE)
+        gb_type = gb_flag.map(lambda x: "GBX" if x else None)
+
+        logger.debug("[GBX] ====== GBX DETECTOR DONE (checkbox-first mode) ======")
+        return pd.DataFrame({
+            "raw_idx": df_gbx["raw_idx"].values,
+            "gb_flag": gb_flag,
+            "gb_type": gb_type,
+        })
 
     # 1) Inline search
     logger.debug("[GBX/TEXT] scanning rows for textual GBX markers...")
-    gb_type = df_raw.apply(detect_gbx_in_row, axis=1)
+    gb_type = df_gbx.apply(detect_gbx_in_row, axis=1)
     gb_flag = gb_type.notna()
+    try:
+        logger.debug("[GBX/TEXT] gb_type unique=%s", gb_type.dropna().astype(str).value_counts().head(10).to_dict())
+        logger.debug("[GBX/TEXT] gb_flag.sum=%d", int(gb_flag.sum()))
+    except Exception:
+        pass
 
-    #remapping in case of footers
-    if gb_flag.any():
-        logger.debug("[GBX/TEXT] found GBX markers → checking for footer rows")
+    # ----------------------------------------------------------
+    # Separate product-level hits from noise (e.g. header "gb")
+    # ----------------------------------------------------------
+    product_hits = []
+    footer_hits = []
 
-        gb_flag_final = gb_flag.copy()
+    last_product_seen = False
 
-        last_product_idx = None
+    for idx, row in df_gbx.iterrows():
+        if not gb_flag.at[idx]:
+            continue
 
-        for idx, row in df_raw.iterrows():
-            row_text = " ".join(map(str, row.values))
+        row_text = " ".join(map(str, row.values))
+        is_prod = looks_like_product(row_text)
+        try:
+            # show WHY it became a hit + product/non-product classification
+            logger.debug(
+                "[GBX/HIT] idx=%s raw_idx=%s is_product=%s last_product_seen=%s text=%r",
+                idx,
+                df_gbx.at[idx, "raw_idx"] if "raw_idx" in df_gbx.columns else None,
+                is_prod,
+                last_product_seen,
+                row_text[:160],
+            )
+        except Exception:
+            logger.debug("[GBX/HIT] idx=%s is_product=%s last_product_seen=%s", idx, is_prod, last_product_seen)
+ 
 
-            if looks_like_product(row_text):
-                last_product_idx = idx
-                continue
+        # ---- NEW LOGIC: positional pairing ----
+        prev_idx = idx - 1 if idx - 1 in df_gbx.index else None
+        prev_is_prod = False
 
-            # 👇 only remap if this GBX hit is in a footer row
-            if gb_flag.at[idx] and not looks_like_product(row_text):
-                if last_product_idx is not None:
-                    gb_flag_final.at[last_product_idx] = True
-                    gb_flag_final.at[idx] = False
+        if prev_idx is not None:
+            prev_text = " ".join(map(str, df_gbx.loc[prev_idx].values))
+            prev_is_prod = looks_like_product(prev_text)
 
-        if gb_flag_final.any():
-            gb_type = gb_flag_final.map(lambda x: "GBX" if x else None)
-            logger.debug("[GBX] ====== GBX DETECTOR DONE (text+footer remap) ======")
-            return pd.DataFrame({"gb_flag": gb_flag_final, "gb_type": gb_type})
+        if is_prod:
+            product_hits.append(idx)
+            logger.debug(
+                "[GBX/HIT] -> classified as INLINE (GBX inside product row)"
+            )
 
-    count_text = int(gb_flag.sum())
+        elif prev_is_prod:
+            footer_hits.append(idx)
+            logger.debug(
+                "[GBX/HIT] -> classified as FOOTER (previous row is product idx=%s)",
+                prev_idx,
+            )
 
-    if count_text > 0:
+        else:
+            logger.debug(
+                "[GBX/HIT] -> classified as PREAMBLE/NOISE (no product above)"
+            )
+
+    logger.debug(
+        "[GBX/DECIDE] product_hits=%d footer_hits=%d first_product_hit=%s first_footer_hit=%s",
+        len(product_hits),
+        len(footer_hits),
+        product_hits[0] if product_hits else None,
+        footer_hits[0] if footer_hits else None,
+    )
+
+    # ==========================================================
+    # 1A) INLINE MODE (only if product rows contain GBX)
+    # ==========================================================
+    if len(product_hits) > 0:
         logger.debug(
-            f"[GBX/TEXT] found {count_text} GBX rows (text-based). "
-            f"Examples: {gb_type[gb_flag].head(5).to_dict()}"
+            f"[GBX/MODE] inline text mode selected (product_hits={len(product_hits)})"
         )
-        logger.debug("[GBX] ====== GBX DETECTOR DONE (text mode) ======")
-        return pd.DataFrame({"gb_flag": gb_flag, "gb_type": gb_type})
+        return pd.DataFrame({
+            "raw_idx": df_gbx["raw_idx"].values,
+            "gb_flag": gb_flag,
+            "gb_type": gb_type,
+        })
+
+    # ==========================================================
+    # 1B) BLOCK MODE (GBX found only in footer rows)
+    # ==========================================================
+    if len(footer_hits) > 0:
+        logger.debug(
+            f"[GBX/MODE] block mode selected (footer_hits={len(footer_hits)})"
+        )
+        # extra debug: show the exact footer rows that triggered block mode (head)
+        try:
+            for j in footer_hits[:5]:
+                row_text = " ".join(map(str, df_gbx.loc[j].values))
+                logger.debug("[GBX/FOOTER_HIT] idx=%s raw_idx=%s text=%r", j, df_gbx.at[j, "raw_idx"], row_text[:160])
+        except Exception:
+            pass
+        gb_flag_block = _detect_gbx_by_blocks(df_gbx)
+        gb_type_block = gb_flag_block.map(lambda x: "GBX" if x else None)
+
+        return pd.DataFrame({
+            "raw_idx": df_gbx["raw_idx"].values,
+            "gb_flag": gb_flag_block,
+            "gb_type": gb_type_block,
+        })
+
 
     logger.debug("[GBX/TEXT] no textual GBX detected → trying checkbox fallback")
 
-    # 2) Block search
-
-    logger.debug("[GBX/BLOCK] trying block-based footer detection...")
-
-    gb_flag_block = _detect_gbx_by_blocks(df_raw)
-    count_block = int(gb_flag_block.sum())
-
-    if count_block > 0:
-        logger.debug(
-            f"[GBX/BLOCK] detected {count_block} GBX rows via footer blocks"
-        )
-        gb_type = gb_flag_block.map(lambda x: "GBX" if x else None)
-        logger.debug("[GBX] ====== GBX DETECTOR DONE (block mode) ======")
-        return pd.DataFrame({"gb_flag": gb_flag_block, "gb_type": gb_type})
-
-
+    
     # 3) Checkbox search
-    col = _detect_gbx_column(df_raw)
+    col = _detect_gbx_column(df_gbx)
 
     if col:
         logger.debug(f"[GBX/FALLBACK] using checkbox column: {col!r}")
 
-        s = df_raw[col].astype(str).str.strip()
+        s = df_gbx[col].astype(str).str.strip()
         gb_flag = s.isin(CHECK_POSITIVE)
         gb_type = gb_flag.map(lambda x: "GBX" if x else None)
 
@@ -211,13 +319,18 @@ def detect_gbx(df_raw: pd.DataFrame) -> pd.DataFrame:
         )
 
         logger.debug("[GBX] ====== GBX DETECTOR DONE (checkbox mode) ======")
-        return pd.DataFrame({"gb_flag": gb_flag, "gb_type": gb_type})
+        return pd.DataFrame({
+            "raw_idx": df_gbx["raw_idx"].values,
+            "gb_flag": gb_flag,
+            "gb_type": gb_type,
+        })
+
 
     # 2.5) Полный брут-форс поиск чекбоксов в *каждой* ячейке DF
     logger.debug("[GBX/FULLSCAN] no checkbox column detected → scanning all cells...")
 
     # Приводим все ячейки к строкам
-    df_str = df_raw.astype(str).applymap(lambda x: x.strip())
+    df_str = df_gbx.astype(str).map(str.strip)
 
     # матрица True/False по чекбоксам
     mask_pos = df_str.isin(CHECK_POSITIVE)
@@ -233,13 +346,21 @@ def detect_gbx(df_raw: pd.DataFrame) -> pd.DataFrame:
         )
         logger.debug("[GBX] ====== GBX DETECTOR DONE (full-scan mode) ======")
 
-        return pd.DataFrame({"gb_flag": gb_flag, "gb_type": gb_type})
+        return pd.DataFrame({
+            "raw_idx": df_gbx["raw_idx"].values,
+            "gb_flag": gb_flag,
+            "gb_type": gb_type,
+        })
+
 
     # 3) Вообще ничего не нашли
     logger.debug("[GBX/NONE] no GBX found (text, column or full-scan)")
     logger.debug("[GBX] ====== GBX DETECTOR DONE (none mode) ======")
 
-    return pd.DataFrame({
-        "gb_flag": [False] * N,
-        "gb_type": [None] * N,
+    result = pd.DataFrame({
+    "raw_idx": df_gbx["raw_idx"].values,
+        "gb_flag": gb_flag,
+        "gb_type": gb_type,
     })
+    logger.debug("GBX output raw_idx head: %s", result["raw_idx"].head(10).tolist())
+    return result

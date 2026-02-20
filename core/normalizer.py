@@ -241,6 +241,9 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
 
     logger.debug(f"normalize_alcohol_df: mapping → {mapping}")
     out = pd.DataFrame()
+    # --- preserve raw index if present ---
+    if "raw_idx" in df.columns:
+        out["raw_idx"] = df["raw_idx"]
 
     # --- Наименование ---
     if name_cols:        
@@ -331,6 +334,15 @@ def normalize_alcohol_df(df_in: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, O
     
     if loc_cols:
         logger.debug(f"location заполнено из {loc_cols}")
+    # --- Валюта (ТОЛЬКО явная колонка currency) ---
+    currency_cols = _find_cols(df, [r"^currency$", r"^валюта$"])
+
+    if currency_cols:
+        # просто прокидываем колонку дальше без bfill
+        out["currency"] = df[currency_cols[0]]
+        logger.debug(f"💱 currency колонка найдена: {currency_cols[0]!r}")
+    else:
+        logger.debug("💱 currency колонка отсутствует — fallback позже")
     
     
     # --- Очистка пустых строк ---

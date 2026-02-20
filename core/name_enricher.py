@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 
-def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataFrame | None = None) -> pd.DataFrame:
+def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataFrame | None = None, df_gbx: pd.DataFrame| None = None) -> pd.DataFrame:
 
     """
     Очистка колонки name от лишних данных, использование данных для создания новых колонок
@@ -87,23 +87,93 @@ def filter_and_enrich(df: pd.DataFrame, col_name: str = "name", df_raw: pd.DataF
     # удаляем cl-часть из названия (все токены)
     df[col_name] = df[col_name].map(_remove_volume_tokens)
 
-    # --- GBX DETECTION (row-wise, index-preserving) ---
-    if df_raw is None:
-        logger.error("[GBX] df_raw is None — cannot detect GBX reliably")
-        gbx_df = pd.DataFrame({"gb_flag": [False]*len(df), "gb_type": [None]*len(df)})
+    # --- GBX DETECTION (unified: text + excel) ---
+    # --- ensure raw_idx exists ---
+    # --- ensure raw_idx exists ---
+    if df_gbx is not None and "raw_idx" not in df_gbx.columns:
+        logger.debug("[GBX] raw_idx missing → creating from index")
+        df_gbx = df_gbx.copy()
+        df_gbx["raw_idx"] = df_gbx.index
+
+    if df_gbx is None:
+        logger.error("[GBX] df_gbx is None — cannot detect GBX reliably")
+        gbx_df = pd.DataFrame({
+            "raw_idx": df.get("raw_idx", pd.Series(dtype=int)),
+            "gb_flag": [False] * len(df),
+            "gb_type": [None] * len(df),
+        })
     else:
-        gbx_df = detect_gbx(df_raw)
+        alive_raw_idx = None
+
+        if "raw_idx" in df.columns:
+            alive_raw_idx = set(df["raw_idx"].dropna().astype(int))
+            logger.debug(
+                "[GBX] alive_raw_idx sample: %s",
+                list(sorted(alive_raw_idx))[:10]
+            )
+
+        gbx_df = detect_gbx(
+            df_gbx=df_gbx,
+            alive_raw_idx=alive_raw_idx,
+        )
+
+    logger.debug("=== DF (before GBX assign) ===")
+    logger.debug("DF columns: %s", df.columns.tolist())
+    logger.debug("DF head(2):\n%s", df.head(2).to_string())
+    logger.debug("DF index: %s", df.index.tolist())
+
+    logger.debug("=== GBX_DF ===")
+    logger.debug("GBX columns: %s", gbx_df.columns.tolist())
+    logger.debug("GBX head(2):\n%s", gbx_df.head(2).to_string())
+    logger.debug("GBX index: %s", gbx_df.index.tolist())
 
 
-    df["gb_flag"] = gbx_df["gb_flag"].values
-    df["gb_type"] = gbx_df["gb_type"].values
+    logger.debug(
+        "GBX DF before merge:\n%s",
+        gbx_df.head(5).to_string()
+    )
+
+    logger.debug("GBX DF before merge:\n%s", gbx_df.head(5).to_string())
+
+    # --- merge GBX safely ---
+    if "raw_idx" in df.columns and "raw_idx" in gbx_df.columns:
+        df = df.merge(
+            gbx_df[["raw_idx", "gb_flag", "gb_type"]],
+            on="raw_idx",
+            how="left"
+        )
+    else:
+        logger.debug("[GBX] raw_idx missing → positional merge")
+        df["gb_flag"] = gbx_df.get("gb_flag", pd.Series([False]*len(df)))
+        df["gb_type"] = gbx_df.get("gb_type", pd.Series([None]*len(df)))
+
+
+    df["gb_flag"] = df["gb_flag"].fillna(False)
+    df["gb_type"] = df["gb_type"].where(df["gb_flag"], None)
+
+    if "raw_idx" in df.columns:
+        logger.debug(
+            "\n=== WORKING DF (raw_idx + name) ===\n%s",
+            df[["raw_idx", col_name]]
+                .sort_values("raw_idx")
+                .to_string(index=False)
+        )
+    else:
+        logger.debug(
+            "\n=== WORKING DF (name only) ===\n%s",
+            df[[col_name]].to_string(index=False)
+        )
+
 
     df[col_name] = df[col_name].map(convert_abbreviation)
     logger.debug("normalize_alcohol_df: применяется convert_abbreviation к наименованиям")
-    # --- запуск верифаера с графовым состоянием ---    
+    # --- запуск верифаера с графовым состоянием ---  
+    logger.debug("BEFORE VERIFIER:\n%s", df[["name","gb_flag","gb_type"]])
+  
     verifier.set_state("graph")
     df = verifier.run(df)
     print(verifier.report())
+    logger.debug("AFTER VERIFIER:\n%s", df[["name","gb_flag","gb_type"]])
 
     #reattach GB/GBX to names after graph
     mask_gb = df["gb_flag"]

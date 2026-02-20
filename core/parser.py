@@ -357,6 +357,11 @@ def parse_excel(src: BytesIO):
 
     if frames:
         df_all = pd.concat(frames, ignore_index=True)
+        # 🔐 стабильная идентичность строки
+        df_all["raw_idx"] = df_all.index
+
+        logger.debug(f"[RAW_IDX] created raw_idx 0..{len(df_all)-1}")
+
         with pd.option_context("display.max_columns", None, "display.width", 1000):
             logger.debug(
                 f"=== ИТОГОВАЯ ТАБЛИЦА (HEAD 15) ===\n{df_all.head(15).to_string(index=True)}"

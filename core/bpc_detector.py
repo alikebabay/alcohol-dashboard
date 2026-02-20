@@ -87,33 +87,65 @@ def is_bpc_series(series: pd.Series) -> bool:
 
 def detect_bpc_column(df: pd.DataFrame) -> Optional[int]:
     """
-    Возвращает ИНДЕКС колонки (0-based), которая похожа на BPC.
-    Работает по физическим колонкам, а не по именам.
+    Возвращает ИНДЕКС физической колонки (0-based),
+    которая похожа на BPC.
+    Игнорирует технические колонки.
     """
-    best_idx = None
-    best_uniq = 9999
 
-    for idx in range(df.shape[1]):
-        col = df.columns[idx]
-        series = df.iloc[:, idx]
-        try:
-            head = series.head(5).astype(str).tolist()
-            logger.debug(f"[BPC_DETECTOR] checking col #{idx} {col!r}, head={head}")
-        except Exception:
+    best_idx = None
+    best_score = -1
+
+    for idx, col in enumerate(df.columns):
+
+        # 🔒 ignore technical columns
+        if str(col).lower() in {"raw_idx"}:
+            logger.debug(f"[BPC_DETECTOR] skip technical col {col!r}")
             continue
 
-        if is_bpc_series(series):
-            uniq = len(set(filter(lambda x: x is not None,
-                                  (parse_bpc_loose(v) for v in series))))
-            logger.debug(f"[BPC_DETECTOR] column #{idx} {col!r} → candidate (uniq={uniq})")
-            if uniq < best_uniq:
-                best_uniq = uniq
-                best_idx = idx
-        else:
-            logger.debug(f"[BPC_DETECTOR] column #{idx} {col!r} rejected")
+        series = df.iloc[:, idx]
+
+        parsed = []
+        total = 0
+
+        for v in series:
+            total += 1
+            n = parse_bpc_loose(v)
+            if n is not None:
+                parsed.append(n)
+
+        if total == 0:
+            continue
+
+        ratio = len(parsed) / total
+        if ratio < 0.7:
+            continue
+
+        uniq = len(set(parsed))
+        if uniq > 20:
+            continue
+
+        mn = min(parsed)
+        mx = max(parsed)
+        if mn < 1 or mx > 200:
+            continue
+
+        # 🔥 NEW: score known BPC hits
+        known_hits = sum(1 for n in parsed if n in BPC_KNOWN)
+        score = ratio * 100 + known_hits
+
+        logger.debug(
+            f"[BPC_DETECTOR] candidate col #{idx} {col!r} "
+            f"(ratio={ratio:.2f}, uniq={uniq}, known_hits={known_hits}, score={score})"
+        )
+
+        if score > best_score:
+            best_score = score
+            best_idx = idx
 
     if best_idx is not None:
-        logger.debug(f"[BPC_DETECTOR] final choice: index={best_idx}, name={df.columns[best_idx]!r}")
+        logger.debug(
+            f"[BPC_DETECTOR] final choice: index={best_idx}, name={df.columns[best_idx]!r}"
+        )
     else:
         logger.debug("[BPC_DETECTOR] no BPC column detected")
 
