@@ -74,7 +74,7 @@ def setup_logging(global_level=logging.INFO):
         "save_to_excel": logging.ERROR,
         "integrations.df_raw_to_graph": logging.ERROR,
         "core.gbx_detector": logging.DEBUG,              
-        "core.text_parser": logging.ERROR,
+        "core.text_parser": logging.DEBUG,
         "core.header_detector": logging.ERROR,
         "core.product_detector": logging.ERROR,
         "core.volume_detector": logging.ERROR,

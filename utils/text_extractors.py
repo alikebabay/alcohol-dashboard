@@ -130,6 +130,7 @@ class PriceExtractor:
             "price_case": self.price_case,
             "bottles_per_case": self.bottles_per_case,
             "currency": self.currency,
+            "price_detected": bool(self.price_bottle or self.price_case),
         }
 
     # ----------------------------

@@ -158,8 +158,8 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
     logger.debug("=== START parse_text ===")
     logger.debug("Raw input:\n%s", raw_text[:500])  # ограничим, если текст длинный
     
-    #сборщик строк без цен push again
-    NOPRICELINES = []
+    # структурный сборщик строк без цен (по raw_idx)
+    NOPRICE_RAW_IDX = set()
     #0 нормализация - пока только слипшийся с цифрой евро
     raw_text = preprocess_raw_text(raw_text)
 
@@ -173,17 +173,16 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
 
     for i, l in enumerate(base_lines):
         logger.debug("  [%02d] %r", i, l)
-    # сборщик строк без цен (POST-MERGE)
-    for line in base_lines:
+    # структурный сборщик строк без цен (до merge, по raw_idx)
+    for raw_idx, line in enumerate(base_lines):
         s = line.strip()
         if not s:
             continue
-
         if detect_product_without_price(s) and not has_price(s):
-            NOPRICELINES.append(s)
+            NOPRICE_RAW_IDX.add(raw_idx)
             logger.debug(
-                "[NOPRICE][POST-MERGE] product-like without price: %r",
-                s
+                "[NOPRICE][STRUCT] raw_idx=%d product-like without price: %r",
+                raw_idx, s
             )
     
     merged_lines = _merge_short_headers(base_lines)
@@ -221,6 +220,9 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
     logger.debug("=== RESOLVED ACCESS ===")
     logger.debug(pformat(final_access))
 
+    # ---- semantic reconciliation layer ----
+    PRICE_DETECTED_RAW_IDX = set()
+
     for idx, ((orig_raw_idx, _), raw) in enumerate(zip(merged_lines, all_lines)):
         line = raw.strip()
         if not line:
@@ -228,6 +230,11 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
             continue
 
         result = extractor.extract(line)
+        # если extractor реально нашёл цену → помечаем raw_idx
+        if result.get("price_bottle") is not None or result.get("price_case") is not None:
+            PRICE_DETECTED_RAW_IDX.add(orig_raw_idx)
+
+        logger.debug("=== LINE %02d ===", idx)
         logger.debug("=== LINE %02d ===", idx)
         logger.debug("SOURCE     : %r", line)
         logger.debug("EXTRACTED  : %s", pformat(result))
@@ -258,9 +265,23 @@ def parse_text(raw_text: str) -> tuple[pd.DataFrame, dict]:
     logger.debug("DataFrame head:\n%s", df.head().to_string())
     logger.debug("DF columns: %s", df.columns.tolist())
 
+    # ---- reconcile structural vs semantic ----
+    REAL_NOPRICE = [
+        base_lines[i]
+        for i in NOPRICE_RAW_IDX
+        if i not in PRICE_DETECTED_RAW_IDX
+    ]
+
+    logger.debug(
+        "[NOPRICE][RECON] structural=%d semantic_resolved=%d final=%d",
+        len(NOPRICE_RAW_IDX),
+        len(PRICE_DETECTED_RAW_IDX),
+        len(REAL_NOPRICE),
+    )
+
     mapping = {
         "source": "text",
-        "noprice_lines": NOPRICELINES,
+        "noprice_lines": REAL_NOPRICE,
         "df_raw": df_raw,
     }
 
