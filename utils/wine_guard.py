@@ -18,6 +18,7 @@ WINE_KEYWORDS = [
     "silver",
     "Single Barrel",
     "Year Old",
+    "y.o.",
     "Flora & Fauna",
     "Classic",
     "Original",
@@ -28,7 +29,7 @@ WINE_KEYWORDS = [
     "NRB",
     "CAN",
     "brut",
-    "Gin"
+    "Gin",
 ]
 
 # подготавливаем нормализованные формы
