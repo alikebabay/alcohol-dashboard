@@ -10,3 +10,4 @@ xlsxwriter==3.2.9
 fastapi==0.123.5
 uvicorn==0.38.0
 fastapi.middleware==0.2.1
+rapidfuzz==3.14.3
