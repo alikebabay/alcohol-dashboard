@@ -78,7 +78,7 @@ def setup_logging(global_level=logging.INFO):
         "core.header_detector": logging.ERROR,
         "core.product_detector": logging.DEBUG,
         "core.volume_detector": logging.ERROR,
-        "merge_headers": logging.ERROR,
+        "merge_headers": logging.DEBUG,
         #workers
         "workers.excel_worker": logging.ERROR,
         "workers.noprice_collector": logging.ERROR,

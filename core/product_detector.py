@@ -72,7 +72,7 @@ def detect_product_without_price(s: str) -> bool:
         reasons.append("BPC_TRIPLE")
 
     if RX_VOLUME.search(s):
-        score += 1
+        score += 2
         reasons.append("VOLUME")
 
     # --- QUANTITY ---
@@ -146,7 +146,7 @@ def detect_product(s: str) -> bool:
     if RX_BPC_TRIPLE.search(s):
         score += 2
     if RX_VOLUME.search(s):
-        score += 1
+        score += 2
     if RX_CS.search(s):
         score += 1
     if RX_VINTAGE.search(s):

@@ -242,7 +242,7 @@ class HeaderMerger:
             "[MERGE][SUMMARY] input=%d output=%d",
             len(lines), len(merged)
         )
-
+        merged.sort(key=lambda x: x[0])
         return merged
 
 
