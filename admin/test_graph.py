@@ -63,14 +63,6 @@ async def test_graph(req: TestRequest):
         canonical_logger.removeHandler(handler)
         graph_logger.removeHandler(handler)
 
-    try:
-        df_norm = normalize_dataframe(df_abbr, col_name="Наименование")
-        logs_text = log_stream.getvalue()
-    finally:
-        canonical_logger.removeHandler(handler)
-        normalize_dataframe_logger.removeHandler(handler)
-        canonical_logger.propagate = old_prop_1
-        normalize_dataframe_logger.propagate = old_prop_2
     # --- END LOG CAPTURE ---
 
     out = []
