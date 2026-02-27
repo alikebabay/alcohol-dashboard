@@ -39,6 +39,10 @@ async def test_graph(req: TestRequest):
     log_stream = io.StringIO()
     handler = logging.StreamHandler(log_stream)
     handler.setLevel(logging.DEBUG)
+    handler.setFormatter(logging.Formatter(
+        "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%H:%M:%S"
+    ))
 
     canonical_logger = logging.getLogger("core.graph_normalizer.canonical")
     canonical_logger.addHandler(handler)
