@@ -2,9 +2,6 @@ import pandas as pd
 import logging
 import json
 from pprint import pformat
-from rapidfuzz import fuzz, process
-import unicodedata
-import re
 
 
 from utils import text_extractors as te
@@ -17,7 +14,9 @@ from config import MIN_PRODUCT_LEN
 from libraries.regular_expressions import RX_BOTTLE, RX_BPC, RX_BPC_TRIPLE, RX_CASE, RX_CURRENCY, RX_CURRENCY_MARKER
 from core.product_detector import detect_product_without_price, detect_product
 from libraries.distillator import preprocess_raw_text
+from utils.brand_match import fuzzy_brand_match
 from core.graph_loader import BRAND_KEYMAP
+
 
 # --- Initialize logging once ---
 setup_logging(logging.DEBUG)
@@ -57,74 +56,12 @@ def has_price(s: str) -> bool:
 def _merge_short_headers(lines):
     return HeaderMerger().merge(lines)
 
-#helper for brand match in case of no product
-def _unicode_normalize_text(s: str) -> str:
-    s = s.lower()
-    s = unicodedata.normalize("NFKD", s)
-    s = "".join(c for c in s if not unicodedata.combining(c))
-    s = re.sub(r"[^a-z0-9\s]", " ", s)
-    s = re.sub(r"\s+", " ", s).strip()
-    return s
 
-def fuzzy_brand_match(s: str, brands: list[str]) -> bool:
-    s = s.strip()
-    if not s or has_price(s):
-        return False
-
-    s_norm = _unicode_normalize_text(s)
-
-    # try prefix of first 1–3 words
-    parts = s_norm.split()
-    if not parts:
-        return False
-
-    # progressively test 3, 2, 1 word prefix
-    for n in (3, 2, 1):
-        prefix = " ".join(parts[:n])
-        if len(prefix) < 4:
-            continue
-
-        match = process.extractOne(
-            prefix,
-            brands,
-            scorer=fuzz.token_set_ratio,
-            score_cutoff=88
-        )
-
-        if match:
-            return True
-
-    return False
 
 # use brand keys from graph (already normalized)
 BRAND_NAMES = [b.lower() for b in BRAND_KEYMAP.keys()]
 
-merge_logger.debug("=== BRAND_KEYMAP DEBUG ===")
-merge_logger.debug("Total brands: %d", len(BRAND_NAMES))
 
-# show sorted sample
-for b in sorted(BRAND_NAMES)[:50]:
-    merge_logger.debug("BRAND: %s", b)
-
-# explicitly check problematic ones
-for test in [
-    "monkey shoulder",
-    "monkey 47",
-    "makers mark",
-    "buffalo trace",
-    "port charlotte",
-    "longrow",
-    "kilkerran",
-    "ford",
-    "irish mist",
-    "ardmore",
-    "dalwhinnie",
-]:
-    merge_logger.debug(
-        "CHECK '%s' in BRAND_KEYMAP: %s",
-        test,
-        test in BRAND_NAMES
-    )
 
 class HeaderMerger:
     STATE_IDLE = "IDLE"

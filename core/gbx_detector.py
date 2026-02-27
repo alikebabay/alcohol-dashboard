@@ -6,6 +6,8 @@ import logging
 from utils.logger import setup_logging
 from libraries.regular_expressions import RX_GBX_MARKER, RX_GBX_NEGATIVE
 from libraries.distillator import looks_like_product
+from utils.brand_match import fuzzy_brand_match
+from core.graph_loader import BRAND_KEYMAP
 
 
 # инициализация общего логгера
@@ -16,6 +18,9 @@ logger = logging.getLogger(__name__)
 # символы чекбоксов для fallback-детектора по колонке
 CHECK_POSITIVE = {"☑", "✓", "✔", "yes", "YES"}
 CHECK_NEGATIVE = {"⮽", "✗", "x", "X", "no", "NO"}
+
+# normalized brand list
+BRAND_NAMES = [b.lower() for b in BRAND_KEYMAP.keys()]
 
 def _cell_to_str(v):
     try:
@@ -215,18 +220,20 @@ def detect_gbx(
 
         row_text = " ".join(map(str, row.values))
         is_prod = looks_like_product(row_text)
+        is_brand = fuzzy_brand_match(row_text, BRAND_NAMES)
         try:
             # show WHY it became a hit + product/non-product classification
             logger.debug(
-                "[GBX/HIT] idx=%s raw_idx=%s is_product=%s last_product_seen=%s text=%r",
+                "[GBX/HIT] idx=%s raw_idx=%s is_product=%s is_brand=%s last_product_seen=%s text=%r",
                 idx,
                 df_gbx.at[idx, "raw_idx"] if "raw_idx" in df_gbx.columns else None,
                 is_prod,
+                is_brand,
                 last_product_seen,
                 row_text[:160],
             )
         except Exception:
-            logger.debug("[GBX/HIT] idx=%s is_product=%s last_product_seen=%s", idx, is_prod, last_product_seen)
+            logger.debug("[GBX/HIT] idx=%s is_product=%s is_brand=%s last_product_seen=%s", idx, is_prod, is_brand, last_product_seen)
  
 
         # ---- NEW LOGIC: positional pairing ----
@@ -237,10 +244,12 @@ def detect_gbx(
             prev_text = " ".join(map(str, df_gbx.loc[prev_idx].values))
             prev_is_prod = looks_like_product(prev_text)
 
-        if is_prod:
+        if is_prod or is_brand:
             product_hits.append(idx)
             logger.debug(
-                "[GBX/HIT] -> classified as INLINE (GBX inside product row)"
+                "[GBX/HIT] -> classified as INLINE (product=%s brand=%s)",
++                is_prod,
++                is_brand,
             )
 
         elif prev_is_prod:
