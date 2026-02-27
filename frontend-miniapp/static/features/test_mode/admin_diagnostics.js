@@ -12,8 +12,8 @@ export async function runGraphTest() {
   renderRunning();
 
   try {
-    const rows = await graphTest(text);
-    renderGraphDiff(rows, logs);
+    const result = await graphTest(text);
+    renderGraphDiff(result.rows, result.logs);
   } catch (e) {
     renderError(e?.message);
   }
