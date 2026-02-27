@@ -39,14 +39,22 @@ async def test_graph(req: TestRequest):
     log_stream = io.StringIO()
     handler = logging.StreamHandler(log_stream)
     handler.setLevel(logging.DEBUG)
+
     handler.setFormatter(logging.Formatter(
         "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%H:%M:%S"
     ))
 
     canonical_logger = logging.getLogger("core.graph_normalizer.canonical")
-    canonical_logger.addHandler(handler)
     normalize_dataframe_logger = logging.getLogger("core.graph_normalizer")
+
+    old_prop_1 = canonical_logger.propagate
+    old_prop_2 = normalize_dataframe_logger.propagate
+
+    canonical_logger.propagate = False
+    normalize_dataframe_logger.propagate = False
+
+    canonical_logger.addHandler(handler)
     normalize_dataframe_logger.addHandler(handler)
 
     try:
@@ -55,6 +63,8 @@ async def test_graph(req: TestRequest):
     finally:
         canonical_logger.removeHandler(handler)
         normalize_dataframe_logger.removeHandler(handler)
+        canonical_logger.propagate = old_prop_1
+        normalize_dataframe_logger.propagate = old_prop_2
     # --- END LOG CAPTURE ---
 
     out = []
