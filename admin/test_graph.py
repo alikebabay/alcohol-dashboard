@@ -16,6 +16,17 @@ router = APIRouter()
 class TestRequest(BaseModel):
     text: str
 
+    class Config:
+        schema_extra = {
+            "example": {
+                "text": "395 cases Courvoisier VSOP + GB 12x70cl at 196 euro\n"
+                        "700 cases Courvoisier VSOP + GB 12x75cl at 196 euro\n"
+                        "85 cases Courvoisier VSOP + GB 12x1L at 315 euro\n"
+                        "230 cases Courvoisier XO + GB 6x70cl at 362 euro\n"
+                        "322 cases Macallan 12 y Double Cask + GB 6x70cl at 252 euro\n"
+                        "563 cases Moet Rose + GB 6x75cl at 178.20 euro"
+            }
+        }
 
 @router.post("/test/graph")
 async def test_graph(req: TestRequest):
@@ -48,6 +59,10 @@ async def test_graph(req: TestRequest):
     canonical_logger = logging.getLogger("core.graph_normalizer.canonical")
     graph_logger = logging.getLogger("core.graph_normalizer")
 
+    # Prevent duplicate logs via propagation
+    canonical_logger.propagate = False
+    graph_logger.propagate = False
+
     canonical_logger.addHandler(handler)
     graph_logger.addHandler(handler)
 
@@ -59,9 +74,12 @@ async def test_graph(req: TestRequest):
         ]):
             df_norm = normalize_dataframe(df_abbr, col_name="Наименование")
         logs_text = log_stream.getvalue()
+        logs_lines = logs_text.splitlines()  # easier for frontend rendering
     finally:
         canonical_logger.removeHandler(handler)
         graph_logger.removeHandler(handler)
+        canonical_logger.propagate = True
+        graph_logger.propagate = True
 
     # --- END LOG CAPTURE ---
 
@@ -85,5 +103,6 @@ async def test_graph(req: TestRequest):
         "ok": True,
         "rows": len(out),
         "data": out,
-        "logs": logs_text
+        "logs": logs_text,
+        "logs": logs_lines
     }
