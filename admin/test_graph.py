@@ -1,7 +1,7 @@
 import difflib
 import pandas as pd
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from pathlib import Path
 import logging
 import io
@@ -16,8 +16,8 @@ router = APIRouter()
 class TestRequest(BaseModel):
     text: str
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "text": "395 cases Courvoisier VSOP + GB 12x70cl at 196 euro\n"
                         "700 cases Courvoisier VSOP + GB 12x75cl at 196 euro\n"
@@ -27,6 +27,7 @@ class TestRequest(BaseModel):
                         "563 cases Moet Rose + GB 6x75cl at 178.20 euro"
             }
         }
+    )
 
 @router.post("/test/graph")
 async def test_graph(req: TestRequest):
