@@ -37,6 +37,8 @@ import { wireOfferEditHandler } from "./admin_backend.js";
 import { initDownloadHandler } from "./admin_editor.js";
 import { mountDeleteButtons } from "./features/delete_buttons/delete_buttons_controller.js";
 import { wireOfferSearch } from "./admin_backend.js";
+import { runGraphTest, testGBX, testPrice } from "./admin_diagnostics.js";
+import { wireTestModeButtons } from "./admin_state.js";
 
 
 
@@ -45,6 +47,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadPartial("brand_panel_container", "/static/partials/brand_panel.html");
     await loadPartial("suppliers_panel_container", "/static/partials/suppliers_panel.html");
     await loadPartial("test_panel_container", "/static/partials/test_panel.html");
+    wireTestModeButtons({ runGraphTest, testGBX, testPrice });
     wireMainMenu();
     wireTestButton();
     wireOfferButtons();

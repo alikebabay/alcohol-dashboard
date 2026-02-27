@@ -5,9 +5,6 @@ const log = getLogger("state");
 
 import { renderSearchResult } from "./admin_editor.js";
 import {renderEditorLayout} from "./features/edit_offer/offer_view.js"
-import { runGraphTest} from "./admin_diagnostics.js";
-import { testGBX} from "./admin_diagnostics.js";
-import { testPrice} from "./admin_diagnostics.js";
 import { renderEvents } from "./events.js";
 import { renderOfferCard } from "./render_offer.js";
 import { renderAdvancedState as renderAdvanced } from "./advanced_state.js";
@@ -458,16 +455,16 @@ export function wireTestButton() {
     btn.addEventListener("click", enterTestMode);
 }
 
-function wireTestModeButtons() {
-    document.getElementById("btn_test_graph")
-        ?.addEventListener("click", runGraphTest);
+export function wireTestModeButtons({ runGraphTest, testGBX, testPrice }) {
+  document.getElementById("btn_test_graph")
+    ?.addEventListener("click", runGraphTest);
 
-    document.getElementById("btn_test_gbx")
-        ?.addEventListener("click", testGBX);
+  document.getElementById("btn_test_gbx")
+    ?.addEventListener("click", testGBX);
 
-    document.getElementById("btn_test_price")
-        ?.addEventListener("click", testPrice);
+  document.getElementById("btn_test_price")
+    ?.addEventListener("click", testPrice);
 
-    document.getElementById("btn_test_exit")
-        ?.addEventListener("click", exitTestMode);
+  document.getElementById("btn_test_exit")
+    ?.addEventListener("click", exitTestMode);
 }
