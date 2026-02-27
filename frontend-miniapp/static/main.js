@@ -37,7 +37,7 @@ import { wireOfferEditHandler } from "./admin_backend.js";
 import { initDownloadHandler } from "./admin_editor.js";
 import { mountDeleteButtons } from "./features/delete_buttons/delete_buttons_controller.js";
 import { wireOfferSearch } from "./admin_backend.js";
-import { runGraphTest, testGBX, testPrice } from "./admin_diagnostics.js";
+import { runGraphTest, testGBX, testPrice } from "./features/test_mode/admin_diagnostics.js";
 import { wireTestModeButtons } from "./admin_state.js";
 
 
