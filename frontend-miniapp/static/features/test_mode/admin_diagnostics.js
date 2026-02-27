@@ -13,7 +13,7 @@ export async function runGraphTest() {
 
   try {
     const rows = await graphTest(text);
-    renderGraphDiff(rows);
+    renderGraphDiff(rows, logs);
   } catch (e) {
     renderError(e?.message);
   }
