@@ -3,31 +3,14 @@ import pandas as pd
 from fastapi import APIRouter
 from pydantic import BaseModel
 from pathlib import Path
-
+import logging
+import io
 
 from core.graph_normalizer import normalize_dataframe
 from utils.abbreviations_helper import convert_abbreviation
 
 router = APIRouter()
 
-LOG_FILES = [
-    "graph_normalizer_debug.txt",
-    "canonical_debug.txt",
-    "brand_debug.txt",
-]
-
-
-def read_logs():
-    logs_dir = Path("logs")
-    collected = []
-
-    for fname in LOG_FILES:
-        path = logs_dir / fname
-        if path.exists():
-            collected.append(f"\n===== {fname} =====\n")
-            collected.append(path.read_text(encoding="utf-8"))
-
-    return "\n".join(collected)
 
 class TestRequest(BaseModel):
     text: str
@@ -52,7 +35,20 @@ async def test_graph(req: TestRequest):
     df_abbr = df.copy()
     df_abbr["Наименование"] = df_abbr["Наименование"].apply(convert_abbreviation)
 
-    df_norm = normalize_dataframe(df_abbr, col_name="Наименование")
+    # --- BEGIN LOG CAPTURE ---
+    log_stream = io.StringIO()
+    handler = logging.StreamHandler(log_stream)
+    handler.setLevel(logging.DEBUG)
+
+    canonical_logger = logging.getLogger("core.graph_normalizer.canonical")
+    canonical_logger.addHandler(handler)
+
+    try:
+        df_norm = normalize_dataframe(df_abbr, col_name="Наименование")
+        logs_text = log_stream.getvalue()
+    finally:
+        canonical_logger.removeHandler(handler)
+    # --- END LOG CAPTURE ---
 
     out = []
 
@@ -69,8 +65,7 @@ async def test_graph(req: TestRequest):
                 "norm": norm,
                 "changed": False
             })
-    logs_text = read_logs()
-
+    
     return {
         "ok": True,
         "rows": len(out),
