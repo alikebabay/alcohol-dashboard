@@ -8,6 +8,7 @@ import io
 
 from core.graph_normalizer import normalize_dataframe
 from utils.abbreviations_helper import convert_abbreviation
+from utils.logger import temporary_debug
 
 router = APIRouter()
 
@@ -39,23 +40,28 @@ async def test_graph(req: TestRequest):
     log_stream = io.StringIO()
     handler = logging.StreamHandler(log_stream)
     handler.setLevel(logging.DEBUG)
-
     handler.setFormatter(logging.Formatter(
         "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%H:%M:%S"
     ))
 
     canonical_logger = logging.getLogger("core.graph_normalizer.canonical")
-    normalize_dataframe_logger = logging.getLogger("core.graph_normalizer")
-
-    old_prop_1 = canonical_logger.propagate
-    old_prop_2 = normalize_dataframe_logger.propagate
-
-    canonical_logger.propagate = False
-    normalize_dataframe_logger.propagate = False
+    graph_logger = logging.getLogger("core.graph_normalizer")
 
     canonical_logger.addHandler(handler)
-    normalize_dataframe_logger.addHandler(handler)
+    graph_logger.addHandler(handler)
+
+    try:
+        with temporary_debug([
+            "core.graph_normalizer",
+            "core.graph_normalizer.canonical",
+            "core.graph_normalizer.brand"
+        ]):
+            df_norm = normalize_dataframe(df_abbr, col_name="Наименование")
+        logs_text = log_stream.getvalue()
+    finally:
+        canonical_logger.removeHandler(handler)
+        graph_logger.removeHandler(handler)
 
     try:
         df_norm = normalize_dataframe(df_abbr, col_name="Наименование")

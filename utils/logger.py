@@ -2,6 +2,27 @@
 import logging
 from pathlib import Path
 import os
+from contextlib import contextmanager
+
+#переключатель для логов админки
+@contextmanager
+def temporary_debug(names: list[str]):
+    """
+    Временно включает DEBUG для указанных логгеров.
+    После выхода из контекста возвращает старые уровни.
+    """
+    loggers = [logging.getLogger(name) for name in names]
+    old_levels = [lg.level for lg in loggers]
+
+    try:
+        for lg in loggers:
+            lg.setLevel(logging.DEBUG)
+        yield
+    finally:
+        for lg, old in zip(loggers, old_levels):
+            lg.setLevel(old)
+
+
 
 def _get_level(env_name: str, default=logging.ERROR):
     """Читает уровень логирования из переменной окружения."""
@@ -58,8 +79,8 @@ def setup_logging(global_level=logging.INFO):
         "dispatcher": logging.ERROR,
         # инфраструктура
         "integrations.matrix_merger": logging.ERROR,
-        "core.graph_normalizer": logging.DEBUG,
-        "core.graph_normalizer.canonical": logging.DEBUG,
+        "core.graph_normalizer": logging.ERROR,
+        "core.graph_normalizer.canonical": logging.ERROR,
         "core.graph_normalizer.loader": logging.ERROR,
         "core.graph_normalizer.brand": logging.ERROR,
         "core.normalizer": logging.ERROR,
