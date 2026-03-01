@@ -110,9 +110,9 @@ def setup_logging(global_level=logging.INFO):
         "utils.text_extractors": logging.ERROR,
         "utils.text_extractors.prices": logging.ERROR,
         "utils.text_extractors.access": logging.ERROR,
-        "utils.text_extractors.location": logging.ERROR,
+        "utils.text_extractors.location": logging.DEBUG,
         "core.access_assistant": logging.ERROR,
-        "core.location_assistant": logging.ERROR,  
+        "core.location_assistant": logging.DEBUG,  
         "integrations.raw_to_graph": logging.ERROR,        
         "main": logging.ERROR,
         #утилиты

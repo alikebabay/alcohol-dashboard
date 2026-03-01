@@ -610,7 +610,7 @@ class BrandSeriesExtractor:
         series_tokens = []
         for t in tokens:
             t_norm = _normalize(t)
-            if any(t_norm in s for s in possible_series):
+            if len(t_norm) >= 3 and any(t_norm in s.split() for s in possible_series):
                 series_tokens.append(t)
 
         if not series_tokens:
