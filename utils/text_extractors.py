@@ -362,8 +362,8 @@ class PriceExtractor:
                 if " case" in global_left or " cases" in global_left:
                     scores["case"] += 0.5
             # RULE: nearest Noun prhase wins
-            # If the NP immediately before the price contains a size → bottle bias
-            if re.search(r'\b\d+\s*(?:cl|ml|l)\b', t["left"].lower()):
+            # If the NP immediately before [-12:] the price contains a size → bottle bias
+            if re.search(r'\b\d+\s*(?:cl|ml|l)\b', t["left"][-12:].lower()):
                 scores["bottle"] += 1
             
             # ------------------------------------------
@@ -375,7 +375,6 @@ class PriceExtractor:
                 n = int(m.group(1))
                 if n in BPC_KNOWN:
                     scores["case"] += 1
-
 
             # 3) RIGHT: "<price> per bottle/btl"
              # RULE LOGIC — используем ТОЛЬКО t["right"]

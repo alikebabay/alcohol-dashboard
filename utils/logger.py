@@ -108,9 +108,9 @@ def setup_logging(global_level=logging.INFO):
         "workers.reference_worker": logging.ERROR,
         # извлекатели
         "utils.text_extractors": logging.ERROR,
-        "utils.text_extractors.prices": logging.ERROR,
+        "utils.text_extractors.prices": logging.DEBUG,
         "utils.text_extractors.access": logging.ERROR,
-        "utils.text_extractors.location": logging.DEBUG,
+        "utils.text_extractors.location": logging.ERROR,
         "core.access_assistant": logging.ERROR,
         "core.location_assistant": logging.DEBUG,  
         "integrations.raw_to_graph": logging.ERROR,        
