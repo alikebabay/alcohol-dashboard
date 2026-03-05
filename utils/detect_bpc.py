@@ -1,6 +1,7 @@
 # core/bpc_detector.py
 import re
 from libraries.regular_expressions import  RX_BPC, RX_BPC_STAR, RX_BPC_DASH, RX_BPC_TRIPLE
+from libraries.distillator import RX_PACK_PCS
 
 BPC_KNOWN = {
     1, 2, 3, 4, 5, 6,
@@ -47,9 +48,16 @@ def detect_bpc(s: str) -> int | None:
         n = int(m.group("cases"))
         if 1 <= n <= 60:
             return n
+        
+    # 4) pcs
+    m = RX_PACK_PCS.search(s)
+    if m:
+        n = int(m.group("cases"))
+        if 1 <= n <= 60:
+            return n
 
     # -------------------------------------------------
-    # 4) FALLBACK: numeric x numeric|volume
+    # 5) FALLBACK: numeric x numeric|volume
     # -------------------------------------------------
     if "x" in s:
         s2 = s.replace("×", "x")
