@@ -83,6 +83,7 @@ RX_CASE_LEFT = [
     re.compile(r'\bcs\b', re.I),
     re.compile(r'\bbox\b', re.I),
     re.compile(r'\bper\s+case\b', re.I),
+    re.compile(r'\b\d{2}\s+cans\b', re.I)
 ]
 
 RX_CASE_RIGHT = [
@@ -90,6 +91,7 @@ RX_CASE_RIGHT = [
     re.compile(r'\bcs\b', re.I),
     re.compile(r'\bbox\b', re.I),
     re.compile(r'\bper\s+case\b', re.I),
+    re.compile(r'\b\d{2}\s+cans\b', re.I)
 ]
 
 #pattern for prices in float format
@@ -104,7 +106,7 @@ RX_NUMBER = re.compile(
 
 
 # Bottles-per-case (6x75, 12×70 и т.п.)
-RX_BPC = re.compile(r'(\d{1,2})\s*[x×]\s*\d{1,3}', re.I)
+RX_BPC = re.compile(r'(\d{1,2})\s*[x×]\s*(\d{1,3})', re.I)
 # Star-style variant:  cs*6 btl, *12 btl, cs * 6 bottles
 RX_BPC_STAR = re.compile(
     r'(?i)(?:\bcs\s*\*|\*)\s*(?P<cases>\d{1,2})\s*(?:btl|btls|bottle)s?\b'
@@ -163,8 +165,8 @@ RX_VINTAGE  = re.compile(r'\b(19\d{2}|20(0\d|1\d|2[0-6]))\b')
 RX_PACK_CASES_FLEX = re.compile(
     r'(?i)\b(?P<cases>\d{1,2})\s*[x×]\s*\d{1,4}(?:[.,]\d{1,2})?\s?(?:ml|cl|l)'
 )
-# извлечение количества бутылок из паттернов вида 6 pcs, 12шт
-RX_PACK_PCS = re.compile(r'(?i)\(?\b(?P<cases>\d{1,3})\s*(?:pcs|шт)\b\)?')
+# извлечение количества бутылок из паттернов вида 6 pcs, 12шт, 24 cans
+RX_PACK_PCS = re.compile(r'(?i)\(?\b(?P<cases>\d{1,3})\s*(?:pcs|шт|cans)\b\)?')
 
 # --- Gift box / gift pack detection ---
 # Matches any positive indicator of boxed/gift packaging

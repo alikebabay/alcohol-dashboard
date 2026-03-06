@@ -251,8 +251,7 @@ class PriceExtractor:
             )
 
             # добавляем оба токена, не выбирая лучший
-            if left_info:
-                price_logger.debug(f"[L1] ADD LEFT TOKEN: {left_info['num']!r}")
+            if left_info:                
                 tokens.append({
                     "value": left_info["num"],
                     "start": left_info["start"],   # добавляем для ограничения контекста
@@ -265,7 +264,6 @@ class PriceExtractor:
                 })
 
             if right_info:
-                price_logger.debug(f"[L1] ADD RIGHT TOKEN: {right_info['num']!r}")
                 tokens.append({
                     "value": right_info["num"],
                     "start": right_info["start"],   # добавляем для ограничения контекста
@@ -276,7 +274,10 @@ class PriceExtractor:
                     "side": "right",
                     "currency": cur_code,
                 })
-        price_logger.debug(f"[L1] FINAL TOKENS: {tokens}")
+        price_logger.debug(
+                    "[TOKENS] %s",
+                    [(t["value"], t["side"], t["currency"]) for t in tokens]
+                )
         return tokens
 
 
@@ -292,13 +293,28 @@ class PriceExtractor:
         # --------------------------------------------------------
         def score_side(score_dict, key, ctx, regex_list, direction):
             for rx in regex_list:
+
                 m = rx.search(ctx)
-                if not m:
-                    continue
-                if direction == "left":
-                    score_dict[key] += 1 if m.end() == len(ctx) else 0.5
-                else:  # "right"
-                    score_dict[key] += 1 if m.start() == 0 else 0.5
+                fired = bool(m)
+
+                # grade calculation
+                grade = 0
+                if fired:
+                    if direction == "left":
+                        grade = 2 if m.end() == len(ctx) else 1
+                    else:
+                        grade = 2 if m.start() == 0 else 1
+
+                    score_dict[key] += grade
+
+                price_logger.debug(
+                    "[REGEX] %-6s fired=%s grade=%s pattern=%s ctx='%s'",
+                    key,
+                    fired,
+                    grade,
+                    rx.pattern,
+                    ctx.strip()
+                )
 
         for t in tokens:
             val = normalize_number(t["value"])
@@ -362,9 +378,9 @@ class PriceExtractor:
                 if " case" in global_left or " cases" in global_left:
                     scores["case"] += 0.5
             # RULE: nearest Noun prhase wins
-            # If the NP immediately before [-12:] the price contains a size → bottle bias
-            if re.search(r'\b\d+\s*(?:cl|ml|l)\b', t["left"][-12:].lower()):
-                scores["bottle"] += 1
+            # If the NP immediately before [-8:] the price contains a size → bottle bias
+            if re.search(r'(?<![x×])\b\d+\s*(?:cl|ml|l)\b', t["left"][-12:].lower()):
+                 scores["bottle"] += 1
             
             # ------------------------------------------
             # CASE SIGNAL: dash-number-dash pattern
@@ -390,6 +406,7 @@ class PriceExtractor:
             # ALL TOKENS HERE ARE CANDIDATES,
             # потому что L1 уже отфильтровал неценовые числа
             classified.append((val, t, scores))
+            
         return classified
     # ----------------------------
     # LAYER 3 — price resolution logic

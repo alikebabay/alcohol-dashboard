@@ -31,9 +31,21 @@ def detect_bpc(s: str) -> int | None:
     # 1) 6x75 / 12×70 / 50cl x 12
     m = RX_BPC.search(s)
     if m:
-        n = int(m.group(1))
-        if 1 <= n <= 60:
-            return n
+        a = int(m.group(1))
+        b = int(m.group(2))
+
+        # check for volume units
+        if re.search(rf'{b}\s*(?:cl|ml|l)\b', s):
+            if a in BPC_KNOWN:
+                return a
+
+        if re.search(rf'{a}\s*(?:cl|ml|l)\b', s):
+            if b in BPC_KNOWN:
+                return b
+
+        # fallback XOR rule
+        if (a in BPC_KNOWN) ^ (b in BPC_KNOWN):
+            return a if a in BPC_KNOWN else b
 
     # 2) cs*6 / *12 btl
     m = RX_BPC_STAR.search(s)
@@ -49,7 +61,7 @@ def detect_bpc(s: str) -> int | None:
         if 1 <= n <= 60:
             return n
         
-    # 4) pcs
+    # 4) pcs and cans
     m = RX_PACK_PCS.search(s)
     if m:
         n = int(m.group("cases"))
