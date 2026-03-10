@@ -44,6 +44,8 @@ logger = logging.getLogger(__name__)
 
 # /start - personal messages
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type != "private":
+        return
     # Load graph snapshot into parser memory
     gl.reload_graph_cache()
     print(f"[CACHE] brands={len(gl.BRAND_KEYMAP)} canonicals={len(gl.CANONICAL_NAMES)}")
@@ -179,7 +181,12 @@ def main():
     #group chat
     group_handler = MessageHandler(
         (filters.ChatType.GROUP | filters.ChatType.SUPERGROUP)
-        & ~filters.COMMAND,
+        & ~filters.COMMAND
+        & (
+            filters.Document.FileExtension("xlsx")
+            | filters.Document.FileExtension("csv")
+            | filters.TEXT
+        ),
         handle_group_message
     )
 
@@ -187,7 +194,7 @@ def main():
 
     # --- Диалог ---
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start_command)],
+        entry_points=[CommandHandler("start", start_command, filters=filters.ChatType.PRIVATE)],
         states={
             # Этап 1: выбираем поставщика
             SUPPLIER: [
