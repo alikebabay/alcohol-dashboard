@@ -78,14 +78,16 @@ async def dispatch_excel(update, context, supplier_choice=None):
     except ValueError as e:
         if str(e) == "NO_PRICE_COLUMNS":
             await publish("ingest.failed", {
-                "chat_id": chat_id,
+                "chat_id": update.effective_chat.id,
+                "chat_type": update.effective_chat.type,
                 "reason": "NO_PRICE",
             })
             return None
 
         if str(e) == "NO_PRICE_VALUES":
             await publish("ingest.failed", {
-                "chat_id": chat_id,
+                "chat_id": update.effective_chat.id,
+                "chat_type": update.effective_chat.type,
                 "reason": "NO_PRICE",
             })
             return None

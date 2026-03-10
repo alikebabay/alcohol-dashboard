@@ -61,3 +61,6 @@ plugins/
 
 #test modules
 tests/test_*.py
+
+code_dump.txt
+structure.txt

@@ -49,3 +49,6 @@ plugins/
 
 #test modules
 test_graph_normalizer.py
+
+code_dump.txt
+structure.txt

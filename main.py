@@ -42,7 +42,7 @@ from config import TOKEN
 logger = logging.getLogger(__name__)
 
 
-# /start
+# /start - personal messages
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Load graph snapshot into parser memory
     gl.reload_graph_cache()
@@ -62,6 +62,29 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
     return SUPPLIER
+
+#group messages
+
+
+async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    msg = update.message
+    chat = update.effective_chat
+
+    supplier = chat.title   # supplier = group name
+
+    # store supplier for downstream ingest logic
+    context.chat_data["supplier_choice"] = supplier
+
+    logger.info(
+        f"[GROUP INGEST] supplier={supplier} "
+        f"chat_id={chat.id} "
+        f"text={msg.text!r} "
+        f"doc={msg.document.file_name if msg.document else None}"
+    )
+
+    # call existing ingest pipeline
+    await handle_userdata(update, context)
 
 
 # выбор поставщика
@@ -97,10 +120,15 @@ async def handle_supplier_choice(update: Update, context: ContextTypes.DEFAULT_T
 
 # Если прислали файл до выбора поставщика
 async def handle_wrong_before_supplier(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type != "private":
+        return
     await update.message.reply_text("Сначала выберите поставщика (/start), затем пришлите прайс (файл или текст).")
 
 # /cancel
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type != "private":
+        return ConversationHandler.END
+
     context.chat_data["_conv_active"] = False
     context.chat_data["_fsm"] = "END"
     await update.message.reply_text("Диалог завершён.")
@@ -108,6 +136,9 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Заглушка для текстов
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type != "private":
+        return ConversationHandler.END
+
     await update.message.reply_text("Используйте /start, чтобы вернуться в меню.")
 
 # Ошибки
@@ -116,10 +147,16 @@ async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Фолбэк: если файл прислали вне диалога
 async def handle_file_outside_dialog(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type != "private":
+        return ConversationHandler.END
+
     await update.message.reply_text("Пожалуйста, сначала введите /start и выберите поставщика.")
 
 # Фолбэк: если текст прислали вне диалога
 async def handle_text_outside_dialog(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type != "private":
+        return ConversationHandler.END
+
     if context.chat_data.get("_conv_active"):
         return
     await update.message.reply_text("Используйте /start, чтобы начать работу.")
@@ -137,6 +174,16 @@ def main():
     init_telegram_notifier(app.bot)
     init_noprice_collector(app.bot)
     logger.info("[BUS] Работники разбужены: blob_worker, reference_worker, excel_worker, telegram_notifier, noprice_collector")
+
+
+    #group chat
+    group_handler = MessageHandler(
+        (filters.ChatType.GROUP | filters.ChatType.SUPERGROUP)
+        & ~filters.COMMAND,
+        handle_group_message
+    )
+
+    app.add_handler(group_handler, group=-1)
 
     # --- Диалог ---
     conv_handler = ConversationHandler(
@@ -184,7 +231,7 @@ def main():
         MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_outside_dialog),
         group=1
     )
-
+    
     # Ошибки
     app.add_error_handler(error)
 

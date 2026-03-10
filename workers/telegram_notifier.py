@@ -1,6 +1,8 @@
 # workers/telegram_notifier.py
-from workers.event_bus import subscribe
+
 import logging
+from workers.event_bus import subscribe
+
 logger = logging.getLogger(__name__)
 
 NO_PRICE_MSG = (
@@ -11,8 +13,11 @@ NO_PRICE_MSG = (
     "Please clarify the price and currency and try again."
 )
 
+
 def init_worker(bot):
+
     async def on_ingest_failed(payload: dict):
+
         chat_id = payload.get("chat_id")
         reason = payload.get("reason")
 
@@ -20,8 +25,14 @@ def init_worker(bot):
             logger.error("[telegram_notifier] missing chat_id in payload")
             return
 
+        # Telegram groups always have negative chat_id
+        if chat_id < 0:
+            logger.info("[telegram_notifier] silent failure in group")
+            return
+
         if reason == "NO_PRICE":
             await bot.send_message(chat_id=chat_id, text=NO_PRICE_MSG)
 
     subscribe("ingest.failed", on_ingest_failed)
+
     logger.info("[telegram_notifier] subscribed to ingest.failed")
