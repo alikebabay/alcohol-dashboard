@@ -22,30 +22,12 @@ MODE = os.getenv("MODE", "dev").lower()
 # 🔐 Функция безопасного доступа к Vault
 # ==========================================================
 def get_from_vault(path, key):
-    import requests
-    VAULT_ADDR = os.getenv("VAULT_ADDR", "http://vault:8200")
-
-    # ищем токен только снаружи: из файла или из окружения
-    token_path = os.getenv("VAULT_TOKEN_FILE")
-    token = None
-    if token_path and os.path.exists(token_path):
-        with open(token_path) as f:
-            token = f.read().strip()
-    elif os.getenv("VAULT_TOKEN"):
-        token = os.getenv("VAULT_TOKEN")
-
-    if not token:
-        raise RuntimeError("Vault token not provided")
-
-    resp = requests.get(
-        f"{VAULT_ADDR}/v1/secret/data/{path}",
-        headers={"X-Vault-Token": token},
+    import os, requests
+    return requests.get(
+        f"{os.getenv('VAULT_ADDR')}/v1/secret/data/{path}",
+        headers={"X-Vault-Token": open('/etc/vault-token').read().strip()},
         timeout=5,
-    )
-
-    if resp.status_code == 200:
-        return resp.json()["data"]["data"].get(key)
-    raise RuntimeError(f"Vault fetch failed: {resp.status_code} {resp.text}")
+    ).json()["data"]["data"][key]
 
 # грузим локальный .env если есть
 SECRETS_PATH = "/etc/secrets/bot_token.env"
