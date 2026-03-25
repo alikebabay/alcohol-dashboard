@@ -48,14 +48,18 @@ def get_from_vault(path, key):
     raise RuntimeError(f"Vault fetch failed: {resp.status_code} {resp.text}")
 
 # грузим локальный .env если есть
-if os.path.exists("bot_token.env"):
-    load_dotenv("bot_token.env")
+SECRETS_PATH = "/etc/secrets/bot_token.env"
+LOCAL_PATH = "bot_token.env"
 
 if MODE == "prod":
-    TOKEN = get_from_vault("app", "bot_token")
-    BOT_USERNAME = get_from_vault("app", "BOT_USERNAME")
+    if os.path.exists(SECRETS_PATH):
+        load_dotenv(SECRETS_PATH)
+    TOKEN = os.getenv("BOT_TOKEN")
+    BOT_USERNAME = os.getenv("BOT_USERNAME")
 else:
-    TOKEN = os.getenv("bot_token")
+    if os.path.exists(LOCAL_PATH):
+        load_dotenv(LOCAL_PATH)
+    TOKEN = os.getenv("BOT_TOKEN")
     BOT_USERNAME = os.getenv("BOT_USERNAME")
 
 # сервисный аккаунт Google Sheets из переменной окружения и локально
