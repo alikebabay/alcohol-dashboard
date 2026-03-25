@@ -166,6 +166,7 @@ async def handle_text_outside_dialog(update: Update, context: ContextTypes.DEFAU
 # Запуск
 def main():
     print("Бот запускается...")
+    print(f"[DEBUG] TOKEN = {repr(TOKEN)}")
 
     app = (Application.builder().token(TOKEN).concurrent_updates(False).read_timeout(60).write_timeout(60).build())
     
