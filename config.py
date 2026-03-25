@@ -35,6 +35,7 @@ def get_vault_token():
 
 
 def get_from_vault(path, key):
+
     token = get_vault_token()
 
     r = requests.get(
@@ -43,8 +44,10 @@ def get_from_vault(path, key):
         timeout=5,
     )
 
+    print("[DEBUG] VAULT RAW:", r.status_code, r.text)
+
     r.raise_for_status()
-    return r.json()["data"]["data"][key]
+    return r.json()["data"]["data"].get(key)
 
 # грузим локальный .env если есть
 SECRETS_PATH = "/etc/secrets/bot_token.env"
