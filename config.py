@@ -113,8 +113,11 @@ else:
     PASS = get_from_vault("app", "neo4j_password")
 
 # 🟢 Shared SYNC driver (used by workers, bot, normalizers, parsers)
-driver = GraphDatabase.driver(URI, auth=(USER, PASS))
-
+if URI and USER and PASS:
+    driver = GraphDatabase.driver(URI, auth=(USER, PASS))
+else:
+    print("[WARN] Neo4j disabled (missing config)")
+    driver = None
 
 
 
