@@ -1,5 +1,5 @@
 #config.py
-import os
+import os, requests
 import json
 from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
@@ -21,13 +21,30 @@ MODE = os.getenv("MODE", "dev").lower()
 # ==========================================================
 # 🔐 Функция безопасного доступа к Vault
 # ==========================================================
-def get_from_vault(path, key):
-    import os, requests
-    return requests.get(
-        f"{os.getenv('VAULT_ADDR')}/v1/secret/data/{path}",
-        headers={"X-Vault-Token": open('/etc/vault-token').read().strip()},
+def get_vault_token():
+    r = requests.post(
+        f"{os.getenv('VAULT_ADDR')}/v1/auth/approle/login",
+        json={
+            "role_id": os.getenv("ROLE_ID"),
+            "secret_id": os.getenv("SECRET_ID"),
+        },
         timeout=5,
-    ).json()["data"]["data"][key]
+    )
+    r.raise_for_status()
+    return r.json()["auth"]["client_token"]
+
+
+def get_from_vault(path, key):
+    token = get_vault_token()
+
+    r = requests.get(
+        f"{os.getenv('VAULT_ADDR')}/v1/secret/data/{path}",
+        headers={"X-Vault-Token": token},
+        timeout=5,
+    )
+
+    r.raise_for_status()
+    return r.json()["data"]["data"][key]
 
 # грузим локальный .env если есть
 SECRETS_PATH = "/etc/secrets/bot_token.env"
