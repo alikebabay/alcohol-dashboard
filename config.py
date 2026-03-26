@@ -19,9 +19,10 @@ load_dotenv("neo4j.env")
 MODE = os.getenv("MODE", "dev").lower()
 
 # ==========================================================
-# 🔐 Функция безопасного доступа к Vault
+# 🔐 Vault (minimal)
 # ==========================================================
-def get_vault_token():
+
+def get_from_vault(key):
     r = requests.post(
         f"{os.getenv('VAULT_ADDR')}/v1/auth/approle/login",
         json={
@@ -31,36 +32,28 @@ def get_vault_token():
         timeout=5,
     )
     r.raise_for_status()
-    return r.json()["auth"]["client_token"]
-
-
-def get_from_vault(path, key):
-
-    token = get_vault_token()
+    token = r.json()["auth"]["client_token"]
 
     r = requests.get(
-        f"{os.getenv('VAULT_ADDR')}/v1/secret/data/{path}",
+        f"{os.getenv('VAULT_ADDR')}/v1/secret/data/app",
         headers={"X-Vault-Token": token},
         timeout=5,
     )
-
-    print("[DEBUG] VAULT RAW:", r.status_code, r.text)
-
     r.raise_for_status()
+
     return r.json()["data"]["data"].get(key)
 
-# грузим локальный .env если есть
-SECRETS_PATH = "/etc/secrets/bot_token.env"
-LOCAL_PATH = "bot_token.env"
+
+# ==========================================================
+# 🌍 MODE
+# ==========================================================
 
 if MODE == "prod":
-    if os.path.exists(SECRETS_PATH):
-        load_dotenv(SECRETS_PATH)
-    TOKEN = os.getenv("BOT_TOKEN")
+    TOKEN = get_from_vault("bot_token")
     BOT_USERNAME = os.getenv("BOT_USERNAME")
+
 else:
-    if os.path.exists(LOCAL_PATH):
-        load_dotenv(LOCAL_PATH)
+    load_dotenv("bot_token.env")
     TOKEN = os.getenv("BOT_TOKEN")
     BOT_USERNAME = os.getenv("BOT_USERNAME")
 
@@ -117,8 +110,6 @@ else:
 
 # 🟢 Shared SYNC driver (used by workers, bot, normalizers, parsers)
 driver = GraphDatabase.driver(URI, auth=(USER, PASS))
-
-
 
 
 # ==========================================================
