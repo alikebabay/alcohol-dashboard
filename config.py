@@ -105,13 +105,13 @@ if MODE == "dev":
 
 elif IS_ADMIN:
     # admin container in prod
-    URI  = "bolt://neo4j:7687"
+    URI  = "bolt://127.0.0.1:7688"
     USER = "neo4j"
     PASS = get_from_vault("app", "neo4j_password")
 
 else:
     # main backend in prod
-    URI  = "bolt://neo4j:7687"
+    URI  = "bolt://127.0.0.1:7688"
     USER = "neo4j"
     PASS = get_from_vault("app", "neo4j_password")
 
