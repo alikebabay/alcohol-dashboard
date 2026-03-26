@@ -100,13 +100,13 @@ elif IS_ADMIN:
     # admin container in prod
     URI  = "bolt://127.0.0.1:7688"
     USER = "neo4j"
-    PASS = get_from_vault("app", "neo4j_password")
+    PASS = get_from_vault("neo4j_password")
 
 else:
     # main backend in prod
     URI  = "bolt://127.0.0.1:7688"
     USER = "neo4j"
-    PASS = get_from_vault("app", "neo4j_password")
+    PASS = get_from_vault("neo4j_password")
 
 # 🟢 Shared SYNC driver (used by workers, bot, normalizers, parsers)
 driver = GraphDatabase.driver(URI, auth=(USER, PASS))
@@ -137,7 +137,7 @@ elif IS_ADMIN:
 
 else:
     # prod backend
-    TOKEN = get_from_vault("app", "bot_token")
+    TOKEN = get_from_vault("bot_token")
     GOOGLE_CREDS = get_from_vault("app", "google_credentials")
 
 
