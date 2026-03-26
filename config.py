@@ -7,6 +7,8 @@ from neo4j import GraphDatabase
 import pandas as pd
 import warnings
 import socket
+import time
+
 
 #минимальная длина продуктовой строки
 MIN_PRODUCT_LEN = 32
@@ -108,8 +110,18 @@ else:
     USER = "neo4j"
     PASS = get_from_vault("neo4j_password")
 
-# 🟢 Shared SYNC driver (used by workers, bot, normalizers, parsers)
-driver = GraphDatabase.driver(URI, auth=(USER, PASS))
+# 🟢 Shared SYNC driver (ensure db is ready after deploy before access)
+for i in range(10):
+    try:
+        driver = GraphDatabase.driver(URI, auth=(USER, PASS))
+        driver.verify_connectivity()
+        print("✅ Neo4j connected")
+        break
+    except Exception as e:
+        print(f"[WAIT] Neo4j not ready ({i})", e)
+        time.sleep(2)
+else:
+    raise RuntimeError("Neo4j never became ready")
 
 
 # ==========================================================
