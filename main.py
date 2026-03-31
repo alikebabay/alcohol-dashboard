@@ -244,7 +244,6 @@ def main():
     app.add_error_handler(error)
 
     print("Опрашиваем...")
-    app.run_polling(poll_interval=1)
 
 if __name__ == "__main__":
     main()
